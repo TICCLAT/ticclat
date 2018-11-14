@@ -5,6 +5,8 @@
 * Spelling normalization
 	- Facilitates searching for spelling variants
 * Spelling modernization
+	- To get better performance when using existing nlp tools that have been
+	  developed using contemporary corpora
 * OCR post correction
 	- Get text as close to the original text as possible
 	- Get modernized/normalized text
@@ -15,6 +17,7 @@
 * Aggregate over words in corpus (or arbitrary selection of texts)
 	- Word frequency list
 	- Tf idf(?)
+	- Reconstruct document(?)
 	- ... (we need some realistic stuff here!)
 * Text reuse(?) (probably not realistic)
 	- Find reused passages (of certain length) in other texts
