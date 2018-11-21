@@ -12,7 +12,7 @@ class AnalyzedWordform(Base):
     __tablename__ = 'analyzed_wordforms'
     __table_args__ = (
         Index('awfKey', 'part_of_speech', 'lemma_id', 'wordform_id',
-              'multiple_lemmata_analysis_id', 'derivation_id', unique=True),
+              'multiple_lemmata_analysis_id', 'derivation_id'),
     )
 
     analyzed_wordform_id = Column(BIGINT(20), primary_key=True)
