@@ -24,6 +24,13 @@ class AnalyzedWordform(Base):
     verified_by = Column(BIGINT(20))
     verification_date = Column(DateTime)
 
+    def __init__(self, pos_tag, lemma_id, wordform_id):
+        self.part_of_speech = pos_tag
+        self.lemma_id = lemma_id
+        self.wordform_id = wordform_id
+        self.multiple_lemmata_analysis_id = 0
+        self.derivation_id = 0
+
 
 class Document(Base):
     __tablename__ = 'documents'
@@ -47,6 +54,9 @@ class Document(Base):
     spelling = Column(String(255))
     parent_document = Column(BIGINT(20), index=True)
 
+    def __init__(self, doc_id):
+        self.persistent_id = doc_id
+
 
 class Lemmata(Base):
     __tablename__ = 'lemmata'
@@ -63,6 +73,10 @@ class Lemmata(Base):
     ne_label = Column(String(255))
     portmanteau_lemma_id = Column(BIGINT(20), index=True)
     language_id = Column(TINYINT(3))
+
+    def __init__(self, lemma, pos_tag):
+        self.modern_lemma = lemma
+        self.lemma_part_of_speech = pos_tag
 
 
 class TokenAttestation(Base):
@@ -81,6 +95,14 @@ class TokenAttestation(Base):
     start_pos = Column(BIGINT(20), nullable=False)
     end_pos = Column(BIGINT(20), nullable=False)
 
+    def __init__(self, awf_id, doc_id):
+        self.analyzed_wordform_id = awf_id
+        self.document_id = doc_id
+
+        self.derivation_id = 0
+        self.start_pos = 0
+        self.end_pos = 0
+
 
 class Wordform(Base):
     __tablename__ = 'wordforms'
@@ -89,3 +111,8 @@ class Wordform(Base):
     wordform = Column(VARCHAR(255), unique=True)
     has_analysis = Column(BIT(1))
     wordform_lowercase = Column(VARCHAR(255), nullable=False, index=True)
+
+    def __init__(self, wordform):
+        self.wordform = wordform
+        self.has_analysis = False
+        self.wordform_lowercase = wordform.lower()
