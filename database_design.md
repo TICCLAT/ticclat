@@ -38,16 +38,18 @@
 
 * Take INL lexicon database structure as starting point
 	- Reuse:
-		- Document/corpora/type_frequency structure can be reused
+		- Document/corpora structure can be reused
 		- Lexical source structure can be reused
 			- We probably need to take into account metadata (time, location) for sources like this, but we ignore it for the time being.
-		- Worform -> analysed_wordform is probably not necessary for our use case, but we keep it to remain compatible
+		- Worform
 			- Both the 'correct' and 'incorrect' wordforms are added to the wordform table. Incorrect wordforms can come from spelling correction lists and documents.
 				- Also, any source can (and will!) contain errors
-		- Attestation structure can be reused
-			- We ignore start and end position in the documents, because we don't need it (and it can easily be calculated by the user)
+		- Text Attestation structure can be reused
 	- Not (re)used:
 		- We don't use the lemma-structure, because it contains information that cannot be automatically derived with high enough quality for historical text - we are not going to do this by hand
+		- type_frequency is removed, because it contains the same information as text_attestations, and is used when annotating documents (IMPACT lexicon document 3.0 page 17)
+		- analysed_wordform is removed. We don't use it.
+		- token_attestations: We ignore word position in the documents, because we don't need it
 * Ignore capitals (all word(forms) are lowercase(d))
 	- In practice, TICCL already lowercases all text (as a preprocessing step)
 * Add table with anahash values

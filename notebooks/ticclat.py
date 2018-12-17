@@ -1,27 +1,10 @@
 # coding: utf-8
-from sqlalchemy import Column, DateTime, Index, String, Text
+from sqlalchemy import Column, Index, String
 from sqlalchemy.dialects.mysql import BIGINT, BIT, VARCHAR
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 metadata = Base.metadata
-
-
-class AnalyzedWordform(Base):
-    __tablename__ = 'analyzed_wordforms'
-    __table_args__ = (
-        Index('awfKey', 'part_of_speech', 'lemma_id', 'wordform_id',
-              'multiple_lemmata_analysis_id', 'derivation_id', unique=True),
-    )
-
-    analyzed_wordform_id = Column(BIGINT(20), primary_key=True)
-    part_of_speech = Column(String(255), nullable=False)
-    lemma_id = Column(BIGINT(20), nullable=False, index=True)
-    wordform_id = Column(BIGINT(20), nullable=False, index=True)
-    multiple_lemmata_analysis_id = Column(BIGINT(20), nullable=False)
-    derivation_id = Column(BIGINT(20), nullable=False, index=True)
-    verified_by = Column(BIGINT(20))
-    verification_date = Column(DateTime)
 
 
 class Corpus(Base):
@@ -87,35 +70,6 @@ class TextAttestation(Base):
     attestation_id = Column(BIGINT(20), primary_key=True)
     frequency = Column(BIGINT(20))
     analyzed_wordform_id = Column(BIGINT(20), nullable=False)
-    document_id = Column(BIGINT(20), nullable=False)
-
-
-class TokenAttestation(Base):
-    __tablename__ = 'token_attestations'
-    __table_args__ = (
-        Index('tlaKey', 'analyzed_wordform_id', 'derivation_id', 'document_id',
-              'start_pos', 'end_pos', unique=True),
-    )
-
-    attestation_id = Column(BIGINT(20), primary_key=True)
-    token_id = Column(BIGINT(20))
-    quote = Column(Text)
-    analyzed_wordform_id = Column(BIGINT(20), nullable=False)
-    derivation_id = Column(BIGINT(20), nullable=False)
-    document_id = Column(BIGINT(20), nullable=False)
-    start_pos = Column(BIGINT(20), nullable=False)
-    end_pos = Column(BIGINT(20), nullable=False)
-
-
-class TypeFrequency(Base):
-    __tablename__ = 'type_frequencies'
-    __table_args__ = (
-        Index('tfKey', 'wordform_id', 'document_id', unique=True),
-    )
-
-    type_frequency_id = Column(BIGINT(20), primary_key=True)
-    frequency = Column(BIGINT(20), nullable=False)
-    wordform_id = Column(BIGINT(20), nullable=False)
     document_id = Column(BIGINT(20), nullable=False)
 
 
