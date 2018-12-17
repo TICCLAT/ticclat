@@ -1,5 +1,6 @@
 # coding: utf-8
-from sqlalchemy import Column, Index, String
+from sqlalchemy import Column, String, Table, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT, BIT, VARCHAR
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -7,18 +8,31 @@ Base = declarative_base()
 metadata = Base.metadata
 
 
+corpusId_x_documentId = Table('corpusId_x_documentId', Base.metadata,
+        Column('corpus_id', BIGINT(20), ForeignKey('corpora.corpus_id')),
+        Column('document_id', BIGINT(20), ForeignKey('documents.document_id'))
+    )
+
+
+# Removed:
+# __table_args__ = (
+#     Index('tlaKey', 'wordform_id', 'document_id', unique=True),
+# )
+text_attestation = Table('text_attestations', Base.metadata,
+        Column('attestation_id', BIGINT(20), primary_key=True),
+        Column('frequency', BIGINT(20)),
+        Column('wordform_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
+        Column('document_id', BIGINT(20), ForeignKey('documents.document_id'))
+    )
+
+
 class Corpus(Base):
     __tablename__ = 'corpora'
 
     corpus_id = Column(BIGINT(20), primary_key=True)
     name = Column(String(255))
-
-
-class CorpusIdXDocumentId(Base):
-    __tablename__ = 'corpusId_x_documentId'
-
-    corpus_id = Column(BIGINT(20), primary_key=True, nullable=False)
-    document_id = Column(BIGINT(20), primary_key=True, nullable=False)
+    documents = relationship('Document', secondary=corpusId_x_documentId,
+                             back_populates='corpora')
 
 
 class Document(Base):
@@ -43,34 +57,27 @@ class Document(Base):
     spelling = Column(String(255))
     parent_document = Column(BIGINT(20), index=True)
 
+    corpora = relationship('Corpus', secondary=corpusId_x_documentId,
+                           back_populates='documents')
+    wordforms = relationship('Wordform', secondary=text_attestation,
+                             back_populates='documents')
 
-class Lexica(Base):
+
+lexical_source_wordform = Table('lexical_source_wordform', Base.metadata,
+        Column('wordform_source_id', BIGINT(20), primary_key=True),
+        Column('lexicon_id', BIGINT(20), ForeignKey('lexica.lexicon_id')),
+        Column('wordform_id', BIGINT(20), ForeignKey('wordforms.wordform_id'))
+    )
+
+
+class Lexicon(Base):
     __tablename__ = 'lexica'
 
     lexicon_id = Column(BIGINT(20), primary_key=True)
     lexicon_name = Column(String(255))
 
-
-class LexicalSourceWordform(Base):
-    __tablename__ = 'lexical_source_wordform'
-
-    wordform_source_id = Column(BIGINT(20), primary_key=True)
-    foreign_id = Column(String(255))
-    label = Column(String(255))
-    wordform_id = Column(BIGINT(20), index=True)
-    lexicon_id = Column(BIGINT(20), index=True)
-
-
-class TextAttestation(Base):
-    __tablename__ = 'text_attestations'
-    __table_args__ = (
-        Index('tlaKey', 'analyzed_wordform_id', 'document_id', unique=True),
-    )
-
-    attestation_id = Column(BIGINT(20), primary_key=True)
-    frequency = Column(BIGINT(20))
-    analyzed_wordform_id = Column(BIGINT(20), nullable=False)
-    document_id = Column(BIGINT(20), nullable=False)
+    wordforms = relationship('Wordform', secondary=lexical_source_wordform,
+                             back_populates='lexica')
 
 
 class Wordform(Base):
@@ -80,3 +87,8 @@ class Wordform(Base):
     wordform = Column(VARCHAR(255), unique=True)
     has_analysis = Column(BIT(1))
     wordform_lowercase = Column(VARCHAR(255), nullable=False, index=True)
+
+    lexica = relationship('Lexicon', secondary=lexical_source_wordform,
+                          back_populates='wordforms')
+    documents = relationship('Document', secondary=text_attestation,
+                             back_populates='wordforms')
