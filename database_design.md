@@ -19,6 +19,9 @@
 	- Tf idf(?)
 	- Reconstruct document(?)
 	- ... (we need some realistic stuff here!)
+* Give me all word(forms) that are related to this word(form)
+	- Show occurrence of the word and/or related words over time (area chart with frequencies over time)
+	- The data retrieved can be used to answer the question: is this a (valid, acceptable) word(form)?
 * Text reuse(?) (probably not realistic)
 	- Find reused passages (of certain length) in other texts
 * Find duplicate documents(?)
