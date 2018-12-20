@@ -69,6 +69,28 @@
 	- wordform_link_id
 	- source_id (source is lexicon)
 
+## Character set and collation
+
+The ticclat database is created using:
+
+```
+CREATE DATABASE ticclat CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+```
+
+If you use a collation such as `utf8mb4_general_ci` or `utf8mb4_unicode_ci`,
+accented characters are mapped to unaccented ones, so, a word like _dóór_ is the
+same as _door_. This is not the behavior we want. Also, this violates the uniqueness
+constraint on `wordforms.wordform`.
+
+To search with a different collation (e.g., if you want to get all accented and
+unaccented forms of a word), do:
+
+```
+SELECT * FROM wordforms WHERE wordform = 'door' COLLATE utf8_general_ci;
+```
+
+To do: find out how to set the collation for a query using sqlalchemy.
+
 ## Brainstorm
 
 * Information about the ocr software and process (impossible) (document-level)
