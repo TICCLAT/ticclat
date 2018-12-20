@@ -92,6 +92,9 @@ class Lexicon(Base):
     wordforms = relationship('Wordform', secondary=lexical_source_wordform,
                              back_populates='lexica')
 
+    def __str__(self):
+        return '<Lexicon {}>'.format(self.lexicon_name)
+
 
 class Wordform(Base):
     __tablename__ = 'wordforms'
@@ -111,6 +114,9 @@ class Wordform(Base):
                          primaryjoin=wordform_link.c.wordform_1_id == wordform_id,
                          secondaryjoin=wordform_link.c.wordform_2_id == wordform_id
                          )
+
+    def __str__(self):
+        return '<Worfdform {}>'.format(self.wordform_lowercase)
 
 
 class Anahash(Base):
