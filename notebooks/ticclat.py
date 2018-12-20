@@ -32,16 +32,11 @@ wordform_link = Table('wordform_links', Base.metadata,
     )
 
 
-source_x_wordform_link = Table('source_x_wordform_link', Base.metatata,
+source_x_wordform_link = Table('source_x_wordform_link', Base.metadata,
     Column('source_x_wordform_link_id', BIGINT(20), primary_key=True),
     Column('wordform_link_id', BIGINT(20), ForeignKey('wordform_links.wordform_link_id')),
     Column('lexicon_id', BIGINT(20), ForeignKey('lexica.lexicon_id'))
     )
-
-sources and wordform_links ()
-	- id (primary key)
-	- wordform_link_id
-	- source_id (source is lexicon)
 
 
 class Corpus(Base):
@@ -103,6 +98,8 @@ class Wordform(Base):
 
     wordform_id = Column(BIGINT(20), primary_key=True)
     wordform = Column(VARCHAR(255), unique=True)
+    anahash_id = Column(BIGINT(20), ForeignKey('anahashes.anahash_id'))
+    anahash = relationship('Anahash')
     has_analysis = Column(BIT(1))
     wordform_lowercase = Column(VARCHAR(255), nullable=False, index=True)
 
@@ -112,13 +109,12 @@ class Wordform(Base):
                              back_populates='wordforms')
     links = relationship('Wordform', secondary=wordform_link,
                          primaryjoin=wordform_link.c.wordform_1_id == wordform_id,
-                         secondaryjoin=wordform_link.c.wordform_2_id == wordform_id,
-                         backref='something')
+                         secondaryjoin=wordform_link.c.wordform_2_id == wordform_id
+                         )
 
 
 class Anahash(Base):
     __tablename__ = 'anahashes'
 
     anahash_id = Column(BIGINT(20), primary_key=True)
-    wordform_id = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
-    anahash = wordform_id = Column(BIGINT(20))
+    anahash = Column(BIGINT(20))
