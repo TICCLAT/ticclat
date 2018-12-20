@@ -1,7 +1,7 @@
 # coding: utf-8
-from sqlalchemy import Column, String, Table, ForeignKey
+from sqlalchemy import Column, String, Table, ForeignKey, Unicode
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import BIGINT, BIT, VARCHAR
+from sqlalchemy.dialects.mysql import BIGINT, BIT
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -100,11 +100,11 @@ class Wordform(Base):
     __tablename__ = 'wordforms'
 
     wordform_id = Column(BIGINT(20), primary_key=True)
-    wordform = Column(VARCHAR(255), unique=True)
+    wordform = Column(Unicode(255), unique=True)
     anahash_id = Column(BIGINT(20), ForeignKey('anahashes.anahash_id'))
     anahash = relationship('Anahash')
     has_analysis = Column(BIT(1))
-    wordform_lowercase = Column(VARCHAR(255), nullable=False, index=True)
+    wordform_lowercase = Column(Unicode(255), nullable=False, index=True)
 
     lexica = relationship('Lexicon', secondary=lexical_source_wordform,
                           back_populates='wordforms')
