@@ -69,6 +69,15 @@
 	- wordform_link_id
 	- source_id (source is lexicon)
 
+## Issues
+
+* Some lexicons contain capitalized wordforms, do we ignore capitalization?
+	- Link wordforms with two hashes (one for capitalized, one for lowercased)
+	- Only use lowercased and lowercase wordforms before storing them in the database
+* Some lexicons contain noisy wordforms, e.g., `te(g)en`, and ticcl normally cleans those using ticcl-unk. How to deal with these forms?
+	- Hash them as they are
+	- Only add cleaned wordforms
+
 ## Character set and collation
 
 The ticclat database is created using:
