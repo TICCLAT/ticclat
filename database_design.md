@@ -91,6 +91,22 @@ SELECT * FROM wordforms WHERE wordform = 'door' COLLATE utf8_general_ci;
 
 To do: find out how to set the collation for a query using sqlalchemy.
 
+## Dumping data
+
+To make a copy of the database do:
+
+```
+mysqldump -u root -p ticclat > ticclat-$(date +%F).sql
+```
+
+To load:
+
+```
+mysql -u root -p ticclat < <file>.sql
+```
+
+Loading database dumps is faster than creating a new one from scratch every time.
+
 ## Brainstorm
 
 * Information about the ocr software and process (impossible) (document-level)
