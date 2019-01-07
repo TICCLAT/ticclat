@@ -124,3 +124,6 @@ class Anahash(Base):
 
     anahash_id = Column(BIGINT(20), primary_key=True)
     anahash = Column(BIGINT(20))
+
+    def __str__(self):
+        return '<Anahash {}>'.format(self.anahash)
