@@ -26,6 +26,10 @@
 	- Find reused passages (of certain length) in other texts
 * Find duplicate documents(?)
 
+Most important queries (these should be fast):
+* Given a wordform, in what range in time does it occur (frequency per year)
+* Given a wordform, in what corpora does it occur with what frequency
+
 ## Requirements
 
 * Store anagram hashes of word forms
