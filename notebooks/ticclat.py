@@ -96,6 +96,16 @@ class Lexicon(Base):
         return '<Lexicon {}>'.format(self.lexicon_name)
 
 
+class Anahash(Base):
+    __tablename__ = 'anahashes'
+
+    anahash_id = Column(BIGINT(20), primary_key=True)
+    anahash = Column(BIGINT(20))
+
+    def __str__(self):
+        return '<Anahash {}>'.format(self.anahash)
+
+
 class Wordform(Base):
     __tablename__ = 'wordforms'
 
@@ -117,13 +127,3 @@ class Wordform(Base):
 
     def __str__(self):
         return '<Worfdform {}>'.format(self.wordform_lowercase)
-
-
-class Anahash(Base):
-    __tablename__ = 'anahashes'
-
-    anahash_id = Column(BIGINT(20), primary_key=True)
-    anahash = Column(BIGINT(20))
-
-    def __str__(self):
-        return '<Anahash {}>'.format(self.anahash)
