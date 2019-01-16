@@ -7,7 +7,7 @@ from tqdm import tqdm
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from ticclat import Wordform
+from ticclat import Wordform, Lexicon
 
 
 # source: https://docs.sqlalchemy.org/en/latest/orm/session_basics.html
@@ -53,7 +53,7 @@ def get_or_create_wordform(session, wordform, has_analysis=False,
     return wf
 
 
-def bulk_add_wordforms(session, wfs, num=1000):
+def bulk_add_wordforms(session, wfs, num=10000):
     """wfs is pandas dataframe with the same column names as the database table
     """
     n = wfs.shape[0] // num
@@ -70,12 +70,16 @@ def bulk_add_wordforms(session, wfs, num=1000):
         existing_wfs = [wf.wordform for wf in result]
 
         # Add wordforms that are not in the database
+        to_add = []
         for idx, row in chunk.iterrows():
             if row['wordform'] not in existing_wfs:
                 total += 1
-                wf = Wordform(wordform=row['wordform'],
-                              has_analysis=row['has_analysis'],
-                              wordform_lowercase=row['wordform'].lower())
-                session.add(wf)
+                to_add.append(
+                    Wordform(wordform=row['wordform'],
+                             has_analysis=row['has_analysis'],
+                             wordform_lowercase=row['wordform'].lower())
+                    )
+        if to_add != []:
+            session.bulk_save_objects(to_add)
 
     return total
