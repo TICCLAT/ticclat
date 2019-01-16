@@ -83,3 +83,18 @@ def bulk_add_wordforms(session, wfs, num=10000):
             session.bulk_save_objects(to_add)
 
     return total
+
+
+def add_lexicon(session, lexicon_name, wfs, num=10000):
+    """wfs is pandas dataframe with the same column names as the database table
+    """
+    bulk_add_wordforms(session, wfs, num=num)
+
+    lexicon = Lexicon(lexicon_name=lexicon_name)
+    session.add(lexicon)
+
+    wordforms = list(wfs['wordform'])
+
+    q = session.query(Wordform).filter(Wordform.wordform.in_(wordforms)).all()
+    print(len(q))
+    lexicon.wordforms = q
