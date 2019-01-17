@@ -100,7 +100,7 @@ class Anahash(Base):
     __tablename__ = 'anahashes'
 
     anahash_id = Column(BIGINT(20), primary_key=True)
-    anahash = Column(BIGINT(20))
+    anahash = Column(BIGINT(20), unique=True, index=True)
 
     def __str__(self):
         return '<Anahash {}>'.format(self.anahash)
@@ -110,7 +110,7 @@ class Wordform(Base):
     __tablename__ = 'wordforms'
 
     wordform_id = Column(BIGINT(20), primary_key=True)
-    wordform = Column(Unicode(255), unique=True)
+    wordform = Column(Unicode(255), unique=True, index=True)
     anahash_id = Column(BIGINT(20), ForeignKey('anahashes.anahash_id'))
     anahash = relationship('Anahash')
     has_analysis = Column(BIT(1))
