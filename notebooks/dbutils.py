@@ -8,7 +8,7 @@ from tqdm import tqdm
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
-from ticclat import Wordform, Lexicon
+from ticclat import Wordform, Lexicon, Anahash
 
 
 # source: https://docs.sqlalchemy.org/en/latest/orm/session_basics.html
@@ -110,3 +110,36 @@ def get_word_frequency_df(session):
     df['frequency'] = 1
 
     return df
+
+
+def bulk_add_anahashes(session, anahashes, num=10000):
+    """anahashes is pandas dataframe with the column wordform (index), anahash
+    """
+    # Remove duplicate anahashes
+    unique_hashes = anahashes.copy().drop_duplicates(subset='anahash')
+    print(anahashes.shape)
+    print(unique_hashes.shape)
+
+    n = unique_hashes.shape[0] // num
+
+    total = 0
+
+    for chunk in tqdm(np.array_split(unique_hashes, n)):
+        # Find out which anahashes are not yet in the database.
+        ahs = list(chunk['anahash'])
+
+        result = session.query(Anahash) \
+            .filter(Anahash.anahash.in_(ahs)).all()
+
+        existing_ahs = [ah.anahash for ah in result]
+
+        # Add anahashes that are not in the database
+        to_add = []
+        for idx, row in chunk.iterrows():
+            if row['anahash'] not in existing_ahs:
+                total += 1
+                to_add.append(Anahash(anahash=row['anahash']))
+        if to_add != []:
+            session.bulk_save_objects(to_add)
+
+    return total
