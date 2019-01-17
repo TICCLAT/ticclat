@@ -1,10 +1,11 @@
 import numpy as np
+import pandas as pd
 
 from contextlib import contextmanager
 
 from tqdm import tqdm
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
 from ticclat import Wordform, Lexicon
@@ -98,3 +99,14 @@ def add_lexicon(session, lexicon_name, wfs, num=10000):
     q = session.query(Wordform).filter(Wordform.wordform.in_(wordforms)).all()
     print(len(q))
     lexicon.wordforms = q
+
+
+def get_word_frequency_df(session):
+    """Can be used as input for ticcl-anahash."""
+    q = session.query(Wordform).filter(and_(Wordform.anahash_id == None)) \
+        .with_entities(Wordform.wordform)
+    df = pd.read_sql(q.statement, q.session.bind)
+    df = df.set_index('wordform')
+    df['frequency'] = 1
+
+    return df
