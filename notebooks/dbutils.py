@@ -3,7 +3,7 @@ import pandas as pd
 
 from contextlib import contextmanager
 
-from tqdm import tqdm
+from tqdm import tqdm_notebook as tqdm
 
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
@@ -141,5 +141,27 @@ def bulk_add_anahashes(session, anahashes, num=10000):
                 to_add.append(Anahash(anahash=row['anahash']))
         if to_add != []:
             session.bulk_save_objects(to_add)
+
+    return total
+
+
+def connect_anahases_to_wordforms(session, anahashes):
+    # get wordforms that have no anahash value
+    # if we have a hash value now:
+    # select hash value from database
+    # and add to wf
+    hashes = list(anahashes.index)
+    wfs = session.query(Wordform).filter(and_(Wordform.anahash_id == None,
+                                              Wordform.wordform.in_(hashes))).all()
+    total = 0
+
+    for wf in tqdm(wfs):
+        #print(wf)
+        h = anahashes.loc[wf.wordform]['anahash']
+        #print(h)
+        a = session.query(Anahash).filter(Anahash.anahash == h).first()
+        #print(a)
+        wf.anahash = a
+        total += 1
 
     return total
