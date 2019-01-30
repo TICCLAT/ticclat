@@ -57,6 +57,9 @@ def get_or_create_wordform(session, wordform, has_analysis=False,
 def bulk_add_wordforms(session, wfs, num=10000):
     """wfs is pandas dataframe with the same column names as the database table
     """
+    if not wfs['wordform'].is_unique:
+        raise ValueError('The wordform-column contains duplicate entries.')
+
     n = wfs.shape[0] // num
 
     total = 0
