@@ -1,6 +1,5 @@
 # coding: utf-8
-from sqlalchemy import Column, String, Table, ForeignKey, Unicode, \
-                       CheckConstraint
+from sqlalchemy import Column, String, Table, ForeignKey, Unicode, CheckConstraint
 from sqlalchemy.schema import Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT, BIT
@@ -11,37 +10,36 @@ metadata = Base.metadata
 
 
 corpusId_x_documentId = Table('corpusId_x_documentId', Base.metadata,
-        Column('corpus_id', BIGINT(20), ForeignKey('corpora.corpus_id')),
-        Column('document_id', BIGINT(20), ForeignKey('documents.document_id'))
-    )
-
+                              Column('corpus_id', BIGINT(20), ForeignKey('corpora.corpus_id')),
+                              Column('document_id', BIGINT(20), ForeignKey('documents.document_id'))
+                              )
 
 # Removed:
 # __table_args__ = (
 #     Index('tlaKey', 'wordform_id', 'document_id', unique=True),
 # )
 text_attestation = Table('text_attestations', Base.metadata,
-        Column('attestation_id', BIGINT(20), primary_key=True),
-        Column('frequency', BIGINT(20)),
-        Column('wordform_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
-        Column('document_id', BIGINT(20), ForeignKey('documents.document_id'))
-    )
+                         Column('attestation_id', BIGINT(20), primary_key=True),
+                         Column('frequency', BIGINT(20)),
+                         Column('wordform_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
+                         Column('document_id', BIGINT(20), ForeignKey('documents.document_id'))
+                         )
 
 wordform_link = Table('wordform_links', Base.metadata,
-    Column('wordform_link_id', BIGINT(20), primary_key=True),
-    Column('wordform_1_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
-    Column('wordform_2_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
-    CheckConstraint('wordform_1_id > wordform_2_id', name='check1'),
-    Index('high_to_low', 'wordform_1_id', 'wordform_2_id'),
-    Index('low_to_high', 'wordform_2_id', 'wordform_1_id')
-    )
+                      Column('wordform_link_id', BIGINT(20), primary_key=True),
+                      Column('wordform_1_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
+                      Column('wordform_2_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
+                      CheckConstraint('wordform_1_id > wordform_2_id', name='check1'),
+                      Index('high_to_low', 'wordform_1_id', 'wordform_2_id'),
+                      Index('low_to_high', 'wordform_2_id', 'wordform_1_id')
+                      )
 
 
 source_x_wordform_link = Table('source_x_wordform_link', Base.metadata,
-    Column('source_x_wordform_link_id', BIGINT(20), primary_key=True),
-    Column('wordform_link_id', BIGINT(20), ForeignKey('wordform_links.wordform_link_id')),
-    Column('lexicon_id', BIGINT(20), ForeignKey('lexica.lexicon_id'))
-    )
+                               Column('source_x_wordform_link_id', BIGINT(20), primary_key=True),
+                               Column('wordform_link_id', BIGINT(20), ForeignKey('wordform_links.wordform_link_id')),
+                               Column('lexicon_id', BIGINT(20), ForeignKey('lexica.lexicon_id'))
+                               )
 
 
 class Corpus(Base):
@@ -82,10 +80,10 @@ class Document(Base):
 
 
 lexical_source_wordform = Table('lexical_source_wordform', Base.metadata,
-        Column('wordform_source_id', BIGINT(20), primary_key=True),
-        Column('lexicon_id', BIGINT(20), ForeignKey('lexica.lexicon_id')),
-        Column('wordform_id', BIGINT(20), ForeignKey('wordforms.wordform_id'))
-    )
+                                Column('wordform_source_id', BIGINT(20), primary_key=True),
+                                Column('lexicon_id', BIGINT(20), ForeignKey('lexica.lexicon_id')),
+                                Column('wordform_id', BIGINT(20), ForeignKey('wordforms.wordform_id'))
+                                )
 
 
 class Lexicon(Base):

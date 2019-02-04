@@ -8,7 +8,7 @@ from tqdm import tqdm_notebook as tqdm
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
-from ticclat.ticclat import Wordform, Lexicon, Anahash
+from ticclat.ticclat_schema import Wordform, Lexicon, Anahash
 
 
 # source: https://docs.sqlalchemy.org/en/latest/orm/session_basics.html
@@ -19,7 +19,7 @@ def session_scope(s):
     try:
         yield session
         session.commit()
-    except:
+    except:  # noqa: E722
         session.rollback()
         raise
     finally:
@@ -82,7 +82,7 @@ def bulk_add_wordforms(session, wfs, num=10000):
                     Wordform(wordform=row['wordform'],
                              has_analysis=row['has_analysis'],
                              wordform_lowercase=row['wordform'].lower())
-                    )
+                )
         if to_add != []:
             session.bulk_save_objects(to_add)
 
@@ -106,7 +106,7 @@ def add_lexicon(session, lexicon_name, wfs, num=10000):
 
 def get_word_frequency_df(session):
     """Can be used as input for ticcl-anahash."""
-    q = session.query(Wordform).filter(and_(Wordform.anahash_id == None)) \
+    q = session.query(Wordform).filter(and_(Wordform.anahash_id is None)) \
         .with_entities(Wordform.wordform)
     df = pd.read_sql(q.statement, q.session.bind)
     df = df.set_index('wordform')
@@ -154,16 +154,16 @@ def connect_anahases_to_wordforms(session, anahashes):
     # select hash value from database
     # and add to wf
     hashes = list(anahashes.index)
-    wfs = session.query(Wordform).filter(and_(Wordform.anahash_id == None,
+    wfs = session.query(Wordform).filter(and_(Wordform.anahash_id is None,
                                               Wordform.wordform.in_(hashes))).all()
     total = 0
 
     for wf in tqdm(wfs):
-        #print(wf)
+        # print(wf)
         h = anahashes.loc[wf.wordform]['anahash']
-        #print(h)
+        # print(h)
         a = session.query(Anahash).filter(Anahash.anahash == h).first()
-        #print(a)
+        # print(a)
         wf.anahash = a
         total += 1
 

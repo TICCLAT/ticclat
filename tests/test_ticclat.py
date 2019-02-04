@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for the ticclat module.
+"""Tests for the ticclat_schema module.
 """
 import pytest
 
-from ticclat import ticclat
+from ticclat import ticclat_schema
 
 
 def test_something():
