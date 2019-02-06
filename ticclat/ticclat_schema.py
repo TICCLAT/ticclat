@@ -17,12 +17,19 @@ corpusId_x_documentId = Table('corpusId_x_documentId', Base.metadata,
 # __table_args__ = (
 #     Index('tlaKey', 'wordform_id', 'document_id', unique=True),
 # )
-text_attestation = Table('text_attestations', Base.metadata,
-                         Column('attestation_id', BIGINT(20), primary_key=True),
-                         Column('frequency', BIGINT(20)),
-                         Column('wordform_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
-                         Column('document_id', BIGINT(20), ForeignKey('documents.document_id'))
-                         )
+
+
+class TextAttestation(Base):
+    __tablename__ = 'text_attestations'
+
+    attestation_id = Column(BIGINT(20), primary_key=True)
+    frequency = Column(BIGINT(20))
+    wordform_id = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
+    document_id = Column(BIGINT(20), ForeignKey('documents.document_id'))
+
+    ta_document = relationship('Document', back_populates='document_wordforms')
+    ta_wordform = relationship('Wordform', back_populates='wordform_documents')
+
 
 wordform_link = Table('wordform_links', Base.metadata,
     Column('wordform_link_id', BIGINT(20), primary_key=True),
@@ -43,8 +50,9 @@ class Corpus(Base):
 
     corpus_id = Column(BIGINT(20), primary_key=True)
     name = Column(String(255))
-    documents = relationship('Document', secondary=corpusId_x_documentId,
-                             back_populates='corpora')
+    corpus_documents = relationship('Document',
+                                    secondary=corpusId_x_documentId,
+                                    back_populates='document_corpora')
 
 
 class Document(Base):
@@ -69,10 +77,9 @@ class Document(Base):
     spelling = Column(String(255))
     parent_document = Column(BIGINT(20), index=True)
 
-    corpora = relationship('Corpus', secondary=corpusId_x_documentId,
-                           back_populates='documents')
-    wordforms = relationship('Wordform', secondary=text_attestation,
-                             back_populates='documents')
+    document_corpora = relationship('Corpus', secondary=corpusId_x_documentId,
+                                    back_populates='corpus_documents')
+    document_wordforms = relationship('TextAttestation', back_populates='ta_document')
 
 
 lexical_source_wordform = Table('lexical_source_wordform', Base.metadata,
@@ -88,8 +95,9 @@ class Lexicon(Base):
     lexicon_id = Column(BIGINT(20), primary_key=True)
     lexicon_name = Column(String(255))
 
-    wordforms = relationship('Wordform', secondary=lexical_source_wordform,
-                             back_populates='lexica')
+    lexicon_wordforms = relationship('Wordform',
+                                     secondary=lexical_source_wordform,
+                                     back_populates='wf_lexica')
 
     def __str__(self):
         return '<Lexicon {}>'.format(self.lexicon_name)
@@ -115,10 +123,9 @@ class Wordform(Base):
     has_analysis = Column(BIT(1))
     wordform_lowercase = Column(Unicode(255), nullable=False, index=True)
 
-    lexica = relationship('Lexicon', secondary=lexical_source_wordform,
-                          back_populates='wordforms')
-    documents = relationship('Document', secondary=text_attestation,
-                             back_populates='wordforms')
+    wf_lexica = relationship('Lexicon', secondary=lexical_source_wordform,
+                             back_populates='lexicon_wordforms')
+    wordform_documents = relationship('TextAttestation', back_populates='ta_wordform')
     links = relationship('Wordform', secondary=wordform_link,
                          primaryjoin=wordform_link.c.wordform_1_id == wordform_id,
                          secondaryjoin=wordform_link.c.wordform_2_id == wordform_id
