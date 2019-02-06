@@ -4,6 +4,9 @@ ticclat
 
 TICCLAT is a tool for text-induced corpus correction and lexical assessment.
 
+.. image:: https://travis-ci.org/TICCLAT/ticclat.svg?branch=master
+    :target: https://travis-ci.org/TICCLAT/ticclat
+
 Installation
 ************
 
