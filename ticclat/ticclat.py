@@ -1,7 +1,5 @@
 # coding: utf-8
-from sqlalchemy import Column, String, Table, ForeignKey, Unicode, \
-                       CheckConstraint
-from sqlalchemy.schema import Index
+from sqlalchemy import Column, String, Table, ForeignKey, Unicode
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT, BIT
 from sqlalchemy.ext.declarative import declarative_base
@@ -30,10 +28,7 @@ text_attestation = Table('text_attestations', Base.metadata,
 wordform_link = Table('wordform_links', Base.metadata,
     Column('wordform_link_id', BIGINT(20), primary_key=True),
     Column('wordform_1_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
-    Column('wordform_2_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
-    CheckConstraint('wordform_1_id > wordform_2_id', name='check1'),
-    Index('high_to_low', 'wordform_1_id', 'wordform_2_id'),
-    Index('low_to_high', 'wordform_2_id', 'wordform_1_id')
+    Column('wordform_2_id', BIGINT(20), ForeignKey('wordforms.wordform_id'))
     )
 
 
