@@ -113,11 +113,11 @@ class Wordform(Base):
     __tablename__ = 'wordforms'
 
     wordform_id = Column(BIGINT(20), primary_key=True)
-    wordform = Column(Unicode(255), unique=True, index=True)
+    wordform = Column(Unicode(255, convert_unicode=False), unique=True, index=True)
     anahash_id = Column(BIGINT(20), ForeignKey('anahashes.anahash_id'))
     anahash = relationship('Anahash')
     has_analysis = Column(BIT(1))
-    wordform_lowercase = Column(Unicode(255), nullable=False, index=True)
+    wordform_lowercase = Column(Unicode(255, convert_unicode=False), nullable=False, index=True)
 
     lexica = relationship('Lexicon', secondary=lexical_source_wordform,
                           back_populates='wordforms')
@@ -129,4 +129,4 @@ class Wordform(Base):
                          )
 
     def __str__(self):
-        return '<Worfdform {}>'.format(self.wordform_lowercase)
+        return '<Wordform {}>'.format(self.wordform_lowercase)
