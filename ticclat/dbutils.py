@@ -79,17 +79,18 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
         existing_wfs = [wf.wordform for wf in result]
 
         # Add wordforms that are not in the database
-        to_add = []
-        for idx, row in chunk.iterrows():
-            if row['wordform'] not in existing_wfs:
-                total += 1
-                to_add.append(
-                    Wordform(wordform=row['wordform'],
-                             has_analysis=row['has_analysis'],
-                             wordform_lowercase=row['wordform'].lower())
-                )
-        if to_add != []:
-            session.bulk_save_objects(to_add)
+        if len(existing_wfs) < len(chunk):
+            to_add = []
+            for idx, row in chunk.iterrows():
+                if row['wordform'] not in existing_wfs:
+                    total += 1
+                    to_add.append(
+                        Wordform(wordform=row['wordform'],
+                                 has_analysis=row['has_analysis'],
+                                 wordform_lowercase=row['wordform'].lower())
+                        )
+            if to_add != []:
+                session.bulk_save_objects(to_add)
 
     return total
 
