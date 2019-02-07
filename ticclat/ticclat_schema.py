@@ -1,5 +1,5 @@
 # coding: utf-8
-from sqlalchemy import Column, String, Table, ForeignKey, Unicode
+from sqlalchemy import Column, String, Table, ForeignKey, Unicode, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT, BIT
 from sqlalchemy.ext.declarative import declarative_base
@@ -30,6 +30,16 @@ class TextAttestation(Base):
     ta_document = relationship('Document', back_populates='document_wordforms')
     ta_wordform = relationship('Wordform', back_populates='wordform_documents')
 
+
+#class WordformLink(Base):
+#    __tablename__ = 'wordform_links'
+
+#    wordform_link_id = Column(BIGINT(20), primary_key=True)
+#    wordform_1_id = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
+#    wordform_2_id = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
+
+#    wfl_wordform_1 = relationship('Wordform', back_populates=)
+#    wfl_wordform_2 = relationship('Wordform', back_populates=)
 
 wordform_link = Table('wordform_links', Base.metadata,
     Column('wordform_link_id', BIGINT(20), primary_key=True),
@@ -94,6 +104,7 @@ class Lexicon(Base):
 
     lexicon_id = Column(BIGINT(20), primary_key=True)
     lexicon_name = Column(String(255))
+    vocabulary = Column(Boolean)
 
     lexicon_wordforms = relationship('Wordform',
                                      secondary=lexical_source_wordform,
