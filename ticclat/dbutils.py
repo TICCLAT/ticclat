@@ -88,7 +88,6 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
                     total += 1
                     to_add.append(
                         Wordform(wordform=row['wordform'],
-                                 has_analysis=row['has_analysis'],
                                  wordform_lowercase=row['wordform'].lower())
                         )
             if to_add != []:
