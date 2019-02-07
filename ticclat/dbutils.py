@@ -55,7 +55,9 @@ def get_or_create_wordform(session, wordform, has_analysis=False,
 
 
 def bulk_add_wordforms(session, wfs, num=10000):
-    """wfs is pandas dataframe with the same column names as the database table
+    """
+    wfs is pandas DataFrame with the same column names as the database table,
+    in this case just "wordform"
     """
     if not wfs['wordform'].is_unique:
         raise ValueError('The wordform-column contains duplicate entries.')
@@ -80,7 +82,7 @@ def bulk_add_wordforms(session, wfs, num=10000):
                 total += 1
                 to_add.append(
                     Wordform(wordform=row['wordform'],
-                             has_analysis=row['has_analysis'],
+                            #  has_analysis=row['has_analysis'],
                              wordform_lowercase=row['wordform'].lower())
                 )
         if to_add != []:
@@ -90,7 +92,9 @@ def bulk_add_wordforms(session, wfs, num=10000):
 
 
 def add_lexicon(session, lexicon_name, wfs, num=10000):
-    """wfs is pandas dataframe with the same column names as the database table
+    """
+    wfs is pandas DataFrame with the same column names as the database table,
+    in this case just "wordform"
     """
     bulk_add_wordforms(session, wfs, num=num)
 
