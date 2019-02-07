@@ -228,7 +228,7 @@ def add_corpus(session, name, texts_file):
         int: The number of documents added
     """
     # create corpus
-    corpus = Corpus(name='nlwiki-20190201-pages-articles')
+    corpus = Corpus(name=name)
     session.add(corpus)
 
     n = 0
