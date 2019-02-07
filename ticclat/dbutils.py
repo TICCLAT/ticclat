@@ -56,8 +56,15 @@ def get_or_create_wordform(session, wordform, has_analysis=False,
     return wf
 
 
+<<<<<<< HEAD
 def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
     """wfs is pandas dataframe with the same column names as the database table
+=======
+def bulk_add_wordforms(session, wfs, num=10000):
+    """
+    wfs is pandas DataFrame with the same column names as the database table,
+    in this case just "wordform"
+>>>>>>> 1f17a02ae96066dae58ece2fb4eb8de85b3bb84d
     """
     if not wfs['wordform'].is_unique:
         raise ValueError('The wordform-column contains duplicate entries.')
@@ -79,6 +86,7 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
         existing_wfs = [wf.wordform for wf in result]
 
         # Add wordforms that are not in the database
+<<<<<<< HEAD
         if len(existing_wfs) < len(chunk):
             to_add = []
             for idx, row in chunk.iterrows():
@@ -91,12 +99,27 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
                         )
             if to_add != []:
                 session.bulk_save_objects(to_add)
+=======
+        to_add = []
+        for idx, row in chunk.iterrows():
+            if row['wordform'] not in existing_wfs:
+                total += 1
+                to_add.append(
+                    Wordform(wordform=row['wordform'],
+                            #  has_analysis=row['has_analysis'],
+                             wordform_lowercase=row['wordform'].lower())
+                )
+        if to_add != []:
+            session.bulk_save_objects(to_add)
+>>>>>>> 1f17a02ae96066dae58ece2fb4eb8de85b3bb84d
 
     return total
 
 
 def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
-    """wfs is pandas dataframe with the same column names as the database table
+    """
+    wfs is pandas DataFrame with the same column names as the database table,
+    in this case just "wordform"
     """
     bulk_add_wordforms(session, wfs, num=num)
 
