@@ -225,17 +225,15 @@ def add_corpus(session, name, texts_file):
         texts_file (str): Path to the file containing the texts. This file
             should contain one text per line.
     Returns:
-        int: The number of documents added
+        Corpus: The corpus object
     """
     # create corpus
     corpus = Corpus(name=name)
     session.add(corpus)
 
-    n = 0
     for terms_vector in tqdm(nltk_tokenize(texts_file)):
         # FIXME: add proper metatadata for a document
         add_document(session, terms_vector, pub_year=2019, language='nl',
                      corpus=corpus)
-        n += 1
 
-    return n
+    return corpus
