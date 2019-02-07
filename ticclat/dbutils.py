@@ -8,7 +8,9 @@ from tqdm import tqdm_notebook as tqdm
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
-from ticclat.ticclat_schema import Wordform, Lexicon, Anahash
+from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, Document, \
+                                   TextAttestation, Corpus
+from ticclat.tokenize import nltk_tokenize
 
 
 # source: https://docs.sqlalchemy.org/en/latest/orm/session_basics.html
@@ -54,17 +56,20 @@ def get_or_create_wordform(session, wordform, has_analysis=False,
     return wf
 
 
-def bulk_add_wordforms(session, wfs, num=10000):
+def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
     """wfs is pandas dataframe with the same column names as the database table
     """
     if not wfs['wordform'].is_unique:
         raise ValueError('The wordform-column contains duplicate entries.')
 
-    n = wfs.shape[0] // num
+    if wfs.shape[0] > num:
+        n = wfs.shape[0] // num
+    else:
+        n = 1
 
     total = 0
 
-    for chunk in tqdm(np.array_split(wfs, n)):
+    for chunk in tqdm(np.array_split(wfs, n), disable=disable_pbar):
         # Find out which wordwordforms are not yet in the database
         wordforms = list(chunk['wordform'])
 
@@ -168,3 +173,69 @@ def connect_anahases_to_wordforms(session, anahashes):
         total += 1
 
     return total
+
+
+def add_document(session, terms_vector, pub_year, language, corpus):
+    """Add a document to the database.
+
+    Inputs:
+        session: SQLAlchemy session object.
+        terms_vector (Counter): term-frequency vector representing the
+            document.
+        pub_year (int): year of publication of the document (metadata).
+        language (str): language of the document (metadata).
+        corpus (Corpus): corpus to which the document belongs.
+
+    Returns:
+        Document (document object)
+    """
+    # create document
+    d = Document(word_count=sum(terms_vector.values()), pub_year=pub_year,
+                 language=language)
+    session.add(d)
+
+    # make sure all wordforms exist in the database
+    df = pd.DataFrame()
+    df['wordform'] = terms_vector.keys()
+    df['has_analysis'] = False
+    bulk_add_wordforms(session, df, disable_pbar=True)
+
+    # get the wordforms
+    q = session.query(Wordform)
+    result = q.filter(Wordform.wordform.in_(terms_vector.keys())).all()
+
+    # add the wordforms to the document
+    for wf in result:
+        ta = TextAttestation(ta_document=d, ta_wordform=wf,
+                             frequency=terms_vector[wf.wordform])
+        session.add(ta)
+
+    # set the corpus
+    d.document_corpora.append(corpus)
+
+    return d
+
+
+def add_corpus(session, name, texts_file):
+    """Add a corpus to the database.
+
+    Inputs:
+        session: SQLAlchemy session object.
+        name (str): The name of the corpus.
+        texts_file (str): Path to the file containing the texts. This file
+            should contain one text per line.
+    Returns:
+        int: The number of documents added
+    """
+    # create corpus
+    corpus = Corpus(name='nlwiki-20190201-pages-articles')
+    session.add(corpus)
+
+    n = 0
+    for terms_vector in tqdm(nltk_tokenize(texts_file)):
+        # FIXME: add proper metatadata for a document
+        add_document(session, terms_vector, pub_year=2019, language='nl',
+                     corpus=corpus)
+        n += 1
+
+    return n
