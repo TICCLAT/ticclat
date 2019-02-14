@@ -114,8 +114,9 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
 
 def get_word_frequency_df(session):
     """Can be used as input for ticcl-anahash."""
-    q = session.query(Wordform).filter(and_(Wordform.anahash_id is None)) \
-        .with_entities(Wordform.wordform)
+    q = session.query(Wordform).filter(Wordform.anahash == None)  # noqa: E711
+    q = q.with_entities(Wordform.wordform)
+
     df = pd.read_sql(q.statement, q.session.bind)
     df = df.set_index('wordform')
     df['frequency'] = 1
@@ -162,7 +163,7 @@ def connect_anahases_to_wordforms(session, anahashes):
     # select hash value from database
     # and add to wf
     hashes = list(anahashes.index)
-    wfs = session.query(Wordform).filter(and_(Wordform.anahash_id is None,
+    wfs = session.query(Wordform).filter(and_(Wordform.anahash == None,  # noqa: E711
                                               Wordform.wordform.in_(hashes))).all()
     total = 0
 
