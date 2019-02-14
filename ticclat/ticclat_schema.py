@@ -1,5 +1,5 @@
 # coding: utf-8
-from sqlalchemy import Column, String, Table, ForeignKey, Unicode, Boolean, or_
+from sqlalchemy import Column, String, Table, ForeignKey, Unicode, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT, BIT
 from sqlalchemy.ext.declarative import declarative_base
@@ -29,31 +29,6 @@ class TextAttestation(Base):
 
     ta_document = relationship('Document', back_populates='document_wordforms')
     ta_wordform = relationship('Wordform', back_populates='wordform_documents')
-
-
-#class WordformLink(Base):
-#   __tablename__ = 'wordform_links'
-
-#   wordform_link_id = Column(BIGINT(20), primary_key=True)
-#   wordform_1_id = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
-#   wordform_2_id = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
-   #lexicon_id = Column(BIGINT(20), ForeignKey('lexica.lexicon_id'))
-
-#   wordform_1 = relationship('Wordform', back_populates='links', foreign_keys=wordform_1_id)
-#   wordform_2 = relationship('Wordform', back_populates='links', foreign_keys=wordform_2_id)
-   #lexicon = relationship('Lexicon', back_populates="wordform_links")
-
-
-#   def __str__(self):
-#       return '<WordformLink {} <-> {}>'.format(self.wordform_1_id, self.wordform_2_id)
-
-
-wordform_link = Table('wordform_links', Base.metadata,
-     Column('wordform_link_id', BIGINT(20), primary_key=True),
-     Column('wordform_1_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
-     Column('wordform_2_id', BIGINT(20), ForeignKey('wordforms.wordform_id'))
-     )
-
 
 # source_x_wordform_link = Table('source_x_wordform_link', Base.metadata,
 #                                Column('source_x_wordform_link_id', BIGINT(20), primary_key=True),
@@ -145,13 +120,6 @@ class Wordform(Base):
     wf_lexica = relationship('Lexicon', secondary=lexical_source_wordform,
                              back_populates='lexicon_wordforms')
     wordform_documents = relationship('TextAttestation', back_populates='ta_wordform')
-    # links = relationship('Wordform', secondary=wordform_link,
-    #                      primaryjoin=wordform_link.c.wordform_1_id == wordform_id,
-    #                      secondaryjoin=wordform_link.c.wordform_2_id == wordform_id
-    #                      )
-    links = relationship('Wordform', secondary=wordform_link,
-                         primaryjoin=wordform_id == wordform_link.c.wordform_1_id,
-                         secondaryjoin=wordform_id == wordform_link.c.wordform_2_id)
 
     def link(self, wf):
         #print('self.id', self.wordform_id)
@@ -172,3 +140,30 @@ class Wordform(Base):
 
     def __str__(self):
         return '<Wordform {}>'.format(self.wordform_lowercase)
+
+
+class WordformLink(Base):
+    __tablename__ = 'wordform_links'
+
+    wordform_link_id = Column(BIGINT(20), primary_key=True)
+    wordform_from = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
+    wordform_to = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
+    #lexicon_id = Column(BIGINT(20), ForeignKey('lexica.lexicon_id'))
+
+    linked_from = relationship('Wordform', backref='links',
+                               primaryjoin=(Wordform.wordform_id == wordform_from))
+    linked_to = relationship('Wordform', backref='links_2_to_1',
+                             primaryjoin=(Wordform.wordform_id == wordform_to))
+
+    #lexicon = relationship('Lexicon', back_populates="wordform_links")
+
+    def __init__(self, wf1, wf2):
+        self.linked_from = wf1
+        self.linked_to = wf2
+
+
+#wordform_link = Table('wordform_links', Base.metadata,
+#     Column('wordform_link_id', BIGINT(20), primary_key=True),
+#     Column('wordform_1_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
+#     Column('wordform_2_id', BIGINT(20), ForeignKey('wordforms.wordform_id'))
+#     )
