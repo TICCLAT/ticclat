@@ -145,6 +145,9 @@ class WordformLink(Base):
         self.linked_from = wf1
         self.linked_to = wf2
 
+    def __str__(self):
+        return '<WordformLink {} -> {}>'.format(self.linked_from.wordform, self.linked_to.wordform)
+
 
 #wordform_link = Table('wordform_links', Base.metadata,
 #     Column('wordform_link_id', BIGINT(20), primary_key=True),
