@@ -30,12 +30,6 @@ class TextAttestation(Base):
     ta_document = relationship('Document', back_populates='document_wordforms')
     ta_wordform = relationship('Wordform', back_populates='wordform_documents')
 
-# source_x_wordform_link = Table('source_x_wordform_link', Base.metadata,
-#                                Column('source_x_wordform_link_id', BIGINT(20), primary_key=True),
-#                                Column('wordform_link_id', BIGINT(20), ForeignKey('wordform_links.wordform_link_id')),
-#                                Column('lexicon_id', BIGINT(20), ForeignKey('lexica.lexicon_id'))
-#                                )
-
 
 class Corpus(Base):
     __tablename__ = 'corpora'
@@ -141,14 +135,11 @@ class WordformLink(Base):
     wordform_link_id = Column(BIGINT(20), primary_key=True)
     wordform_from = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
     wordform_to = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
-    #lexicon_id = Column(BIGINT(20), ForeignKey('lexica.lexicon_id'))
 
     linked_from = relationship('Wordform', backref='links',
                                primaryjoin=(Wordform.wordform_id == wordform_from))
     linked_to = relationship('Wordform', backref='links_2_to_1',
                              primaryjoin=(Wordform.wordform_id == wordform_to))
-
-    #lexicon = relationship('Lexicon', back_populates="wordform_links")
 
     def __init__(self, wf1, wf2):
         self.linked_from = wf1
@@ -160,3 +151,30 @@ class WordformLink(Base):
 #     Column('wordform_1_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
 #     Column('wordform_2_id', BIGINT(20), ForeignKey('wordforms.wordform_id'))
 #     )
+
+
+class WordformLinkSource(Base):
+    __tablename__ = 'source_x_wordform_link'
+
+    source_x_wordform_link_id = Column(BIGINT(20), primary_key=True)
+    wordform_link_id = Column(BIGINT(20), ForeignKey('wordform_links.wordform_link_id'))
+    lexicon_id = Column(BIGINT(20), ForeignKey('lexica.lexicon_id'))
+
+    wordform_from_correct = Column(Boolean)
+    wordform_to_correct = Column(Boolean)
+
+    wfls_wflink = relationship('WordformLink', backref='wf_links')
+    wfls_lexicon = relationship('Lexicon', backref='wfl_lexica')
+
+    def __init__(self, wflink, wf_from_correct, wf_to_correct, lexicon):
+        self.wfls_wflink = wflink
+        self.wordform_from_correct = wf_from_correct
+        self.wordform_to_correct = wf_to_correct
+        self.wfls_lexicon = lexicon
+
+
+# source_x_wordform_link = Table('source_x_wordform_link', Base.metadata,
+#                                Column('source_x_wordform_link_id', BIGINT(20), primary_key=True),
+#                                Column('wordform_link_id', BIGINT(20), ForeignKey('wordform_links.wordform_link_id')),
+#                                Column('lexicon_id', BIGINT(20), ForeignKey('lexica.lexicon_id'))
+#                                )
