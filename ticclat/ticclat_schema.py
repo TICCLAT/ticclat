@@ -119,11 +119,64 @@ class Wordform(Base):
         """Add WordformLinks between self and another wordfrom and vice versa.
 
         The WordformLinks are added only in the link does not yet exist.
+
+        Inputs:
+            wf (Wordform): Wordform that is related to Wordform self.
         """
         links = [w.linked_to for w in self.links]
         if wf not in links:
             WordformLink(self, wf)
             WordformLink(wf, self)
+
+    def link_with_metadata(self, wf_to, wf_from_correct, wf_to_correct,
+                           lexicon):
+        """Add WordformLinks with metadata.
+
+        Adds a WordformLink between self and another wordfrom, and vice versa,
+        if these links are not yet in the database.
+        And adds a WordformLinkSource, with Lexicon, and information about
+        which Wordforms are correct according to the Lexicon. No duplicate
+        WordformLinkSources are added.
+
+        TODO: add Uniqueconstraint on (wf_from (self), wf_to, lexicon)?
+
+        Inputs:
+            wf_to (Wordform): Wordform self will be linked to (and vice versa)
+            wf_from_correct (boolean): True if Wordform self is correct
+                according to the lexicon, False otherwise.
+            wf_to_correct (boolean): True if Wordform wf_to is correct
+                according to the lexicon, False otherwise.
+            lexicon (Lexicon): The Lexicon that contains the WordformLink
+        """
+        self.link(wf_to)
+
+        # check whether the WordformLinkSource is already in the database
+        wfl = next((wfl for wfl in self.links if wfl.linked_to == wf_to))
+        wflinks = [link for link in wfl.wf_links]
+        lexica = [l.wfls_lexicon for l in wflinks]
+
+        if lexicon not in lexica:
+            # add WordformLinkSource for link from wf (self) to corr
+            WordformLinkSource(wfl, wf_from_correct, wf_to_correct, lexicon)
+
+            # add WordformLinkSource for link from corr to wf (self)
+            wfl = next((wfl for wfl in wf_to.links if wfl.linked_to == self))
+            WordformLinkSource(wfl, wf_to_correct, wf_from_correct, lexicon)
+
+    def link_spelling_correction(self, corr, lexicon):
+        """Add a spelling correction WordformLink.
+
+        This method sets the booleans that indicate which Wordforms are correct
+        (according to the lexicon).
+
+        Inputs:
+            corr (Wordform): A correction candidate of Wordform self
+            lexicon (Lexicon): The Lexicon that contains the WordformLink
+        """
+        self.link_with_metadata(corr,
+                                wf_from_correct=False,
+                                wf_to_correct=True,
+                                lexicon=lexicon)
 
     def __str__(self):
         return '<Wordform {}>'.format(self.wordform_lowercase)
