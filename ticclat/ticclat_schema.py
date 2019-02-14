@@ -122,21 +122,14 @@ class Wordform(Base):
     wordform_documents = relationship('TextAttestation', back_populates='ta_wordform')
 
     def link(self, wf):
-        #print('self.id', self.wordform_id)
-        #print('wf.id', wf.wordform_id)
-        #wfl = WordformLink(wordform_1=self, wordform_2=wf)
-        #if wfl not in self.links:
-        #    self.links.append(wfl)
-        #    wfl2 = WordformLink(wordform_1=wf, wordform_2=self)
-        #    wf.links.append(wfl2)
-        if wf not in self.links:
-            self.links.append(wf)
-            wf.links.append(self)
+        """Add WordformLinks between self and another wordfrom and vice versa.
 
-    def unlink(self, wf):
-        if wf in self.links:
-            self.links.remove(wf)
-            wf.links.remove(self)
+        The WordformLinks are added only in the link does not yet exist.
+        """
+        links = [w.linked_to for w in self.links]
+        if wf not in links:
+            WordformLink(self, wf)
+            WordformLink(wf, self)
 
     def __str__(self):
         return '<Wordform {}>'.format(self.wordform_lowercase)
