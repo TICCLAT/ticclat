@@ -175,6 +175,9 @@ class WordformLinkSource(Base):
         self.wordform_to_correct = wf_to_correct
         self.wfls_lexicon = lexicon
 
+    def __str__(self):
+        return '<WordformLinkSource {} -> {} in "{}">'.format(self.wfls_wflink.linked_from.wordform, self.wfls_wflink.linked_to.wordform, self.wfls_lexicon.lexicon_name)
+
 
 # source_x_wordform_link = Table('source_x_wordform_link', Base.metadata,
 #                                Column('source_x_wordform_link_id', BIGINT(20), primary_key=True),
