@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
 from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, Document, \
-                                   TextAttestation, Corpus
+    TextAttestation, Corpus
 from ticclat.tokenize import nltk_tokenize
 
 
@@ -88,8 +88,7 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
                     total += 1
                     to_add.append(
                         Wordform(wordform=row['wordform'],
-                                 wordform_lowercase=row['wordform'].lower())
-                        )
+                                 wordform_lowercase=row['wordform'].lower()))
             if to_add != []:
                 session.bulk_save_objects(to_add)
 
