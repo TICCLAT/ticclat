@@ -1,7 +1,7 @@
 # coding: utf-8
 from sqlalchemy import Column, String, Table, ForeignKey, Unicode, Boolean
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import BIGINT, BIT
+from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -85,7 +85,6 @@ class Lexicon(Base):
     lexicon_wordforms = relationship('Wordform',
                                      secondary=lexical_source_wordform,
                                      back_populates='wf_lexica')
-    #wordform_links = relationship("WordformLink")
 
     def __str__(self):
         return '<Lexicon {}>'.format(self.lexicon_name)
@@ -202,13 +201,6 @@ class WordformLink(Base):
         return '<WordformLink {} -> {}>'.format(self.linked_from.wordform, self.linked_to.wordform)
 
 
-#wordform_link = Table('wordform_links', Base.metadata,
-#     Column('wordform_link_id', BIGINT(20), primary_key=True),
-#     Column('wordform_1_id', BIGINT(20), ForeignKey('wordforms.wordform_id')),
-#     Column('wordform_2_id', BIGINT(20), ForeignKey('wordforms.wordform_id'))
-#     )
-
-
 class WordformLinkSource(Base):
     __tablename__ = 'source_x_wordform_link'
 
@@ -230,10 +222,3 @@ class WordformLinkSource(Base):
 
     def __str__(self):
         return '<WordformLinkSource {} -> {} in "{}">'.format(self.wfls_wflink.linked_from.wordform, self.wfls_wflink.linked_to.wordform, self.wfls_lexicon.lexicon_name)
-
-
-# source_x_wordform_link = Table('source_x_wordform_link', Base.metadata,
-#                                Column('source_x_wordform_link_id', BIGINT(20), primary_key=True),
-#                                Column('wordform_link_id', BIGINT(20), ForeignKey('wordform_links.wordform_link_id')),
-#                                Column('lexicon_id', BIGINT(20), ForeignKey('lexica.lexicon_id'))
-#                                )
