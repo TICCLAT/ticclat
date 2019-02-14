@@ -8,8 +8,7 @@ from tqdm import tqdm_notebook as tqdm
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
-from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, Document, \
-    TextAttestation, Corpus
+from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, Corpus
 from ticclat.tokenize import nltk_tokenize
 
 
@@ -179,48 +178,7 @@ def connect_anahases_to_wordforms(session, anahashes):
     return total
 
 
-def add_document(session, terms_vector, pub_year, language, corpus):
-    """Add a document to the database.
-
-    Inputs:
-        session: SQLAlchemy session object.
-        terms_vector (Counter): term-frequency vector representing the
-            document.
-        pub_year (int): year of publication of the document (metadata).
-        language (str): language of the document (metadata).
-        corpus (Corpus): corpus to which the document belongs.
-
-    Returns:
-        Document (document object)
-    """
-    # create document
-    d = Document(word_count=sum(terms_vector.values()), pub_year=pub_year,
-                 language=language)
-    session.add(d)
-
-    # make sure all wordforms exist in the database
-    df = pd.DataFrame()
-    df['wordform'] = terms_vector.keys()
-    df['has_analysis'] = False
-    bulk_add_wordforms(session, df, disable_pbar=True)
-
-    # get the wordforms
-    q = session.query(Wordform)
-    result = q.filter(Wordform.wordform.in_(terms_vector.keys())).all()
-
-    # add the wordforms to the document
-    for wf in result:
-        ta = TextAttestation(ta_document=d, ta_wordform=wf,
-                             frequency=terms_vector[wf.wordform])
-        session.add(ta)
-
-    # set the corpus
-    d.document_corpora.append(corpus)
-
-    return d
-
-
-def add_corpus(session, name, texts_file):
+def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
     """Add a corpus to the database.
 
     Inputs:
@@ -231,13 +189,42 @@ def add_corpus(session, name, texts_file):
     Returns:
         Corpus: The corpus object
     """
+    # add all the wordforms in the corpus
+    i = 0
+    dfs = []
+
+    for terms_vector in tqdm(nltk_tokenize(texts_file)):
+        df = pd.DataFrame()
+        df['wordform'] = terms_vector.keys()
+        dfs.append(df)
+
+        i += 1
+
+        if i % n_documents == 0:
+            r = pd.concat(dfs)
+            r = r.drop_duplicates(subset='wordform')
+            n = bulk_add_wordforms(session, r, disable_pbar=True)
+            print('Added {} wordforms'.format(n))
+
+            dfs = []
+
+    # also add the final documents
+    if len(dfs) > 0:
+        r = pd.concat(dfs)
+        r = r.drop_duplicates(subset='wordform')
+        n = bulk_add_wordforms(session, r, disable_pbar=True, num=n_wfs)
+        print('Added {} wordforms'.format(n))
+
     # create corpus
     corpus = Corpus(name=name)
     session.add(corpus)
 
     for terms_vector in tqdm(nltk_tokenize(texts_file)):
+        # get the wordforms
+        q = session.query(Wordform)
+        wfs = q.filter(Wordform.wordform.in_(terms_vector.keys())).all()
+
         # FIXME: add proper metatadata for a document
-        add_document(session, terms_vector, pub_year=2019, language='nl',
-                     corpus=corpus)
+        corpus.add_document(terms_vector, wfs)
 
     return corpus
