@@ -168,7 +168,7 @@ def connect_anahases_to_wordforms(session, anahashes):
                                               Wordform.wordform.in_(hashes))).all()
     total = 0
 
-    for wf in tqdm(wfs):
+    for wf in wfs:
         # print(wf)
         h = anahashes.loc[wf.wordform]['anahash']
         # print(h)
