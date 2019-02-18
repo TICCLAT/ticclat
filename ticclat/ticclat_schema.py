@@ -1,5 +1,6 @@
 # coding: utf-8
-from sqlalchemy import Column, String, Table, ForeignKey, Unicode, Boolean
+from sqlalchemy import Column, String, Table, ForeignKey, Unicode, Boolean, \
+    Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.ext.declarative import declarative_base
@@ -134,7 +135,7 @@ class Anahash(Base):
 class Wordform(Base):
     __tablename__ = 'wordforms'
 
-    wordform_id = Column(BIGINT(20), primary_key=True)
+    wordform_id = Column(BIGINT(20).with_variant(Integer, 'sqlite'), primary_key=True)
     wordform = Column(Unicode(255, convert_unicode=False), unique=True, index=True)
     anahash_id = Column(BIGINT(20), ForeignKey('anahashes.anahash_id'))
 
