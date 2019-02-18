@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 from contextlib import contextmanager
@@ -64,14 +63,9 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
     if not wfs['wordform'].is_unique:
         raise ValueError('The wordform-column contains duplicate entries.')
 
-    if wfs.shape[0] > num:
-        n = wfs.shape[0] // num
-    else:
-        n = 1
-
     total = 0
 
-    for chunk in tqdm(np.array_split(wfs, n), disable=disable_pbar):
+    for chunk in chunk_df(wfs, num=num):
         # Find out which wordwordforms are not yet in the database
         wordforms = list(chunk['wordform'])
 
