@@ -82,7 +82,7 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
         # Add wordforms that are not in the database
         if len(existing_wfs) < len(chunk):
             to_add = []
-            for idx, row in chunk.iterrows():
+            for _, row in chunk.iterrows():
                 if row['wordform'] not in existing_wfs:
                     total += 1
                     to_add.append(
@@ -146,7 +146,7 @@ def bulk_add_anahashes(session, anahashes, num=10000):
 
         # Add anahashes that are not in the database
         to_add = []
-        for idx, row in chunk.iterrows():
+        for _, row in chunk.iterrows():
             if row['anahash'] not in existing_ahs:
                 total += 1
                 to_add.append(Anahash(anahash=row['anahash']))
