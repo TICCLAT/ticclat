@@ -1,5 +1,6 @@
 import os
 import tempfile
+import warnings
 
 import pandas as pd
 
@@ -23,6 +24,12 @@ def anahash_df(wfreq, alphabet_file):
         pandas DataFrame containing the word forms as index and anahash values
         as column.
     """
+
+    if wfreq.empty or wfreq is None:
+        msg = 'Input "wfreq" is empty or None. Please input non-empty word ' \
+              'frequency data.'
+        warnings.warn(msg)
+
     # save word frequency data to temporary file
     (fd, tmpfile) = tempfile.mkstemp()
     os.close(fd)
