@@ -108,7 +108,7 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
 
     q = session.query(Wordform).filter(Wordform.wordform.in_(wordforms)).all()
     print(len(q))
-    lexicon.wordforms = q
+    lexicon.lexicon_wordforms = q
 
 
 def get_word_frequency_df(session):
