@@ -104,6 +104,10 @@ lexical_source_wordform = Table('lexical_source_wordform', Base.metadata,
 
 
 class Lexicon(Base):
+    """
+    vocabulary (bool): if True, all words in this lexicon are (supposed to be)
+                       valid words, if False, some are misspelled
+    """
     __tablename__ = 'lexica'
 
     lexicon_id = Column(BIGINT(20).with_variant(Integer, 'sqlite'), primary_key=True)
