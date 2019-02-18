@@ -183,6 +183,9 @@ def connect_anahases_to_wordforms(session, anahashes):
 def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
     """Add a corpus to the database.
 
+    Take care: this is a very slow method for adding a big corpus like the
+    Dutch wikipedia. Also, this function is still untested.
+
     Inputs:
         session: SQLAlchemy session object.
         name (str): The name of the corpus.
