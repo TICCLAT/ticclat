@@ -1,6 +1,7 @@
 import os
 import tempfile
 import warnings
+import json
 
 import numpy as np
 import pandas as pd
@@ -66,3 +67,40 @@ def chunk_df(df, num=1000):
 
     for chunk in np.array_split(df, n):
         yield chunk
+
+
+def write_json_lines(fname, generator):
+    """Write a sequence of dictionaries to file, one dictionary per line
+
+    This can be used when doing mass inserts (i.e., inserts not using the ORM)
+    into the database. The data that will be inserted is written to file, so
+    it can be read (using ``read_json_lines``) without using a lot of memory.
+
+    Inputs:
+        fname (str): Path to the file to save the data to
+        generator (generator): Generator that produces objects to write to file
+    """
+    with open(fname, 'w') as f:
+        for obj in generator:
+            f.write(json.dumps(obj))
+            f.write('\n')
+
+
+def read_json_lines(fname):
+    """Generator that reads a dictionary per line from a file
+
+    This can be used when doing mass inserts (i.e., inserts not using the ORM)
+    into the database. The data that will be inserted is written to file (using
+    ``write_json_lines``), so it can be read and inserted into the database
+    without using a lot of memory.
+
+    Inputs:
+        fname (str): Path to the file containing the data, one dictionary
+            (JSON) object per line
+
+    Returns:
+        iterator over the lines in the input file
+    """
+    with open(fname) as f:
+        for line in f:
+            yield json.loads(line)
