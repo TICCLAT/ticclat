@@ -112,13 +112,22 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
 
 
 def get_word_frequency_df(session):
-    """Can be used as input for ticcl-anahash."""
+    """Can be used as input for ticcl-anahash.
+
+    Returns:
+        Pandas DataFrame containing wordforms as index and a frequency value as
+            column, or None if all wordforms in the database already are
+            connected to an anahash value
+    """
     q = session.query(Wordform).filter(Wordform.anahash == None)  # noqa: E711
     q = q.with_entities(Wordform.wordform)
 
     df = pd.read_sql(q.statement, q.session.bind)
-    df = df.set_index('wordform')
-    df['frequency'] = 1
+    if df.empty:
+        df = None
+    else:
+        df = df.set_index('wordform')
+        df['frequency'] = 1
 
     return df
 
