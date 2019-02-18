@@ -2,6 +2,7 @@ import os
 import tempfile
 import warnings
 
+import numpy as np
 import pandas as pd
 
 import sh
@@ -48,3 +49,20 @@ def anahash_df(wfreq, alphabet_file):
                             # Make sure 'null' is read as string and not NaN
                             keep_default_na=False)
     return anahashes
+
+
+def chunk_df(df, num=1000):
+    """Generator that returns about equally size chunks from a pandas DataFrame
+
+    Inputs:
+        df (DataFrame): the DataFrame to be chunked
+        num (int, default 10000): the approximate number of records that will
+            be in each chunk
+    """
+    if df.shape[0] > num:
+        n = df.shape[0] // num
+    else:
+        n = 1
+
+    for chunk in np.array_split(df, n):
+        yield chunk
