@@ -1,3 +1,5 @@
+import pytest
+
 import pandas as pd
 
 from ticclat.ticclat_schema import Wordform
@@ -7,7 +9,6 @@ from ticclat.dbutils import bulk_add_wordforms
 def test_bulk_add_wordforms_all_new(dbsession):
     wfs = pd.DataFrame()
     wfs['wordform'] = ['wf1', 'wf2', 'wf3']
-    wfs['wordform_lowercase'] = ['wf1', 'wf2', 'wf3']
 
     print(dbsession)
 
@@ -22,7 +23,6 @@ def test_bulk_add_wordforms_all_new(dbsession):
 def test_bulk_add_wordforms_some_new(dbsession):
     wfs = pd.DataFrame()
     wfs['wordform'] = ['wf1', 'wf2', 'wf3']
-    wfs['wordform_lowercase'] = ['wf1', 'wf2', 'wf3']
 
     print(dbsession)
 
