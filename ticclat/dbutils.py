@@ -9,6 +9,7 @@ from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
 from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, Corpus
+from ticclat.utils import chunk_df
 from ticclat.tokenize import nltk_tokenize
 
 
@@ -140,11 +141,9 @@ def bulk_add_anahashes(session, anahashes, num=10000):
     print(anahashes.shape)
     print(unique_hashes.shape)
 
-    n = unique_hashes.shape[0] // num
-
     total = 0
 
-    for chunk in tqdm(np.array_split(unique_hashes, n)):
+    for chunk in chunk_df(unique_hashes, num=num):
         # Find out which anahashes are not yet in the database.
         ahs = list(chunk['anahash'])
 
