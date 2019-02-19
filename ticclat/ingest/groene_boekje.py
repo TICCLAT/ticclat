@@ -78,7 +78,7 @@ def create_GB95_wordform_df(df_GB1995):
     for marker, umarker in diacritic_markers.items():
         wordform_clean_df = wordform_clean_df.str.replace(marker, umarker)
 
-    return wordform_df
+    return wordform_clean_df
 
 
 if __name__ == '__main__':
