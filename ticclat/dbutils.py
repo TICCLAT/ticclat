@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 from contextlib import contextmanager
@@ -9,6 +8,7 @@ from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
 from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, Corpus
+from ticclat.utils import chunk_df
 from ticclat.tokenize import nltk_tokenize
 
 
@@ -63,14 +63,9 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
     if not wfs['wordform'].is_unique:
         raise ValueError('The wordform-column contains duplicate entries.')
 
-    if wfs.shape[0] > num:
-        n = wfs.shape[0] // num
-    else:
-        n = 1
-
     total = 0
 
-    for chunk in tqdm(np.array_split(wfs, n), disable=disable_pbar):
+    for chunk in chunk_df(wfs, num=num):
         # Find out which wordwordforms are not yet in the database
         wordforms = list(chunk['wordform'])
 
@@ -140,11 +135,9 @@ def bulk_add_anahashes(session, anahashes, num=10000):
     print(anahashes.shape)
     print(unique_hashes.shape)
 
-    n = unique_hashes.shape[0] // num
-
     total = 0
 
-    for chunk in tqdm(np.array_split(unique_hashes, n)):
+    for chunk in chunk_df(unique_hashes, num=num):
         # Find out which anahashes are not yet in the database.
         ahs = list(chunk['anahash'])
 
@@ -189,6 +182,9 @@ def connect_anahases_to_wordforms(session, anahashes):
 
 def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
     """Add a corpus to the database.
+
+    Take care: this is a very slow method for adding a big corpus like the
+    Dutch wikipedia. Also, this function is still untested.
 
     Inputs:
         session: SQLAlchemy session object.
