@@ -81,6 +81,74 @@ def create_GB95_wordform_df(df_GB1995):
     return wordform_clean_df
 
 
+def clean_wordform_series(wordform_series, remove_duplicates=False):
+    # remove colons
+    wordform_series = wordform_series.str.replace(':', '')
+    # strip whitespace
+    wordform_series = wordform_series.str.strip()
+    # remove duplicate word footnote numbers
+    duplicates = wordform_series.str.contains('[0-9]$', regex=True)
+    wordform_series = pd.concat((wordform_series[~duplicates], wordform_series[duplicates].str.replace('[0-9]$', '', regex=True)))
+    # remove parentheses around some words
+    wordform_series = wordform_series.sort_values().str.strip("()")
+    # remove abbreviations
+    abbreviation = wordform_series.str.contains('\.$')
+    wordform_series = wordform_series[~abbreviation]
+    
+    if remove_duplicates:
+        wordform_series = pd.Series(wordform_series.unique())
+    return wordform_series
+
+
+def create_GB95_link_df(df_GB1995):
+    link_data = df_GB1995.drop(["syllables", "grammatical tag", "article",
+                                "plural/past/attrib syllables", "diminu/compara/past plural syllables", "past perfect/superla syllables"], axis=1)
+
+    # clean link_data
+    link_data['see also'] = link_data['see also'].str.replace('zie ook ', '')
+    link_data['disambiguation'] = link_data['disambiguation'].str.strip('()')
+    link_data['disambiguation'][link_data['disambiguation'] == 'andere bett.'] = None
+    link_data['disambiguation'][link_data['disambiguation'] == 'andere bet.'] = None
+    link_data['disambiguation'][link_data['disambiguation'].str.contains(" ", na=False)
+                                & ~link_data['disambiguation'].str.contains(",", na=False)] = None
+    link_data['disambiguation'][link_data['disambiguation'].str.contains("[^,] ", na=False)] = (
+        link_data['disambiguation']
+         [link_data['disambiguation'].str.contains("[^,] ", na=False)]
+         .str.split(', ')
+         .map(lambda x: [i for i in x if not ' ' in i])
+         .map(lambda x: None if len(x) == 0 else ', '.join(x))
+    )
+    link_data['disambiguation'][link_data['disambiguation'].str.contains(", -", na=False)] = None
+    link_data = link_data.dropna(how='all', subset=["see also", "disambiguation", "plural/past/attrib", "diminu/compara/past plural", "past perfect/superla"])
+
+    # convert to link_df
+    link_df = (link_data.set_index('word').stack().reset_index().drop('level_1', axis=1)
+                        .rename({'word': 'wordform_1', 0: 'wordform_2'}, axis=1))
+    has_comma1 = link_df['wordform_1'].str.contains(',')
+    link_df = pd.concat((link_df[~has_comma1],) + tuple(pd.DataFrame({'wordform_1': row['wordform_1'].split(', '),
+                                                                      'wordform_2': (row['wordform_2'],) * len(row['wordform_1'].split(', '))})
+                                                         for ix, row in link_df[has_comma1].iterrows()))
+
+    has_comma2 = link_df['wordform_2'].str.contains(',')
+    link_df = pd.concat((link_df[~has_comma2],) + tuple(pd.DataFrame({'wordform_1': (row['wordform_1'],) * len(row['wordform_2'].split(', ')),
+                                                                      'wordform_2': row['wordform_2'].split(', ')})
+                                                         for ix, row in link_df[has_comma2].iterrows()))
+
+    link_df = link_df.reset_index(drop=True)
+
+    link_clean_df = link_df.copy()
+    link_clean_df['wordform_1'] = clean_wordform_series(link_clean_df['wordform_1'])
+    link_clean_df['wordform_2'] = clean_wordform_series(link_clean_df['wordform_2'])
+    # some links will be removed (abbreviations), so drop those rows
+    link_clean_df = link_clean_df.dropna()
+
+    for column in link_clean_df:
+        for marker, umarker in diacritic_markers.items():
+            link_clean_df[column] = link_clean_df[column].str.replace(marker, umarker)
+
+    return link_clean_df
+
+
 if __name__ == '__main__':
     # basic config
     db_name = 'ticclat'
