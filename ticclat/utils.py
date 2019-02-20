@@ -104,3 +104,15 @@ def read_json_lines(fname):
     with open(fname) as f:
         for line in f:
             yield json.loads(line)
+
+
+def get_temp_file():
+    """Create a temporary file and return the path.
+
+    Returns:
+        Path to the temporary file.
+    """
+    (fd, fname) = tempfile.mkstemp()
+    os.close(fd)
+
+    return fname
