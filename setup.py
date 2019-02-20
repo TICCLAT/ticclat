@@ -48,7 +48,7 @@ setup(
       'SQLAlchemy',
       'tqdm',
       'nltk',
-      'MySQLdb',
+      'mysqlclient',
       'sqlalchemy_utils'
     ],  # FIXME: add your package's dependencies to this list
     setup_requires=[
