@@ -41,7 +41,7 @@ def sql_insert(engine, table_object, to_insert):
     is used, no relationships can be added automatically. So, use with care!
 
     Inputs:
-        engine: SQLAlchemy created using init_db.
+        engine: SQLAlchemy engine or session
         table_object: object representing a table in the database (i.e., one
             of the objects from ticclat_schema)
         to_insert (list of dicts): list containg dictionary representations of
@@ -79,7 +79,7 @@ def get_tas(corpus, doc_ids, wf_mapping, p):
                'frequency': int(freq)}
 
 
-def add_corpus_core(session, engine, texts_iterator, corpus_name):
+def add_corpus_core(session, texts_iterator, corpus_name):
     # get terms/document matrix of corpus and vectorizer containing vocabulary
     print('Tokenizing')
     tokenized_file = get_temp_file()
@@ -142,7 +142,7 @@ def add_corpus_core(session, engine, texts_iterator, corpus_name):
     # faster than using the ORM)
     print('Adding the wordforms')
     if to_add != []:
-        sql_insert(engine, Wordform, to_add)
+        sql_insert(session, Wordform, to_add)
 
     print('Prepare adding the text attestations')
     # make a mapping from
@@ -173,9 +173,9 @@ def add_corpus_core(session, engine, texts_iterator, corpus_name):
     for ta in read_json_lines(ta_file):
         to_add.append(ta)
         if len(to_add) == 250000:
-            sql_insert(engine, TextAttestation, to_add)
+            sql_insert(session, TextAttestation, to_add)
             to_add = []
-    sql_insert(engine, TextAttestation, to_add)
+    sql_insert(session, TextAttestation, to_add)
 
     # remove temp data
     os.remove(tokenized_file)
