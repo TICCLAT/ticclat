@@ -37,3 +37,18 @@ def test_read_and_write_json_lines(fs):
     results = [o for o in read_json_lines(fname)]
 
     assert objects == results
+
+
+def test_read_and_write_json_lines_empty(fs):
+    objects = []
+
+    fname = 'objects'
+
+    write_json_lines(fname, objects)
+
+    assert os.path.exists(fname)
+    assert os.path.getsize(fname) == 0
+
+    results = [o for o in read_json_lines(fname)]
+
+    assert objects == results
