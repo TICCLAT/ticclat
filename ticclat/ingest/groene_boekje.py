@@ -18,8 +18,7 @@ def load_GB95(path):
                             "grammatical tag", "article",
                             "plural/past/attrib", "plural/past/attrib syllables",
                             "diminu/compara/past plural", "diminu/compara/past plural syllables",
-                            "past perfect/superla", "past perfect/superla syllables"],
-                     encoding='utf8') # encoding necessary for later loading into sqlalchemy!
+                            "past perfect/superla", "past perfect/superla syllables"])
 
     df = df.where(df != "Ili/as", other=None)
 
@@ -46,6 +45,10 @@ def nd_any(*args):
     return result
 
 
+def contains_in_any_column(df, word):
+    return df[nd_any(*tuple(df[col].str.contains(word) for col in df.columns))]
+
+
 def clean_wordform_df(wordform_df):
     # remove colons
     wordform_df = wordform_df.str.replace(':', '')
@@ -64,11 +67,36 @@ def clean_wordform_df(wordform_df):
     return wordform_df
 
 
+def clean_disambiguation_column(df):
+    df['disambiguation'] = df['disambiguation'].str.strip('()')
+    df['disambiguation'][df['disambiguation'] == 'andere bett.'] = None
+    df['disambiguation'][df['disambiguation'] == 'andere bet.'] = None
+    df['disambiguation'][df['disambiguation'].str.contains(" ", na=False)
+                                & ~df['disambiguation'].str.contains(",", na=False)] = None
+    df['disambiguation'][df['disambiguation'].str.contains("[^,] ", na=False)] = (
+        df['disambiguation']
+         [df['disambiguation'].str.contains("[^,] ", na=False)]
+         .str.split(', ')
+         .map(lambda x: [i for i in x if not ' ' in i])
+         .map(lambda x: None if len(x) == 0 else ', '.join(x))
+    )
+    df['disambiguation'][df['disambiguation'].str.contains(", -", na=False)] = None
+
+    return df
+
+
 def create_GB95_wordform_df(df_GB1995):
-    wordform_df = pd.concat((df_GB1995["word"],
-                             df_GB1995["plural/past/attrib"],
-                             df_GB1995["diminu/compara/past plural"],
-                             df_GB1995["past perfect/superla"]))\
+    data = df_GB1995.drop(["syllables", "see also", "grammatical tag", "article",
+                           "plural/past/attrib syllables", "diminu/compara/past plural syllables",
+                           "past perfect/superla syllables"], axis=1)
+    
+    df = clean_disambiguation_column(data)
+
+    wordform_df = pd.concat((df["word"],
+                             df["disambiguation"],
+                             df["plural/past/attrib"],
+                             df["diminu/compara/past plural"],
+                             df["past perfect/superla"]))\
                     .dropna()
     has_comma = wordform_df.str.contains(', ')
     wordform_df = pd.concat((wordform_df[~has_comma],) + tuple(pd.Series(row.split(', ')) for row in wordform_df[has_comma]))
@@ -106,19 +134,7 @@ def create_GB95_link_df(df_GB1995):
 
     # clean link_data
     link_data['see also'] = link_data['see also'].str.replace('zie ook ', '')
-    link_data['disambiguation'] = link_data['disambiguation'].str.strip('()')
-    link_data['disambiguation'][link_data['disambiguation'] == 'andere bett.'] = None
-    link_data['disambiguation'][link_data['disambiguation'] == 'andere bet.'] = None
-    link_data['disambiguation'][link_data['disambiguation'].str.contains(" ", na=False)
-                                & ~link_data['disambiguation'].str.contains(",", na=False)] = None
-    link_data['disambiguation'][link_data['disambiguation'].str.contains("[^,] ", na=False)] = (
-        link_data['disambiguation']
-         [link_data['disambiguation'].str.contains("[^,] ", na=False)]
-         .str.split(', ')
-         .map(lambda x: [i for i in x if not ' ' in i])
-         .map(lambda x: None if len(x) == 0 else ', '.join(x))
-    )
-    link_data['disambiguation'][link_data['disambiguation'].str.contains(", -", na=False)] = None
+    link_data = clean_disambiguation_column(link_data)
     link_data = link_data.dropna(how='all', subset=["see also", "disambiguation", "plural/past/attrib", "diminu/compara/past plural", "past perfect/superla"])
 
     # convert to link_df
@@ -169,7 +185,7 @@ if __name__ == '__main__':
                 os.environ[parts[0]] = parts[1].strip()
 
 
-    engine = sqlalchemy.create_engine("mysql://{}:{}@localhost/{}".format(os.environ['user'], 
+    engine = sqlalchemy.create_engine("mysql://{}:{}@localhost/{}?charset=utf8mb4".format(os.environ['user'], 
                                                                         os.environ['password'], 
                                                                         os.environ['dbname']))
     if not sqlalchemy_utils.database_exists(engine.url):
@@ -186,5 +202,5 @@ if __name__ == '__main__':
 
     # # Load Groene Boekje wordforms into TICCLAT database
     with ticclat.dbutils.session_scope(Session) as session:
-        ticclat.dbutils.add_lexicon(session, "Groene Boekje 1995", True, wordform_clean_df.str.encode('utf8').to_frame(name='wordform'))
+        ticclat.dbutils.add_lexicon(session, "Groene Boekje 1995", True, wordform_clean_df.to_frame(name='wordform'))
 
