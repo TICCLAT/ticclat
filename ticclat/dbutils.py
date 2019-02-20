@@ -8,7 +8,12 @@ from tqdm import tqdm_notebook as tqdm
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
-from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, Corpus
+# for create_database:
+import MySQLdb
+from sqlalchemy_utils import database_exists, create_database
+from sqlalchemy_utils.functions import drop_database
+
+from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus
 from ticclat.utils import chunk_df
 from ticclat.tokenize import nltk_tokenize
 
@@ -246,3 +251,28 @@ def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
         corpus.add_document(terms_vector, wfs)
 
     return corpus
+
+
+def create_ticclat_database(delete_existing=False, dbname='ticclat', user="", passwd=""):
+    db = MySQLdb.connect(user=user, passwd=passwd)
+    engine = create_engine(f"mysql://{user}:{passwd}@localhost/{dbname}?charset=utf8mb4")
+
+    with db.cursor() as cursor:
+        try:
+            cursor.execute(f"CREATE DATABASE {dbname} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
+            result = cursor.fetchall()
+        except MySQLdb.ProgrammingError as e:
+            if database_exists(engine.url):
+                if not delete_existing:
+                    raise Exception(f"Database `{dbname}` already exists, delete it first before recreating.")
+                else:
+                    drop_database(engine.url)
+                    cursor.execute(f"CREATE DATABASE {dbname} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
+                    result = cursor.fetchall()
+            else:
+                raise e
+    
+    Session = sessionmaker(bind=engine)
+
+    # create tables
+    Base.metadata.create_all(engine)
