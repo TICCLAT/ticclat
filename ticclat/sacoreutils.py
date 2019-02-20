@@ -5,7 +5,6 @@ More info: https://docs.sqlalchemy.org/en/latest/faq/performance.html
 """
 import os
 import tempfile
-import json
 import scipy
 
 import numpy as np
@@ -15,8 +14,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from ticclat.ticclat_schema import Wordform, Corpus, Document, TextAttestation
-from ticclat.dbutils import session_scope
-from ticclat.tokenize import terms_documents_matrix_counters, nltk_tokenize
+from ticclat.tokenize import terms_documents_matrix_counters
 from ticclat.utils import chunk_df, write_json_lines, read_json_lines, \
     get_temp_file
 
