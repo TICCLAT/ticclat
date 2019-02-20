@@ -1,3 +1,4 @@
+import logging
 import pandas as pd
 
 from contextlib import contextmanager
@@ -15,6 +16,8 @@ from sqlalchemy_utils.functions import drop_database
 from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus
 from ticclat.utils import chunk_df
 from ticclat.tokenize import nltk_tokenize
+
+logger = logging.getLogger(__name__)
 
 
 # source: https://docs.sqlalchemy.org/en/latest/orm/session_basics.html
@@ -65,6 +68,8 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
     """
+    logger.info('Bulk adding wordforms.')
+
     if not wfs['wordform'].is_unique:
         raise ValueError('The wordform-column contains duplicate entries.')
 
@@ -91,6 +96,8 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
             if to_add != []:
                 session.bulk_save_objects(to_add)
 
+    logger.info('{} wordforms have been added.'.format(total))
+
     return total
 
 
@@ -99,6 +106,8 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
     """
+    logger.info('Adding lexicon.')
+
     bulk_add_wordforms(session, wfs, num=num)
 
     lexicon = Lexicon(lexicon_name=lexicon_name, vocabulary=vocabulary)
@@ -107,8 +116,12 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
     wordforms = list(wfs['wordform'])
 
     q = session.query(Wordform).filter(Wordform.wordform.in_(wordforms)).all()
-    print(len(q))
+    logger.info('Adding {} wordforms to the lexicon.'.format(len(q)))
     lexicon.lexicon_wordforms = q
+
+    logger.info('Lexicon was added.')
+
+    return lexicon
 
 
 def get_word_frequency_df(session):
@@ -173,7 +186,7 @@ def connect_anahases_to_wordforms(session, anahashes):
                                               Wordform.wordform.in_(hashes))).all()
     total = 0
 
-    for wf in tqdm(wfs):
+    for wf in wfs:
         # print(wf)
         h = anahashes.loc[wf.wordform]['anahash']
         # print(h)
