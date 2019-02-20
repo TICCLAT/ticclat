@@ -105,6 +105,8 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
     print(len(q))
     lexicon.lexicon_wordforms = q
 
+    return lexicon
+
 
 def get_word_frequency_df(session):
     """Can be used as input for ticcl-anahash.
