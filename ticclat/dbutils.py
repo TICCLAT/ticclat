@@ -240,7 +240,7 @@ def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
     return corpus
 
 
-def create_database(delete_existing=False, dbname='ticclat', user="", passwd=""):
+def create_ticclat_database(delete_existing=False, dbname='ticclat', user="", passwd=""):
     db = MySQLdb.connect(user=user, passwd=passwd)
     engine = create_engine(f"mysql://{user}:{passwd}@localhost/{dbname}?charset=utf8mb4")
 
