@@ -23,6 +23,7 @@ def nltk_tokenize(texts_file, punkt='tokenizers/punkt/dutch.pickle'):
     Yields:
         Counter: term-frequency vector representing a document.
     """
+    nltk.download('punkt')
     tokenizer = nltk.data.load(punkt)
 
     with open(texts_file) as f:

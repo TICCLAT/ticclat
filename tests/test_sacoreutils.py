@@ -11,7 +11,7 @@ def setup_data(tmpdir):
     copytree('tests/data', datadir)
 
 
-def test_add_corpus_core(engine, dbsession, tmpdir):
+def test_add_corpus_core(dbsession, tmpdir):
     setup_data(tmpdir)
     texts_file = tmpdir.join('data/test_corpus.txt').strpath
 
@@ -19,7 +19,7 @@ def test_add_corpus_core(engine, dbsession, tmpdir):
     texts_iterator = nltk_tokenize(texts_file)
     corpus_name = 'test corpus'
 
-    add_corpus_core(dbsession, engine, texts_iterator, corpus_name)
+    add_corpus_core(dbsession, texts_iterator, corpus_name)
 
     # wordforms
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform).all()
