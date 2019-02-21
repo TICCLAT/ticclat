@@ -3,7 +3,7 @@ import pandas as pd
 
 from contextlib import contextmanager
 
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm
 
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
@@ -75,6 +75,8 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
 
     total = 0
 
+    progress_bar = tqdm(total=len(wfs))
+
     for chunk in chunk_df(wfs, num=num):
         # Find out which wordwordforms are not yet in the database
         wordforms = list(chunk['wordform'])
@@ -95,6 +97,8 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
                                  wordform_lowercase=row['wordform'].lower()))
             if to_add != []:
                 session.bulk_save_objects(to_add)
+
+        progress_bar.update(n=num)
 
     logger.info('{} wordforms have been added.'.format(total))
 

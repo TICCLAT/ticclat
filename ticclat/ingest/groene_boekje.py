@@ -8,6 +8,8 @@ import sqlalchemy_utils
 import ticclat.dbutils
 import ticclat.ticclat_schema as schema
 
+import tqdm
+
 
 ######################
 # Groene Boekje 1995 #
@@ -196,11 +198,27 @@ if __name__ == '__main__':
     # create tables
     schema.Base.metadata.create_all(engine)
 
+    # load data from file
+    df95 = load_GB95(GB1995_path)
 
     # wordforms
-    wordform_clean_df = create_GB95_wordform_df(load_GB95(GB1995_path))
+    wordform_clean_df = create_GB95_wordform_df(df95)
 
-    # # Load Groene Boekje wordforms into TICCLAT database
+    # load wordforms into TICCLAT database
     with ticclat.dbutils.session_scope(Session) as session:
         ticclat.dbutils.add_lexicon(session, "Groene Boekje 1995", True, wordform_clean_df.to_frame(name='wordform'))
 
+    # links
+    link_df = create_GB95_link_df(df95)
+
+    # load links into TICCLAT database
+    with ticclat.dbutils.session_scope(Session) as session:
+        lexicon = session.query(ticclat.ticclat_schema.Lexicon).filter(ticclat.ticclat_schema.Lexicon.lexicon_name=='Groene Boekje 1995').first()
+        if lexicon is None:
+            raise Exception("No lexicon found!")
+        for idx, row in tqdm.tqdm(link_df.iterrows(), total=link_df.shape[0]):
+            wf = session.query(ticclat.ticclat_schema.Wordform).filter(ticclat.ticclat_schema.Wordform.wordform == row['wordform_1']).first()
+            corr = session.query(ticclat.ticclat_schema.Wordform).filter(ticclat.ticclat_schema.Wordform.wordform == row['wordform_2']).first()
+            if corr is None:
+                print("Wordform '", row['wordform_2'], "' not found in wordforms table, continuing...")
+            wf.link_with_metadata(corr, True, True, lexicon)
