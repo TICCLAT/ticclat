@@ -79,6 +79,9 @@ def write_json_lines(fname, generator):
     Inputs:
         fname (str): Path to the file to save the data to
         generator (generator): Generator that produces objects to write to file
+
+    Returns:
+        int: the number of records written.
     """
     total = 0
     with open(fname, 'w') as f:
