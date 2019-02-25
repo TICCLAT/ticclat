@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 # for create_database:
 import MySQLdb
-from sqlalchemy_utils import database_exists, create_database
+from sqlalchemy_utils import database_exists
 from sqlalchemy_utils.functions import drop_database
 
 from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, \
