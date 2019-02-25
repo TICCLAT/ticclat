@@ -30,9 +30,10 @@ def test_read_and_write_json_lines(fs):
 
     fname = 'objects'
 
-    write_json_lines(fname, objects)
+    total = write_json_lines(fname, objects)
 
     assert os.path.exists(fname)
+    assert total == len(objects)
 
     results = [o for o in read_json_lines(fname)]
 

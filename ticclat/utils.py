@@ -80,10 +80,14 @@ def write_json_lines(fname, generator):
         fname (str): Path to the file to save the data to
         generator (generator): Generator that produces objects to write to file
     """
+    total = 0
     with open(fname, 'w') as f:
         for obj in generator:
             f.write(json.dumps(obj))
             f.write('\n')
+
+            total += 1
+    return total
 
 
 def read_json_lines(fname):
