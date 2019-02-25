@@ -1,4 +1,5 @@
 import pytest
+import os
 import sqlite3
 
 import numpy as np
@@ -6,7 +7,11 @@ import pandas as pd
 
 from ticclat.ticclat_schema import Wordform, Lexicon, Anahash
 from ticclat.dbutils import bulk_add_wordforms, add_lexicon, \
-    get_word_frequency_df, bulk_add_anahashes, connect_anahases_to_wordforms
+    get_word_frequency_df, bulk_add_anahashes, connect_anahases_to_wordforms, \
+    update_anahashes
+
+from . import data_dir
+
 
 # Make sure np.int64 are inserted into the testing database as integers and
 # not binary data.
@@ -141,3 +146,26 @@ def test_connect_anahases_to_wordforms(dbsession):
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
     assert [wf.anahash.anahash for wf in wrdfrms] == list(a['anahash'])
+
+
+@pytest.mark.skip(reason='Install TICCL before testing this.')
+@pytest.mark.datafiles(os.path.join(data_dir(), 'alphabet'))
+def test_update_anahashes(dbsession, datafiles):
+    wfs = pd.DataFrame()
+    wfs['wordform'] = ['wf-a', 'wf-b', 'wf-c']
+
+    alphabet_file = datafiles.listdir()[0]
+
+    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+
+    update_anahashes(dbsession, alphabet_file)
+
+    wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
+    anahashes = dbsession.query(Anahash).order_by(Anahash.anahash_id).all()
+
+    # Three anahashes were added
+    assert len(anahashes) == 3
+
+    # The anahases are connected to the correct wordforms
+    for wf, a in zip(wrdfrms, anahashes):
+        assert wf.anahash_id == a.anahash_id
