@@ -225,13 +225,13 @@ def connect_anahases_to_wordforms(session, anahashes):
     anahash_to_wf_file = get_temp_file()
     t = write_json_lines(anahash_to_wf_file, get_anahashes(session, anahashes))
 
-    print(t)
-
     u = Wordform.__table__.update(). \
         where(Wordform.wordform_id == bindparam('wf_id')). \
         values(anahash_id=bindparam('a_id'))
-    print(u)
-    session.execute(u, [o for o in read_json_lines(anahash_to_wf_file)])
+
+    to_update = [o for o in read_json_lines(anahash_to_wf_file)]
+    if to_update != []:
+        session.execute(u, to_update)
 
     logger.info('Added the anahash of {} wordforms.'.format(t))
 

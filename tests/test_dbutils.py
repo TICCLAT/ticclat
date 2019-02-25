@@ -148,6 +148,27 @@ def test_connect_anahases_to_wordforms(dbsession):
     assert [wf.anahash.anahash for wf in wrdfrms] == list(a['anahash'])
 
 
+def test_connect_anahases_to_wordforms_empty(dbsession):
+    wfs = pd.DataFrame()
+    wfs['wordform'] = ['wf1', 'wf2', 'wf3']
+
+    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+
+    a = pd.DataFrame({'wordform': ['wf1', 'wf2', 'wf3'],
+                      'anahash': [1, 2, 3]}).set_index('wordform')
+
+    bulk_add_anahashes(dbsession, a)
+
+    connect_anahases_to_wordforms(dbsession, a)
+
+    # nothing was updated the second time around
+    # (and there is no error when running this)
+    t = connect_anahases_to_wordforms(dbsession, a)
+
+    assert t == 0
+
+
+
 @pytest.mark.skip(reason='Install TICCL before testing this.')
 @pytest.mark.datafiles(os.path.join(data_dir(), 'alphabet'))
 def test_update_anahashes(dbsession, datafiles):
