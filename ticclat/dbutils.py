@@ -173,7 +173,7 @@ def bulk_add_anahashes(session, anahashes, num=10000):
     unique_hashes = anahashes.copy().drop_duplicates(subset='anahash')
     msg = 'The input data contains {} wordform/anahash pairs.'
     logger.debug(msg.format(anahashes.shape[0]))
-    'There are {} unique anahash values.'
+    msg = 'There are {} unique anahash values.'
     logger.debug(msg.format(unique_hashes.shape[0]))
 
     total = 0
