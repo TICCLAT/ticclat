@@ -29,7 +29,7 @@ def anahash_df(wfreq, alphabet_file):
         pandas DataFrame containing the word forms as index and anahash values
         as column.
     """
-    logger.info('Running TICLL-anahash.')
+    logger.info('Running TICCL-anahash.')
 
     if wfreq.empty or wfreq is None:
         msg = 'Input "wfreq" is empty or None. Please input non-empty word ' \
