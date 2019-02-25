@@ -1,3 +1,4 @@
+import os
 import logging
 import pandas as pd
 
@@ -232,6 +233,8 @@ def connect_anahases_to_wordforms(session, anahashes):
     to_update = [o for o in read_json_lines(anahash_to_wf_file)]
     if to_update != []:
         session.execute(u, to_update)
+
+    os.remove(anahash_to_wf_file)
 
     logger.info('Added the anahash of {} wordforms.'.format(t))
 
