@@ -5,7 +5,7 @@ from contextlib import contextmanager
 
 from tqdm import tqdm
 
-from sqlalchemy import create_engine, and_
+from sqlalchemy import create_engine, select, and_
 from sqlalchemy.orm import sessionmaker
 
 # for create_database:
@@ -13,8 +13,9 @@ import MySQLdb
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy_utils.functions import drop_database
 
-from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus
+from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, lexical_source_wordform
 from ticclat.utils import chunk_df
+from ticclat.sacoreutils import bulk_add_wordforms_core
 from ticclat.tokenize import nltk_tokenize
 
 logger = logging.getLogger(__name__)
@@ -81,10 +82,10 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
         # Find out which wordwordforms are not yet in the database
         wordforms = list(chunk['wordform'])
 
-        q = session.query(Wordform)
-        result = q.filter(Wordform.wordform.in_(wordforms)).all()
+        s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
+        result = session.execute(s).fetchall()
 
-        existing_wfs = [wf.wordform for wf in result]
+        existing_wfs = [wf['wordform'] for wf in result]
 
         # Add wordforms that are not in the database
         if len(existing_wfs) < len(chunk):
@@ -93,10 +94,12 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
                 if row['wordform'] not in existing_wfs:
                     total += 1
                     to_add.append(
-                        Wordform(wordform=row['wordform'],
-                                 wordform_lowercase=row['wordform'].lower()))
+                        {'wordform': row['wordform'],
+                         'wordform_lowercase': row['wordform'].lower()}
+                    )
+
             if to_add != []:
-                session.bulk_save_objects(to_add)
+                bulk_add_wordforms_core(session, to_add)
 
         progress_bar.update(n=num)
 
@@ -116,12 +119,22 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
 
     lexicon = Lexicon(lexicon_name=lexicon_name, vocabulary=vocabulary)
     session.add(lexicon)
+    session.flush()
+    lexicon_id = lexicon.lexicon_id
+
+    logger.debug('Lexicon id: {}'.format(lexicon.lexicon_id))
 
     wordforms = list(wfs['wordform'])
 
-    q = session.query(Wordform).filter(Wordform.wordform.in_(wordforms)).all()
-    logger.info('Adding {} wordforms to the lexicon.'.format(len(q)))
-    lexicon.lexicon_wordforms = q
+    s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
+    result = session.execute(s).fetchall()
+
+    logger.info('Adding {} wordforms to the lexicon.'.format(len(result)))
+    session.execute(
+        lexical_source_wordform.insert(),
+        [{'lexicon_id': lexicon_id,
+          'wordform_id': wf['wordform_id']} for wf in result]
+    )
 
     logger.info('Lexicon was added.')
 
@@ -275,7 +288,7 @@ def create_ticclat_database(delete_existing=False, dbname='ticclat', user="", pa
                     result = cursor.fetchall()
             else:
                 raise e
-    
+
     Session = sessionmaker(bind=engine)
 
     # create tables

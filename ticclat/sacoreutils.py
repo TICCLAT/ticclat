@@ -79,6 +79,19 @@ def bulk_add_textattestations_core(engine, iterator, batch_size=50000):
     sql_insert_batches(engine, TextAttestation, iterator, batch_size)
 
 
+def select_wordforms(session, iterator):
+    for chunk in iterator:
+        # Find out which wordwordforms are not yet in the database
+        wordforms = list(chunk['wordform'])
+        s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
+        result = session.execute(s).fetchall()
+
+        # wf: (id, wordform, anahash_id, wordform_lowercase)
+        for wf in result:
+            yield {'wordform_id': wf[0],
+                   'wordform': wf[1]}
+
+
 def get_tas(corpus, doc_ids, wf_mapping, p):
 
     cx = scipy.sparse.coo_matrix(corpus)
