@@ -151,6 +151,7 @@ def get_word_frequency_df(session):
             column, or None if all wordforms in the database already are
             connected to an anahash value
     """
+    logger.info('Selecting wordforms without anahash value.')
     q = session.query(Wordform).filter(Wordform.anahash == None)  # noqa: E711
     q = q.with_entities(Wordform.wordform)
 
@@ -167,6 +168,7 @@ def get_word_frequency_df(session):
 def bulk_add_anahashes(session, anahashes, num=10000):
     """anahashes is pandas dataframe with the column wordform (index), anahash
     """
+    logger.info('Adding anahashes.')
     # Remove duplicate anahashes
     unique_hashes = anahashes.copy().drop_duplicates(subset='anahash')
     msg = 'The input data contains {} wordform/anahash pairs.'
@@ -195,6 +197,8 @@ def bulk_add_anahashes(session, anahashes, num=10000):
         if to_add != []:
             sql_insert(session, Anahash, to_add)
 
+    logger.info('Added {} anahashes.'.format(total))
+
     return total
 
 
@@ -217,6 +221,7 @@ def get_anahashes(session, anahashes):
 
 
 def connect_anahases_to_wordforms(session, anahashes):
+    logger.info('Connecting anahashes to wordforms.')
     anahash_to_wf_file = get_temp_file()
     t = write_json_lines(anahash_to_wf_file, get_anahashes(session, anahashes))
 
@@ -228,23 +233,19 @@ def connect_anahases_to_wordforms(session, anahashes):
     print(u)
     session.execute(u, [o for o in read_json_lines(anahash_to_wf_file)])
 
+    logger.info('Added the anahash of {} wordforms.'.format(t))
+
     return t
 
 
 def update_anahashes(session, alphabet_file):
-    logger.info('Selecting wordforms without anahash value.')
     df = get_word_frequency_df(session)
 
-    logger.info('Running TICLL-anahash.')
     anahashes = anahash_df(df, alphabet_file)
 
-    logger.info('Adding anahashes.')
-    total = bulk_add_anahashes(session, anahashes)
-    logger.info('Added {} anahashes.'.format(total))
+    bulk_add_anahashes(session, anahashes)
 
-    logger.info('Connecting anahashes to wordforms.')
-    total = connect_anahases_to_wordforms(session, anahashes)
-    logger.info('Added the anahash of {} wordforms.'.format(total))
+    connect_anahases_to_wordforms(session, anahashes)
 
 
 def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):

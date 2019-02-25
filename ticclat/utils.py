@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 import warnings
@@ -7,6 +8,8 @@ import numpy as np
 import pandas as pd
 
 import sh
+
+logger = logging.getLogger(__name__)
 
 
 def anahash_df(wfreq, alphabet_file):
@@ -26,6 +29,7 @@ def anahash_df(wfreq, alphabet_file):
         pandas DataFrame containing the word forms as index and anahash values
         as column.
     """
+    logger.info('Running TICLL-anahash.')
 
     if wfreq.empty or wfreq is None:
         msg = 'Input "wfreq" is empty or None. Please input non-empty word ' \
