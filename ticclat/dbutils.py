@@ -239,6 +239,15 @@ def connect_anahases_to_wordforms(session, anahashes):
 
 
 def update_anahashes(session, alphabet_file):
+    """Add anahashes for all wordforms that do not have an anahash value yet.
+
+    Requires ticcl to be installed!
+
+    Inputs:
+        session: SQLAlchemy session object.
+        alphabet_file (str): the path to the alphabet file for ticcl.
+    """
+    logger.info('Adding anahash values to wordforms without anahash.')
     df = get_word_frequency_df(session)
 
     anahashes = anahash_df(df, alphabet_file)
