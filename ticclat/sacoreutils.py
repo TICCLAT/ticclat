@@ -15,8 +15,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.sql import select
 from sqlalchemy.orm import scoped_session, sessionmaker
 
+from tqdm import tqdm
+
 from ticclat.ticclat_schema import Wordform, Corpus, Document, \
-    TextAttestation, corpusId_x_documentId
+    TextAttestation, Anahash, corpusId_x_documentId
 from ticclat.tokenize import terms_documents_matrix_counters
 from ticclat.utils import chunk_df, write_json_lines, read_json_lines, \
     get_temp_file
@@ -57,6 +59,24 @@ def sql_insert(engine, table_object, to_insert):
     )
 
 
+def sql_query_batches(engine, query, iterator, total=0, batch_size=10000):
+    pbar = tqdm(total=total, mininterval=2.0)
+    objects = []
+    for item in iterator:
+        objects.append(item)
+        if len(objects) == batch_size:
+            engine.execute(query, objects)
+            objects = []
+            pbar.update(batch_size)
+    # Doing the insert with an empty list results in adding a row with all
+    # fields to the deafult values, or an error, if fields don't have a default
+    # value. Se, we have to check whether to_add is empty.
+    if objects != []:
+        engine.execute(query, objects)
+        pbar.update(len(objects))
+    pbar.close()
+
+
 def sql_insert_batches(engine, table_object, iterator, batch_size=10000):
     to_add = []
     for item in iterator:
@@ -77,6 +97,10 @@ def bulk_add_wordforms_core(engine, iterator, batch_size=50000):
 
 def bulk_add_textattestations_core(engine, iterator, batch_size=50000):
     sql_insert_batches(engine, TextAttestation, iterator, batch_size)
+
+
+def bulk_add_anahashes_core(engine, iterator, batch_size=50000):
+    sql_insert_batches(engine, Anahash, iterator, batch_size)
 
 
 def select_wordforms(session, iterator):

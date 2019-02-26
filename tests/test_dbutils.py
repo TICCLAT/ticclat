@@ -136,12 +136,15 @@ def test_connect_anahases_to_wordforms(dbsession):
 
     bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
 
+    wfs = get_word_frequency_df(dbsession, add_ids=True)
+    wf_mapping = wfs['wordform_id'].to_dict()
+
     a = pd.DataFrame({'wordform': ['wf1', 'wf2', 'wf3'],
                       'anahash': [1, 2, 3]}).set_index('wordform')
 
     bulk_add_anahashes(dbsession, a)
 
-    connect_anahases_to_wordforms(dbsession, a)
+    connect_anahases_to_wordforms(dbsession, a, wf_mapping)
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
@@ -159,13 +162,15 @@ def test_connect_anahases_to_wordforms_empty(dbsession):
 
     bulk_add_anahashes(dbsession, a)
 
-    connect_anahases_to_wordforms(dbsession, a)
+    connect_anahases_to_wordforms(dbsession, a, a['anahash'].to_dict())
 
-    # nothing was updated the second time around
+    # nothing was updated the second time around (the values didn't change)
     # (and there is no error when running this)
-    t = connect_anahases_to_wordforms(dbsession, a)
+    connect_anahases_to_wordforms(dbsession, a, a['anahash'].to_dict())
 
-    assert t == 0
+    wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
+
+    assert [wf.anahash.anahash for wf in wrdfrms] == list(a['anahash'])
 
 
 @pytest.mark.skip(reason='Install TICCL before testing this.')
@@ -203,8 +208,7 @@ def test_update_anahashes_nothing_to_update(dbsession, datafiles):
 
     bulk_add_anahashes(dbsession, a)
 
-    connect_anahases_to_wordforms(dbsession, a)
-
+    connect_anahases_to_wordforms(dbsession, a, a['anahash'].to_dict())
     alphabet_file = datafiles.listdir()[0]
     update_anahashes(dbsession, alphabet_file)
 

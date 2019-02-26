@@ -1,12 +1,14 @@
 import os
+import json
 import logging
 import pandas as pd
 
 from contextlib import contextmanager
+from collections import defaultdict
 
 from tqdm import tqdm
 
-from sqlalchemy import create_engine, select, and_, bindparam
+from sqlalchemy import create_engine, select, bindparam
 from sqlalchemy.orm import sessionmaker
 
 # for create_database:
@@ -18,7 +20,8 @@ from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, \
     lexical_source_wordform
 from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
     read_json_lines, get_temp_file
-from ticclat.sacoreutils import bulk_add_wordforms_core, sql_insert
+from ticclat.sacoreutils import bulk_add_wordforms_core, \
+    bulk_add_anahashes_core, sql_query_batches
 from ticclat.tokenize import nltk_tokenize
 
 logger = logging.getLogger(__name__)
@@ -144,7 +147,7 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
     return lexicon
 
 
-def get_word_frequency_df(session):
+def get_word_frequency_df(session, add_ids=False):
     """Can be used as input for ticcl-anahash.
 
     Returns:
@@ -154,7 +157,10 @@ def get_word_frequency_df(session):
     """
     logger.info('Selecting wordforms without anahash value.')
     q = session.query(Wordform).filter(Wordform.anahash == None)  # noqa: E711
-    q = q.with_entities(Wordform.wordform)
+    if add_ids:
+        q = q.with_entities(Wordform.wordform, Wordform.wordform_id)
+    else:
+        q = q.with_entities(Wordform.wordform)
 
     df = pd.read_sql(q.statement, q.session.bind)
     if df.empty:
@@ -166,7 +172,7 @@ def get_word_frequency_df(session):
     return df
 
 
-def bulk_add_anahashes(session, anahashes, num=10000):
+def bulk_add_anahashes(session, anahashes, tqdm=None, num=10000):
     """anahashes is pandas dataframe with the column wordform (index), anahash
     """
     logger.info('Adding anahashes.')
@@ -178,61 +184,78 @@ def bulk_add_anahashes(session, anahashes, num=10000):
     logger.debug(msg.format(unique_hashes.shape[0]))
 
     total = 0
+    anahashes_to_add_file = get_temp_file()
 
-    for chunk in chunk_df(unique_hashes, num=num):
-        # Find out which anahashes are not yet in the database.
-        ahs = list(chunk['anahash'])
+    if tqdm is not None:
+        pbar = tqdm(total=unique_hashes.shape[0])
+    with open(anahashes_to_add_file, 'w') as f:
+        for chunk in chunk_df(unique_hashes, num=num):
+            # Find out which anahashes are not yet in the database.
+            ahs = set(list(chunk['anahash']))
 
-        s = select([Anahash]).where(Anahash.anahash.in_(ahs))
-        result = session.execute(s).fetchall()
+            s = select([Anahash]).where(Anahash.anahash.in_(ahs))
+            result = session.execute(s).fetchall()
 
-        existing_ahs = [ah[1] for ah in result]
+            existing_ahs = set([ah[1] for ah in result])
 
-        # Add anahashes that are not in the database
-
-        to_add = []
-        for _, row in chunk.iterrows():
-            if row['anahash'] not in existing_ahs:
+            for ah in ahs.difference(existing_ahs):
+                f.write(json.dumps({'anahash': ah}))
+                f.write('\n')
                 total += 1
-                to_add.append({'anahash': row['anahash']})
-        if to_add != []:
-            sql_insert(session, Anahash, to_add)
+            if tqdm is not None:
+                pbar.update(chunk.shape[0])
+
+    bulk_add_anahashes_core(session, read_json_lines(anahashes_to_add_file))
+
+    os.remove(anahashes_to_add_file)
 
     logger.info('Added {} anahashes.'.format(total))
 
     return total
 
 
-def get_anahashes(session, anahashes):
-    for chunk in chunk_df(anahashes):
-        hashes = list(chunk.index)
-        s = select([Wordform]).where(
-            and_(Wordform.anahash_id == None,  # noqa: E711
-                 Wordform.wordform.in_(hashes)))
-        wfs = session.execute(s).fetchall()
-        for wf in wfs:
-            # wf (wordform_id, wordform, anahash_id, wordform_lowercase)
-            h = anahashes.loc[wf[1]]['anahash']
-            s = select([Anahash]).where(Anahash.anahash == h)
-            a = session.execute(s).fetchone()
+def get_anahashes(session, anahashes, wf_mapping, batch_size=50000):
+    unique_hashes = anahashes.copy().drop_duplicates(subset='anahash')
+    pbar = tqdm(total=unique_hashes.shape[0], mininterval=2.0)
 
-            # SQLAlchemy doesn't allow the use of column names in update
-            # statements, so we use something else.
-            yield {'a_id': a[0], 'wf_id': wf[0]}
+    ah_mapping = {}
+
+    for chunk in chunk_df(unique_hashes, num=batch_size):
+        # Find out which anahashes are not yet in the database.
+        ahs = set(list(chunk['anahash']))
+
+        s = select([Anahash]).where(Anahash.anahash.in_(ahs))
+        result = session.execute(s).fetchall()
+
+        for ah in result:
+            ah_mapping[ah[1]] = ah[0]
+        pbar.update(chunk.shape[0])
+    pbar.close()
+
+    pbar = tqdm(total=anahashes.shape[0], mininterval=2.0)
+    for wf, row in anahashes.iterrows():
+        # SQLAlchemy doesn't allow the use of column names in update
+        # statements, so we use something else.
+        yield {'a_id': ah_mapping[row['anahash']], 'wf_id': wf_mapping[wf]}
+        pbar.update(1)
+    pbar.close()
 
 
-def connect_anahases_to_wordforms(session, anahashes):
+def connect_anahases_to_wordforms(session, anahashes, df, batch_size=50000):
     logger.info('Connecting anahashes to wordforms.')
+
+    logger.debug('Getting wordform/anahash_id pairs.')
     anahash_to_wf_file = get_temp_file()
-    t = write_json_lines(anahash_to_wf_file, get_anahashes(session, anahashes))
+    t = write_json_lines(anahash_to_wf_file, get_anahashes(session, anahashes,
+                                                           df))
 
     u = Wordform.__table__.update(). \
         where(Wordform.wordform_id == bindparam('wf_id')). \
         values(anahash_id=bindparam('a_id'))
 
-    to_update = [o for o in read_json_lines(anahash_to_wf_file)]
-    if to_update != []:
-        session.execute(u, to_update)
+    logger.debug('Adding the connections wordform -> anahash_id.')
+    sql_query_batches(session, u, read_json_lines(anahash_to_wf_file), t,
+                      batch_size)
 
     os.remove(anahash_to_wf_file)
 
@@ -241,7 +264,7 @@ def connect_anahases_to_wordforms(session, anahashes):
     return t
 
 
-def update_anahashes(session, alphabet_file):
+def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
     """Add anahashes for all wordforms that do not have an anahash value yet.
 
     Requires ticcl to be installed!
@@ -251,13 +274,20 @@ def update_anahashes(session, alphabet_file):
         alphabet_file (str): the path to the alphabet file for ticcl.
     """
     logger.info('Adding anahash values to wordforms without anahash.')
-    df = get_word_frequency_df(session)
+    df = get_word_frequency_df(session, add_ids=True)
 
-    anahashes = anahash_df(df, alphabet_file)
+    if df is None:
+        logger.info('All wordforms have an anahash value.')
+        return
 
-    bulk_add_anahashes(session, anahashes)
+    wf_mapping = defaultdict(int)
+    df['wordform_id'].to_dict(wf_mapping)
 
-    connect_anahases_to_wordforms(session, anahashes)
+    anahashes = anahash_df(df[['frequency']], alphabet_file)
+
+    bulk_add_anahashes(session, anahashes, tqdm=tqdm, num=batch_size)
+
+    connect_anahases_to_wordforms(session, anahashes, wf_mapping, batch_size)
 
 
 def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
