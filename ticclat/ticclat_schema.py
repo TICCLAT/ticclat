@@ -1,6 +1,6 @@
 # coding: utf-8
 from sqlalchemy import Column, String, Table, ForeignKey, Unicode, Boolean, \
-    Integer
+    Integer, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.ext.declarative import declarative_base
@@ -216,9 +216,8 @@ class Wordform(Base):
 class WordformLink(Base):
     __tablename__ = 'wordform_links'
 
-    wordform_link_id = Column(BIGINT(20).with_variant(Integer, 'sqlite'), primary_key=True)
-    wordform_from = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
-    wordform_to = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'))
+    wordform_from = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'), primary_key=True)
+    wordform_to = Column(BIGINT(20), ForeignKey('wordforms.wordform_id'), primary_key=True)
 
     linked_from = relationship('Wordform', backref='links',
                                primaryjoin=(Wordform.wordform_id == wordform_from))
@@ -235,9 +234,13 @@ class WordformLink(Base):
 
 class WordformLinkSource(Base):
     __tablename__ = 'source_x_wordform_link'
+    __table_args__ = (
+        ForeignKeyConstraint(['wordform_from', 'wordform_to'], ['wordform_links.wordform_from', 'wordform_links.wordform_to']),
+    )
 
     source_x_wordform_link_id = Column(BIGINT(20).with_variant(Integer, 'sqlite'), primary_key=True)
-    wordform_link_id = Column(BIGINT(20), ForeignKey('wordform_links.wordform_link_id'))
+    wordform_from = Column(BIGINT(20), nullable=False)
+    wordform_to = Column(BIGINT(20), nullable=False)
     lexicon_id = Column(BIGINT(20), ForeignKey('lexica.lexicon_id'))
 
     wordform_from_correct = Column(Boolean)
