@@ -172,6 +172,36 @@ def get_word_frequency_df(session, add_ids=False):
     return df
 
 
+def get_wf_mapping(session, lexicon=None, lexicon_id=None):
+    msg = 'Getting the wordform mapping of lexicon "{}"'
+
+    if lexicon is not None:
+        if lexicon.lexicon_id is None:
+            raise ValueError('The lexicon does not (yet) have an ID. Please'
+                             ' make sure the ID of the lexicon is set.')
+        else:
+            lexicon_id = lexicon.lexicon_id
+        msg = msg.format(lexicon)
+    elif lexicon_id is not None:
+        msg = msg.format('lexicon id {}'.format(lexicon_id))
+    # Add option lexicon name and get the lexicon_id from the database
+    else:
+        raise ValueError('Please specify the lexicon.')
+
+    logger.info(msg)
+
+    s = select([lexical_source_wordform.join(Lexicon).join(Wordform)]) \
+        .where(Lexicon.lexicon_id == lexicon_id)
+    logger.debug(s)
+    result = session.execute(s).fetchall()
+
+    wf_mapping = defaultdict(int)
+    for r in result:
+        wf_mapping[r['wordform']] = r[lexical_source_wordform.c.wordform_id]
+
+    return wf_mapping
+
+
 def bulk_add_anahashes(session, anahashes, tqdm=None, num=10000):
     """anahashes is pandas dataframe with the column wordform (index), anahash
     """

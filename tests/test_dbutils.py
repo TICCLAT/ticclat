@@ -8,7 +8,7 @@ import pandas as pd
 from ticclat.ticclat_schema import Wordform, Lexicon, Anahash
 from ticclat.dbutils import bulk_add_wordforms, add_lexicon, \
     get_word_frequency_df, bulk_add_anahashes, connect_anahases_to_wordforms, \
-    update_anahashes
+    update_anahashes, get_wf_mapping
 
 from . import data_dir
 
@@ -215,3 +215,50 @@ def test_update_anahashes_nothing_to_update(dbsession, datafiles):
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
     assert [wf.anahash.anahash for wf in wrdfrms] == list(a['anahash'])
+
+
+def test_get_wf_mapping_lexicon(dbsession):
+    name = 'test lexicon'
+
+    wfs = pd.DataFrame()
+    wfs['wordform'] = ['wf1', 'wf2', 'wf3']
+
+    print(dbsession)
+
+    lex = add_lexicon(dbsession, lexicon_name=name, vocabulary=True, wfs=wfs)
+
+    wf_mapping = get_wf_mapping(dbsession, lexicon=lex)
+
+    for w in wfs['wordform']:
+        assert w in wf_mapping.keys()
+
+
+def test_get_wf_mapping_lexicon_no_id(dbsession):
+    name = 'test lexicon'
+
+    wfs = pd.DataFrame()
+    wfs['wordform'] = ['wf1', 'wf2', 'wf3']
+
+    print(dbsession)
+
+    lex = Lexicon(lexicon_name=name)
+
+    with pytest.raises(ValueError):
+        get_wf_mapping(dbsession, lexicon=lex)
+
+
+def test_get_wf_mapping_lexicon_id(dbsession):
+    name = 'test lexicon'
+
+    wfs = pd.DataFrame()
+    wfs['wordform'] = ['wf1', 'wf2', 'wf3']
+
+    print(dbsession)
+
+    lex = add_lexicon(dbsession, lexicon_name=name, vocabulary=True, wfs=wfs)
+    lexicon_id = lex.lexicon_id
+
+    wf_mapping = get_wf_mapping(dbsession, lexicon_id=lexicon_id)
+
+    for w in wfs['wordform']:
+        assert w in wf_mapping.keys()
