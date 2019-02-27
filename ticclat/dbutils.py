@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from tqdm import tqdm
 
-from sqlalchemy import create_engine, select, bindparam
+from sqlalchemy import create_engine, select, bindparam, and_
 from sqlalchemy.orm import sessionmaker
 
 # for create_database:
@@ -17,11 +17,11 @@ from sqlalchemy_utils import database_exists
 from sqlalchemy_utils.functions import drop_database
 
 from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, \
-    lexical_source_wordform
+    lexical_source_wordform, WordformLink, WordformLinkSource
 from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
-    read_json_lines, get_temp_file
+    read_json_lines, get_temp_file, json_line
 from ticclat.sacoreutils import bulk_add_wordforms_core, \
-    bulk_add_anahashes_core, sql_query_batches
+    bulk_add_anahashes_core, sql_query_batches, sql_insert_batches
 from ticclat.tokenize import nltk_tokenize
 
 logger = logging.getLogger(__name__)
@@ -318,6 +318,105 @@ def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
     bulk_add_anahashes(session, anahashes, tqdm=tqdm, num=batch_size)
 
     connect_anahases_to_wordforms(session, anahashes, wf_mapping, batch_size)
+
+
+def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
+                        wf_to_name, lexicon_id, wf_from_correct, wf_to_correct,
+                        wfl_file, wfls_file):
+    num_wf_links = 0
+    num_wf_link_sources = 0
+    with open(wfl_file, 'w') as links, open(wfls_file, 'w') as sources:
+        wf_links = defaultdict(bool)
+        for idx, row in tqdm(links_df.iterrows(), total=links_df.shape[0]):
+            wf_from = wf_mapping[row[wf_from_name]]
+            wf_to = wf_mapping[row[wf_to_name]]
+
+            # Don't add links to self! and keep track of what was added,
+            # because duplicates may occur
+            if wf_from != wf_to and (wf_from, wf_to) not in wf_links:
+                s = select([WordformLink]). \
+                    where(and_(WordformLink.wordform_from == wf_from,
+                               WordformLink.wordform_to == wf_to))
+                r = session.execute(s).fetchone()
+                if r is None:
+                    # Both directions of the relationship need to be added.
+                    links.write(json_line({'wordform_from': wf_from,
+                                           'wordform_to': wf_to}))
+                    links.write(json_line({'wordform_from': wf_to,
+                                           'wordform_to': wf_from}))
+
+                    num_wf_links += 2
+                # The wordform link sources (in both directions) need to be
+                # written regardless of the existence of the wordform links.
+                line = json_line({'wordform_from': wf_from,
+                                  'wordform_to': wf_to,
+                                  'lexicon_id': lexicon_id,
+                                  'wordform_from_correct': wf_from_correct,
+                                  'wordform_to_correct': wf_to_correct})
+                sources.write(line)
+                line = json_line({'wordform_from': wf_to,
+                                  'wordform_to': wf_from,
+                                  'lexicon_id': lexicon_id,
+                                  'wordform_from_correct': wf_to_correct,
+                                  'wordform_to_correct': wf_from_correct})
+                sources.write(line)
+                num_wf_link_sources += 2
+
+                wf_links[(wf_from, wf_to)] = True
+                wf_links[(wf_to, wf_from)] = True
+
+    return num_wf_links, num_wf_link_sources
+
+
+def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
+                           to_column, from_correct, to_correct,
+                           batch_size=50000):
+    logger.info('Adding lexicon with links between wordforms.')
+
+    # Make a dataframe containing all wordforms in the lexicon
+    wordforms = pd.DataFrame()
+    wordforms['wordform'] = wfs[from_column].append(wfs[to_column],
+                                                    ignore_index=True)
+    wordforms = wordforms.drop_duplicates(subset='wordform')
+
+    # Create the lexicon (with all the wordforms)
+    lexicon = add_lexicon(session, lexicon_name, vocabulary, wordforms,
+                          num=batch_size)
+
+    wf_mapping = get_wf_mapping(session, lexicon_id=lexicon.lexicon_id)
+
+    try:
+        wfl_file = get_temp_file()
+        logger.debug('Writing wordform links to add to "{}".'.format(wfl_file))
+
+        wfls_file = get_temp_file()
+        msg = 'Writing wordform link sources to add to "{}".'.format(wfls_file)
+        logger.debug(msg)
+
+        num_l, num_s = write_wf_links_data(session, wf_mapping, wfs,
+                                           from_column, to_column,
+                                           lexicon.lexicon_id,
+                                           from_correct, to_correct,
+                                           wfl_file, wfls_file)
+
+        logger.info('Inserting {} wordform links.'.format(num_l))
+        sql_insert_batches(session, WordformLink, read_json_lines(wfl_file),
+                           batch_size=batch_size)
+
+        logger.info('Inserting {} wordform link sources.'.format(num_s))
+        sql_insert_batches(session, WordformLinkSource,
+                           read_json_lines(wfls_file), batch_size=batch_size)
+    finally:
+        try:
+            os.remove(wfl_file)
+        except FileNotFoundError:
+            pass
+        try:
+            os.remove(wfls_file)
+        except FileNotFoundError:
+            pass
+
+    return lexicon
 
 
 def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
