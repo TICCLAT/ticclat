@@ -2,7 +2,8 @@ import os
 
 import pandas as pd
 
-from ticclat.utils import chunk_df, read_json_lines, write_json_lines
+from ticclat.utils import chunk_df, read_json_lines, write_json_lines, \
+    json_line
 
 
 def test_chunk_df_smaller_than_num():
@@ -53,3 +54,9 @@ def test_read_and_write_json_lines_empty(fs):
     results = [o for o in read_json_lines(fname)]
 
     assert objects == results
+
+
+def test_json_line():
+    obj = {'a': 1, 'b': 2}
+
+    assert json_line(obj) == '{"a": 1, "b": 2}\n'

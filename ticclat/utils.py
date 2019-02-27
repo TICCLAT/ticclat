@@ -90,11 +90,14 @@ def write_json_lines(fname, generator):
     total = 0
     with open(fname, 'w') as f:
         for obj in generator:
-            f.write(json.dumps(obj))
-            f.write('\n')
+            f.write(json_line(obj))
 
             total += 1
     return total
+
+
+def json_line(obj):
+    return '{}\n'.format(json.dumps(obj))
 
 
 def read_json_lines(fname):
