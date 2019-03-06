@@ -65,12 +65,11 @@ def test_bulk_add_wordforms_not_unique(dbsession):
 
     print(dbsession)
 
-    with pytest.raises(ValueError):
-        bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
-    assert len(wrdfrms) == 0
+    assert len(wrdfrms) == 2
 
 
 def test_add_lexicon(dbsession):

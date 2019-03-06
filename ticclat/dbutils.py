@@ -78,7 +78,9 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
     logger.info('Bulk adding wordforms.')
 
     if not wfs['wordform'].is_unique:
-        raise ValueError('The wordform-column contains duplicate entries.')
+        logger.info('The wordform-column contains duplicate entries. '
+                    'Removing duplicates.')
+        wfs = wfs.drop_duplicates(subset='wordform')
 
     total = 0
 
