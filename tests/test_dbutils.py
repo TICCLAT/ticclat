@@ -5,10 +5,15 @@ import sqlite3
 import numpy as np
 import pandas as pd
 
-from ticclat.ticclat_schema import Wordform, Lexicon, Anahash
+from sqlalchemy import and_
+
+from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, \
+    WordformLinkSource
+from ticclat.utils import read_json_lines
 from ticclat.dbutils import bulk_add_wordforms, add_lexicon, \
     get_word_frequency_df, bulk_add_anahashes, connect_anahases_to_wordforms, \
-    update_anahashes, get_wf_mapping
+    update_anahashes, get_wf_mapping, add_lexicon_with_links, \
+    write_wf_links_data
 
 from . import data_dir
 
@@ -262,3 +267,90 @@ def test_get_wf_mapping_lexicon_id(dbsession):
 
     for w in wfs['wordform']:
         assert w in wf_mapping.keys()
+
+
+def test_write_wf_links_data(dbsession, fs):
+    wfl_file = 'wflinks'
+    wfls_file = 'wflsources'
+
+    name = 'linked test lexicon'
+
+    wfs = pd.DataFrame()
+    wfs['wordform'] = ['wf1', 'wf2', 'wf3', 'wf1s', 'wf2s', 'wf3s']
+
+    lex = add_lexicon(dbsession, lexicon_name=name, vocabulary=True, wfs=wfs)
+
+    wfs = pd.DataFrame()
+    wfs['lemma'] = ['wf1', 'wf2', 'wf3']
+    wfs['variant'] = ['wf1s', 'wf2s', 'wf3s']
+
+    wfm = get_wf_mapping(dbsession, lexicon=lex)
+
+    num_l, num_s = write_wf_links_data(dbsession, wf_mapping=wfm, links_df=wfs,
+                                       wf_from_name='lemma',
+                                       wf_to_name='variant',
+                                       lexicon_id=lex.lexicon_id,
+                                       wf_from_correct=True,
+                                       wf_to_correct=True,
+                                       wfl_file=wfl_file, wfls_file=wfls_file)
+    assert num_l == 3*2
+    assert num_s == 3*2
+
+    wflinks = []
+    for wf1, wf2 in zip(wfs['lemma'], wfs['variant']):
+        wflinks.append({"wordform_from": wfm[wf1], "wordform_to": wfm[wf2]})
+        wflinks.append({"wordform_from": wfm[wf2], "wordform_to": wfm[wf1]})
+
+    wflsources = []
+    for wfl in wflinks:
+        wflsources.append({"wordform_from": wfl['wordform_from'],
+                           "wordform_to": wfl['wordform_to'],
+                           "lexicon_id": lex.lexicon_id,
+                           "wordform_from_correct": True,
+                           "wordform_to_correct": True})
+
+    for wfls1, wfls2 in zip(read_json_lines(wfls_file), wflsources):
+        assert wfls1 == wfls2
+
+
+def test_add_lexicon_with_links(dbsession):
+    name = 'linked test lexicon'
+
+    wfs = pd.DataFrame()
+    wfs['lemma'] = ['wf1', 'wf2', 'wf3']
+    wfs['variant'] = ['wf1s', 'wf2s', 'wf3s']
+
+    add_lexicon_with_links(dbsession, lexicon_name=name, vocabulary=True,
+                           wfs=wfs, from_column='lemma', to_column='variant',
+                           from_correct=True, to_correct=True)
+
+    lex = dbsession.query(Lexicon).filter(Lexicon.lexicon_name == name).first()
+
+    assert lex.vocabulary
+    assert len(lex.lexicon_wordforms) == 6
+
+    for w1, w2 in zip(wfs['lemma'], wfs['variant']):
+        wf1 = dbsession.query(Wordform).filter(Wordform.wordform == w1).first()
+        wf2 = dbsession.query(Wordform).filter(Wordform.wordform == w2).first()
+
+        # check wordform links
+        links = [w.linked_to for w in wf1.links]
+        assert wf2 in links
+
+        links = [w.linked_to for w in wf2.links]
+        assert wf1 in links
+
+        # check wordform link sources
+        wfl = dbsession.query(WordformLinkSource) \
+            .filter(and_(WordformLinkSource.wordform_from == wf1.wordform_id,
+                         WordformLinkSource.wordform_to == wf2.wordform_id)) \
+            .first()
+        assert wfl is not None
+        assert wfl.wfls_lexicon == lex
+
+        wfl = dbsession.query(WordformLinkSource) \
+            .filter(and_(WordformLinkSource.wordform_from == wf2.wordform_id,
+                         WordformLinkSource.wordform_to == wf1.wordform_id)) \
+            .first()
+        assert wfl is not None
+        assert wfl.wfls_lexicon == lex
