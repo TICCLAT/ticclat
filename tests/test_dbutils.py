@@ -187,7 +187,18 @@ def test_update_anahashes(dbsession, datafiles):
 
     bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
 
+    anahashes = dbsession.query(Anahash).order_by(Anahash.anahash_id).all()
+    assert len(anahashes) == 0
+
+    wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
+    for w in wrdfrms:
+        assert(w.anahash) is None
+
     update_anahashes(dbsession, alphabet_file)
+
+    # If we don't commit here, the anahashes won't be updated when we do the
+    # tests.
+    dbsession.commit()
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
     anahashes = dbsession.query(Anahash).order_by(Anahash.anahash_id).all()
@@ -196,8 +207,8 @@ def test_update_anahashes(dbsession, datafiles):
     assert len(anahashes) == 3
 
     # The anahases are connected to the correct wordforms
-    for wf, a in zip(wrdfrms, anahashes):
-        assert wf.anahash_id == a.anahash_id
+    for wf, a in zip(wrdfrms, (3, 2, 1)):
+        assert wf.anahash_id == a
 
 
 @pytest.mark.datafiles(os.path.join(data_dir(), 'alphabet'))

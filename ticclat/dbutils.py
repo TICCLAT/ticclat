@@ -312,8 +312,7 @@ def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
         logger.info('All wordforms have an anahash value.')
         return
 
-    wf_mapping = defaultdict(int)
-    df['wordform_id'].to_dict(wf_mapping)
+    wf_mapping = df['wordform_id'].to_dict(defaultdict(int))
 
     anahashes = anahash_df(df[['frequency']], alphabet_file)
 
