@@ -4,12 +4,15 @@ A document in ticclat is a term-frequency vector (collections.Counter). This
 module contains generators that return term-frequency vectors for certain types
 of input data.
 """
+import bz2
+
 import nltk.data
 
 from itertools import chain
 
 from nltk import word_tokenize
 
+from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
 
 
@@ -34,6 +37,18 @@ def nltk_tokenize(texts_file, punkt='tokenizers/punkt/dutch.pickle'):
             yield list(chain(*tokens))
 
 
+def ticcl_frequency_bz2(in_files, max_word_length=255):
+    for freq_file in in_files:
+        c = {}
+        with bz2.open(freq_file, 'rt') as f:
+            for line in f:
+                word, freq = line.split()
+                # The corpus may contain wordforms that are too long
+                if len(word) <= max_word_length:
+                    c[word] = int(freq)
+        yield c
+
+
 def do_nothing(list_of_words):
     return list_of_words
 
@@ -51,5 +66,12 @@ def terms_documents_matrix_counters(corpus):
     """
     v = CountVectorizer(tokenizer=do_nothing, lowercase=False)
     corpus = v.fit_transform(corpus)
+
+    return corpus, v
+
+
+def terms_documents_matrix_ticcl_frequency(in_files):
+    v = DictVectorizer()
+    corpus = v.fit_transform(ticcl_frequency_bz2(in_files))
 
     return corpus, v
