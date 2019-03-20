@@ -19,9 +19,8 @@ from tqdm import tqdm
 
 from ticclat.ticclat_schema import Wordform, Corpus, Document, \
     TextAttestation, Anahash, corpusId_x_documentId
-from ticclat.tokenize import terms_documents_matrix_counters
 from ticclat.utils import chunk_df, write_json_lines, read_json_lines, \
-    get_temp_file
+    get_temp_file, iterate_wf, chunk_json_lines
 
 logger = logging.getLogger(__name__)
 
@@ -127,32 +126,20 @@ def get_tas(corpus, doc_ids, wf_mapping, p):
                'frequency': int(freq)}
 
 
-def add_corpus_core(session, texts_iterator, corpus_name):
-    logger.info('Tokenizing')
-    tokenized_file = get_temp_file()
-    write_json_lines(tokenized_file, texts_iterator)
-
-    logger.info('Creating the terms/document matrix')
-    documents_iterator = read_json_lines(tokenized_file)
-    corpus_m, v = terms_documents_matrix_counters(documents_iterator)
-
-    wfs = pd.DataFrame()
-    wfs['wordform'] = v.vocabulary_
+def add_corpus_core(session, corpus_matrix, vectorizer, corpus_name,
+                    document_metadata=pd.DataFrame()):
+    wf_file = get_temp_file()
+    write_json_lines(wf_file, iterate_wf(vectorizer.vocabulary_))
 
     # Prepare the documents to be added to the database
     # FIXME: add proper metadata
     logger.info('Creating document data')
-    cx = scipy.sparse.csr_matrix(corpus_m)
+    cx = scipy.sparse.csr_matrix(corpus_matrix)
     word_counts = cx.sum(axis=1)  # sum the rows
 
     wc_list = np.array(word_counts).flatten().tolist()
 
-    documents = pd.DataFrame()
-    documents['word_count'] = wc_list
-
-    # add other metadata
-    documents['pub_year'] = 2019
-    documents['language'] = 'nl'
+    document_metadata['word_count'] = wc_list
 
     # Determine which wordforms in the vocabulary need to be added to the
     # database
@@ -161,9 +148,9 @@ def add_corpus_core(session, texts_iterator, corpus_name):
     logger.info('Determine which wordforms need to be added')
     wf_to_add_file = get_temp_file()
     with open(wf_to_add_file, 'w') as f:
-        for chunk in chunk_df(wfs, num=num):
+        for chunk in chunk_json_lines(wf_file, num=num):
             # Find out which wordwordforms are not yet in the database
-            wordforms = set(list(chunk['wordform']))
+            wordforms = set([wf['wordform'] for wf in chunk])
             s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
             result = session.execute(s).fetchall()
 
@@ -182,7 +169,7 @@ def add_corpus_core(session, texts_iterator, corpus_name):
     # add the documents using ORM, because we need to link them to the
     # corpus
     logger.info('Adding the documents')
-    for doc in documents.to_dict(orient='records'):
+    for doc in document_metadata.to_dict(orient='records'):
         d = Document(**doc)
         d.document_corpora.append(corpus)
     session.flush()
@@ -195,7 +182,7 @@ def add_corpus_core(session, texts_iterator, corpus_name):
 
     logger.info('Prepare adding the text attestations')
     # make a mapping from
-    df = pd.DataFrame.from_dict(v.vocabulary_, orient='index')
+    df = pd.DataFrame.from_dict(vectorizer.vocabulary_, orient='index')
     df = df.reset_index()
 
     logger.info('\tGetting the wordform ids')
@@ -219,17 +206,18 @@ def add_corpus_core(session, texts_iterator, corpus_name):
 
     logger.info('\tReversing the mapping')
     # reverse mapping from wordform to id in the terms/document matrix
-    p = dict(zip(v.vocabulary_.values(), v.vocabulary_.keys()))
+    p = dict(zip(vectorizer.vocabulary_.values(),
+                 vectorizer.vocabulary_.keys()))
 
     logger.info('\tGetting the text attestations')
     ta_file = get_temp_file()
-    write_json_lines(ta_file, get_tas(corpus_m, doc_ids, wf_mapping, p))
+    write_json_lines(ta_file, get_tas(corpus_matrix, doc_ids, wf_mapping, p))
 
     logger.info('Adding the text attestations')
     bulk_add_textattestations_core(session, read_json_lines(ta_file),
                                    batch_size=250000)
 
     # remove temp data
-    os.remove(tokenized_file)
+    os.remove(wf_file)
     os.remove(wf_to_add_file)
     os.remove(ta_file)

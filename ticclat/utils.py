@@ -120,6 +120,20 @@ def read_json_lines(fname):
             yield json.loads(line)
 
 
+def chunk_json_lines(fname, num=1000):
+    res = []
+    i = 0
+    for obj in read_json_lines(fname):
+        res.append(obj)
+        i += 1
+        if i == num:
+            yield res
+            res = []
+            i = 0
+    if res != []:
+        yield res
+
+
 def get_temp_file():
     """Create a temporary file and return the path.
 
@@ -130,3 +144,8 @@ def get_temp_file():
     os.close(fd)
 
     return fname
+
+
+def iterate_wf(lst):
+    for wf in lst:
+        yield {'wordform': wf}
