@@ -70,7 +70,7 @@ def get_or_create_wordform(session, wordform, has_analysis=False,
     return wf
 
 
-def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
+def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
@@ -84,46 +84,45 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, num=10000):
 
     total = 0
 
-    progress_bar = tqdm(total=len(wfs))
+    with tqdm(total=len(wfs)) as progress_bar:
+        for chunk in chunk_df(wfs, batch_size=batch_size):
+            # Find out which wordwordforms are not yet in the database
+            wordforms = list(chunk['wordform'])
 
-    for chunk in chunk_df(wfs, num=num):
-        # Find out which wordwordforms are not yet in the database
-        wordforms = list(chunk['wordform'])
+            s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
+            result = session.execute(s).fetchall()
 
-        s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
-        result = session.execute(s).fetchall()
+            existing_wfs = [wf['wordform'] for wf in result]
 
-        existing_wfs = [wf['wordform'] for wf in result]
+            # Add wordforms that are not in the database
+            if len(existing_wfs) < len(chunk):
+                to_add = []
+                for _, row in chunk.iterrows():
+                    if row['wordform'] not in existing_wfs:
+                        total += 1
+                        to_add.append(
+                            {'wordform': row['wordform'],
+                            'wordform_lowercase': row['wordform'].lower()}
+                        )
 
-        # Add wordforms that are not in the database
-        if len(existing_wfs) < len(chunk):
-            to_add = []
-            for _, row in chunk.iterrows():
-                if row['wordform'] not in existing_wfs:
-                    total += 1
-                    to_add.append(
-                        {'wordform': row['wordform'],
-                         'wordform_lowercase': row['wordform'].lower()}
-                    )
+                if to_add != []:
+                    bulk_add_wordforms_core(session, to_add, batch_size=batch_size)
 
-            if to_add != []:
-                bulk_add_wordforms_core(session, to_add)
-
-        progress_bar.update(n=num)
+            progress_bar.update(n=batch_size)
 
     logger.info('{} wordforms have been added.'.format(total))
 
     return total
 
 
-def add_lexicon(session, lexicon_name, vocabulary, wfs, num=10000):
+def add_lexicon(session, lexicon_name, vocabulary, wfs, batch_size=10000):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
     """
     logger.info('Adding lexicon.')
 
-    bulk_add_wordforms(session, wfs, num=num)
+    bulk_add_wordforms(session, wfs, batch_size=batch_size)
 
     lexicon = Lexicon(lexicon_name=lexicon_name, vocabulary=vocabulary)
     session.add(lexicon)
@@ -204,16 +203,14 @@ def get_wf_mapping(session, lexicon=None, lexicon_id=None):
     return wf_mapping
 
 
-def bulk_add_anahashes(session, anahashes, tqdm=None, num=10000):
+def bulk_add_anahashes(session, anahashes, tqdm=None, batch_size=10000):
     """anahashes is pandas dataframe with the column wordform (index), anahash
     """
     logger.info('Adding anahashes.')
     # Remove duplicate anahashes
     unique_hashes = anahashes.copy().drop_duplicates(subset='anahash')
-    msg = 'The input data contains {} wordform/anahash pairs.'
-    logger.debug(msg.format(anahashes.shape[0]))
-    msg = 'There are {} unique anahash values.'
-    logger.debug(msg.format(unique_hashes.shape[0]))
+    logger.debug(f'The input data contains {anahashes.shape[0]} wordform/anahash pairs.')
+    logger.debug(f'There are {unique_hashes.shape[0]} unique anahash values.')
 
     total = 0
     anahashes_to_add_file = get_temp_file()
@@ -221,7 +218,7 @@ def bulk_add_anahashes(session, anahashes, tqdm=None, num=10000):
     if tqdm is not None:
         pbar = tqdm(total=unique_hashes.shape[0])
     with open(anahashes_to_add_file, 'w') as f:
-        for chunk in chunk_df(unique_hashes, num=num):
+        for chunk in chunk_df(unique_hashes, batch_size=batch_size):
             # Find out which anahashes are not yet in the database.
             ahs = set(list(chunk['anahash']))
 
@@ -236,6 +233,8 @@ def bulk_add_anahashes(session, anahashes, tqdm=None, num=10000):
                 total += 1
             if tqdm is not None:
                 pbar.update(chunk.shape[0])
+    if tqdm is not None:
+        pbar.close()
 
     bulk_add_anahashes_core(session, read_json_lines(anahashes_to_add_file))
 
@@ -248,32 +247,30 @@ def bulk_add_anahashes(session, anahashes, tqdm=None, num=10000):
 
 def get_anahashes(session, anahashes, wf_mapping, batch_size=50000):
     unique_hashes = anahashes.copy().drop_duplicates(subset='anahash')
-    pbar = tqdm(total=unique_hashes.shape[0], mininterval=2.0)
 
-    ah_mapping = {}
+    with tqdm(total=unique_hashes.shape[0], mininterval=2.0) as pbar:
+        ah_mapping = {}
 
-    for chunk in chunk_df(unique_hashes, num=batch_size):
-        # Find out which anahashes are not yet in the database.
-        ahs = set(list(chunk['anahash']))
+        for chunk in chunk_df(unique_hashes, batch_size=batch_size):
+            # Find out which anahashes are not yet in the database.
+            ahs = set(list(chunk['anahash']))
 
-        s = select([Anahash]).where(Anahash.anahash.in_(ahs))
-        result = session.execute(s).fetchall()
+            s = select([Anahash]).where(Anahash.anahash.in_(ahs))
+            result = session.execute(s).fetchall()
 
-        for ah in result:
-            ah_mapping[ah[1]] = ah[0]
-        pbar.update(chunk.shape[0])
-    pbar.close()
+            for ah in result:
+                ah_mapping[ah[1]] = ah[0]
+            pbar.update(chunk.shape[0])
 
-    pbar = tqdm(total=anahashes.shape[0], mininterval=2.0)
-    for wf, row in anahashes.iterrows():
-        # SQLAlchemy doesn't allow the use of column names in update
-        # statements, so we use something else.
-        yield {'a_id': ah_mapping[row['anahash']], 'wf_id': wf_mapping[wf]}
-        pbar.update(1)
-    pbar.close()
+    with tqdm(total=anahashes.shape[0], mininterval=2.0) as pbar:
+        for wf, row in anahashes.iterrows():
+            # SQLAlchemy doesn't allow the use of column names in update
+            # statements, so we use something else.
+            yield {'a_id': ah_mapping[row['anahash']], 'wf_id': wf_mapping[wf]}
+            pbar.update(1)
 
 
-def connect_anahases_to_wordforms(session, anahashes, df, batch_size=50000):
+def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
     logger.info('Connecting anahashes to wordforms.')
 
     logger.debug('Getting wordform/anahash_id pairs.')
@@ -316,9 +313,9 @@ def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
 
     anahashes = anahash_df(df[['frequency']], alphabet_file)
 
-    bulk_add_anahashes(session, anahashes, tqdm=tqdm, num=batch_size)
+    bulk_add_anahashes(session, anahashes, tqdm=tqdm, batch_size=batch_size)
 
-    connect_anahases_to_wordforms(session, anahashes, wf_mapping, batch_size)
+    connect_anahashes_to_wordforms(session, anahashes, wf_mapping, batch_size)
 
 
 def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
@@ -382,7 +379,7 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
 
     # Create the lexicon (with all the wordforms)
     lexicon = add_lexicon(session, lexicon_name, vocabulary, wordforms,
-                          num=batch_size)
+                          batch_size=batch_size)
 
     wf_mapping = get_wf_mapping(session, lexicon_id=lexicon.lexicon_id)
 
@@ -457,7 +454,7 @@ def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
     if len(dfs) > 0:
         r = pd.concat(dfs)
         r = r.drop_duplicates(subset='wordform')
-        n = bulk_add_wordforms(session, r, disable_pbar=True, num=n_wfs)
+        n = bulk_add_wordforms(session, r, disable_pbar=True, batch_size=n_wfs)
         print('Added {} wordforms'.format(n))
 
     # create corpus
@@ -494,7 +491,7 @@ def create_ticclat_database(delete_existing=False, dbname='ticclat', user="", pa
             else:
                 raise e
 
-    Session = sessionmaker(bind=engine)
+    # Session = sessionmaker(bind=engine)
 
     # create tables
     Base.metadata.create_all(engine)
