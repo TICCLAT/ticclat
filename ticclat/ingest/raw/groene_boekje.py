@@ -10,6 +10,14 @@ import ticclat.ticclat_schema as schema
 
 import tqdm
 
+"""
+This script cleans and ingests raw Groene Boekje CSV files into the TICCLAT
+database.
+
+For reference only. This was developed before we switched to ingesting
+frequency lists from TICCL-unk.
+"""
+
 
 ######################
 # Groene Boekje 1995 #

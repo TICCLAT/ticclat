@@ -20,7 +20,7 @@ from tqdm import tqdm
 from ticclat.ticclat_schema import Wordform, Corpus, Document, \
     TextAttestation, Anahash, corpusId_x_documentId
 from ticclat.utils import chunk_df, write_json_lines, read_json_lines, \
-    get_temp_file, iterate_wf, chunk_json_lines
+    get_temp_file, iterate_wf, chunk_json_lines, count_lines
 
 logger = logging.getLogger(__name__)
 
@@ -59,47 +59,49 @@ def sql_insert(engine, table_object, to_insert):
 
 
 def sql_query_batches(engine, query, iterator, total=0, batch_size=10000):
-    pbar = tqdm(total=total, mininterval=2.0)
-    objects = []
-    for item in iterator:
-        objects.append(item)
-        if len(objects) == batch_size:
+    with tqdm(total=total, mininterval=2.0) as pbar:
+        objects = []
+        for item in iterator:
+            objects.append(item)
+            if len(objects) == batch_size:
+                engine.execute(query, objects)
+                objects = []
+                pbar.update(batch_size)
+        # Doing the insert with an empty list results in adding a row with all
+        # fields to the deafult values, or an error, if fields don't have a default
+        # value. Se, we have to check whether to_add is empty.
+        if objects != []:
             engine.execute(query, objects)
-            objects = []
-            pbar.update(batch_size)
-    # Doing the insert with an empty list results in adding a row with all
-    # fields to the deafult values, or an error, if fields don't have a default
-    # value. Se, we have to check whether to_add is empty.
-    if objects != []:
-        engine.execute(query, objects)
-        pbar.update(len(objects))
-    pbar.close()
+            pbar.update(len(objects))
 
 
-def sql_insert_batches(engine, table_object, iterator, batch_size=10000):
-    to_add = []
-    for item in iterator:
-        to_add.append(item)
-        if len(to_add) == batch_size:
+def sql_insert_batches(engine, table_object, iterator, total=0, batch_size=10000):
+    with tqdm(total=total, mininterval=2.0) as pbar:
+        to_add = []
+        for item in iterator:
+            to_add.append(item)
+            if len(to_add) == batch_size:
+                sql_insert(engine, table_object, to_add)
+                to_add = []
+                pbar.update(batch_size)
+        # Doing the insert with an empty list results in adding a row with all
+        # fields to the deafult values, or an error, if fields don't have a default
+        # value. Se, we have to check whether to_add is empty.
+        if to_add != []:
             sql_insert(engine, table_object, to_add)
-            to_add = []
-    # Doing the insert with an empty list results in adding a row with all
-    # fields to the deafult values, or an error, if fields don't have a default
-    # value. Se, we have to check whether to_add is empty.
-    if to_add != []:
-        sql_insert(engine, table_object, to_add)
+            pbar.update(len(to_add))
 
 
 def bulk_add_wordforms_core(engine, iterator, batch_size=50000):
-    sql_insert_batches(engine, Wordform, iterator, batch_size)
+    sql_insert_batches(engine, Wordform, iterator, batch_size=batch_size)
 
 
-def bulk_add_textattestations_core(engine, iterator, batch_size=50000):
-    sql_insert_batches(engine, TextAttestation, iterator, batch_size)
+def bulk_add_textattestations_core(engine, iterator, total=0, batch_size=50000):
+    sql_insert_batches(engine, TextAttestation, iterator, total=total, batch_size=batch_size)
 
 
 def bulk_add_anahashes_core(engine, iterator, batch_size=50000):
-    sql_insert_batches(engine, Anahash, iterator, batch_size)
+    sql_insert_batches(engine, Anahash, iterator, batch_size=batch_size)
 
 
 def select_wordforms(session, iterator):
@@ -127,7 +129,7 @@ def get_tas(corpus, doc_ids, wf_mapping, p):
 
 
 def add_corpus_core(session, corpus_matrix, vectorizer, corpus_name,
-                    document_metadata=pd.DataFrame()):
+                    document_metadata=pd.DataFrame(), batch_size=50000):
     wf_file = get_temp_file()
     write_json_lines(wf_file, iterate_wf(vectorizer.vocabulary_))
 
@@ -143,23 +145,23 @@ def add_corpus_core(session, corpus_matrix, vectorizer, corpus_name,
 
     # Determine which wordforms in the vocabulary need to be added to the
     # database
-    num = 50000
-
     logger.info('Determine which wordforms need to be added')
     wf_to_add_file = get_temp_file()
     with open(wf_to_add_file, 'w') as f:
-        for chunk in chunk_json_lines(wf_file, num=num):
-            # Find out which wordwordforms are not yet in the database
-            wordforms = set([wf['wordform'] for wf in chunk])
-            s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
-            result = session.execute(s).fetchall()
+        with tqdm(total=count_lines(wf_file)) as pbar:
+            for chunk in chunk_json_lines(wf_file, batch_size=batch_size):
+                # Find out which wordwordforms are not yet in the database
+                wordforms = set([wf['wordform'] for wf in chunk])
+                s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
+                result = session.execute(s).fetchall()
 
-            # wf: (id, wordform, anahash_id, wordform_lowercase)
-            existing_wfs = set([wf[1] for wf in result])
-            for wf in wordforms.difference(existing_wfs):
-                f.write(json.dumps({'wordform': wf,
-                                    'wordform_lowercase': wf.lower()}))
-                f.write('\n')
+                # wf: (id, wordform, anahash_id, wordform_lowercase)
+                existing_wfs = set([wf[1] for wf in result])
+                for wf in wordforms.difference(existing_wfs):
+                    f.write(json.dumps({'wordform': wf,
+                                        'wordform_lowercase': wf.lower()}))
+                    f.write('\n')
+                pbar.update(batch_size)
 
     # Create the corpus (in a session) and get the ID
     logger.info('Creating the corpus')
@@ -214,8 +216,9 @@ def add_corpus_core(session, corpus_matrix, vectorizer, corpus_name,
     write_json_lines(ta_file, get_tas(corpus_matrix, doc_ids, wf_mapping, p))
 
     logger.info('Adding the text attestations')
+    total = count_lines(ta_file)
     bulk_add_textattestations_core(session, read_json_lines(ta_file),
-                                   batch_size=250000)
+                                   total=total, batch_size=batch_size)
 
     # remove temp data
     os.remove(wf_file)

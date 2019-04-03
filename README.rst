@@ -26,6 +26,29 @@ Run tests (including coverage) with:
   python setup.py test
 
 
+Setup MySQL
+***********
+
+Configure server
+----------------
+Run `sudo mysql_secure_installation`_ with the following choices:
+
+* Validate passwords: no
+* Root password: pick one
+* Remove anonymous users: yes
+* Disallow root login remotely: no
+* Remove test database and access to it: yes
+* Reload privilege tables now: yes
+
+To run the ingestion script (e.g. the elex lexicon ingestion), the maximum package size has to be high enough.
+We set it to 41943040 (4194304 was not enough) by setting the following line in `/etc/my.cnf`_:
+
+.. code-block:: console
+
+  [mysqld]
+  max_allowed_packet = 42M
+
+
 Documentation
 *************
 

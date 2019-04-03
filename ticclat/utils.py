@@ -56,16 +56,16 @@ def anahash_df(wfreq, alphabet_file):
     return anahashes
 
 
-def chunk_df(df, num=1000):
+def chunk_df(df, batch_size=1000):
     """Generator that returns about equally size chunks from a pandas DataFrame
 
     Inputs:
         df (DataFrame): the DataFrame to be chunked
-        num (int, default 10000): the approximate number of records that will
+        batch_size (int, default 10000): the approximate number of records that will
             be in each chunk
     """
-    if df.shape[0] > num:
-        n = df.shape[0] // num
+    if df.shape[0] > batch_size:
+        n = df.shape[0] // batch_size
     else:
         n = 1
 
@@ -100,6 +100,15 @@ def json_line(obj):
     return '{}\n'.format(json.dumps(obj))
 
 
+from itertools import takewhile, repeat
+
+def count_lines(filename):
+    """From https://stackoverflow.com/a/27518377/1199693"""
+    f = open(filename, 'rb')
+    bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
+    return sum( buf.count(b'\n') for buf in bufgen )
+
+
 def read_json_lines(fname):
     """Generator that reads a dictionary per line from a file
 
@@ -120,13 +129,13 @@ def read_json_lines(fname):
             yield json.loads(line)
 
 
-def chunk_json_lines(fname, num=1000):
+def chunk_json_lines(fname, batch_size=1000):
     res = []
     i = 0
     for obj in read_json_lines(fname):
         res.append(obj)
         i += 1
-        if i == num:
+        if i == batch_size:
             yield res
             res = []
             i = 0
@@ -149,3 +158,9 @@ def get_temp_file():
 def iterate_wf(lst):
     for wf in lst:
         yield {'wordform': wf}
+
+
+def set_logger(level='INFO'):
+    logging.basicConfig(format="%(asctime)s [%(process)d] %(levelname)-8s "
+                        "%(name)s,%(lineno)s\t%(message)s")
+    logging.getLogger().setLevel(level)
