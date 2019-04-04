@@ -1,18 +1,21 @@
-from ticclat.ingest import elex, gb, opentaal, sonar
+from ticclat.ingest import elex, gb, opentaal, sonar, twente_spelling_correction_list, inl
 import logging
 
 
 logger = logging.getLogger(__name__)
 
 
-all_sources = {'SoNaR500': sonar,
-               'elex': elex,
-               'groene boekje': gb,
-               'OpenTaal': opentaal,
-               }
+all_sources = {
+    'twente': twente_spelling_correction_list,
+    'inl': inl,
+    'SoNaR500': sonar,
+    'elex': elex,
+    'groene boekje': gb,
+    'OpenTaal': opentaal,
+}
 
 
-def ingest_all(session, base_dir='/data/ponyland_mreynaert_TICCLAT',
+def ingest_all(session, base_dir='/data',
                include=[], exclude=[], **kwargs):
     if len(include) > 0 and len(exclude) > 0:
         raise Exception("ingest_all: Don't use include and exclude at the same time!")
