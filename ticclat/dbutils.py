@@ -42,9 +42,9 @@ def session_scope(s):
         session.close()
 
 
-def get_session(user, password, dbname,
-                dburl='mysql://{}:{}@localhost/{}?charset=utf8mb4'):
-    engine = create_engine(dburl.format(user, password, dbname))
+def get_session(user, password, dbname, host='localhost',
+                dburl='mysql://{}:{}@{}/{}?charset=utf8mb4'):
+    engine = create_engine(dburl.format(user, password, host, dbname))
 
     return sessionmaker(bind=engine)
 
