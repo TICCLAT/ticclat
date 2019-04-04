@@ -29,8 +29,8 @@ Run tests (including coverage) with:
 Setup MySQL
 ***********
 
-Configure server
-----------------
+Server security
+---------------
 Run `sudo mysql_secure_installation`_ with the following choices:
 
 * Validate passwords: no
@@ -39,6 +39,24 @@ Run `sudo mysql_secure_installation`_ with the following choices:
 * Disallow root login remotely: no
 * Remove test database and access to it: yes
 * Reload privilege tables now: yes
+
+To allow login as any user with the root password set above, you have to switch the authentication plugin for root to `mysql_native_password`_.
+You can check with
+
+.. code-block:: mysql
+
+  SELECT plugin from mysql.user where User='root';
+
+what plugin you are using currently.
+If it is auth_socket (default on Ubuntu), you can only login as root if you are running `mysql`_ as the Unix root user, e.g. by running with `sudo`_.
+To change it to `mysql_native_password`_, start `mysql -u root`_ and run
+
+.. code-block:: mysql
+
+  UPDATE mysql.user SET plugin = 'mysql_native_password' WHERE User = 'root';
+
+Other settings
+--------------
 
 To run the ingestion script (e.g. the elex lexicon ingestion), the maximum package size has to be high enough.
 We set it to 41943040 (4194304 was not enough) by setting the following line in `/etc/my.cnf`_:
