@@ -31,7 +31,7 @@ Setup MySQL
 
 Server security
 ---------------
-Run `sudo mysql_secure_installation`_ with the following choices:
+Run `sudo mysql_secure_installation` with the following choices:
 
 * Validate passwords: no
 * Root password: pick one
@@ -40,7 +40,9 @@ Run `sudo mysql_secure_installation`_ with the following choices:
 * Remove test database and access to it: yes
 * Reload privilege tables now: yes
 
-To allow login as any user with the root password set above, you have to switch the authentication plugin for root to `mysql_native_password`_.
+To allow login as any user with the root password set above,
+you have to switch the authentication plugin for root to
+`mysql_native_password`.
 You can check with
 
 .. code-block:: mysql
@@ -48,18 +50,32 @@ You can check with
   SELECT plugin from mysql.user where User='root';
 
 what plugin you are using currently.
-If it is auth_socket (default on Ubuntu), you can only login as root if you are running `mysql`_ as the Unix root user, e.g. by running with `sudo`_.
-To change it to `mysql_native_password`_, start `mysql -u root`_ and run
+If it is auth_socket (default on Ubuntu), you can only login
+as root if you are running `mysql` as the Unix root user,
+e.g. by running with `sudo`.
+To change it to `mysql_native_password`, start `mysql -u root` and run
 
 .. code-block:: mysql
 
   UPDATE mysql.user SET plugin = 'mysql_native_password' WHERE User = 'root';
 
+To make this authentication plugin the default, add the following
+to `/etc/my.cnf` (or another `my.cnf` location, run
+`mysqladmin --help` to see the locations that `mysqld` looks for):
+
+.. code-block:: console
+
+  [mysqld]
+  default-authentication-plugin = mysql_native_password
+
+
 Other settings
 --------------
 
-To run the ingestion script (e.g. the elex lexicon ingestion), the maximum package size has to be high enough.
-We set it to 41943040 (4194304 was not enough) by setting the following line in `/etc/my.cnf`_:
+To run the ingestion script (e.g. the elex lexicon ingestion),
+the maximum package size has to be high enough.
+We set it to 41943040 (4194304 was not enough) by setting
+the following line in `/etc/my.cnf`:
 
 .. code-block:: console
 
