@@ -325,7 +325,7 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
     num_wf_link_sources = 0
     with open(wfl_file, 'w') as links, open(wfls_file, 'w') as sources:
         wf_links = defaultdict(bool)
-        for idx, row in tqdm(links_df.iterrows(), total=links_df.shape[0]):
+        for _, row in tqdm(links_df.iterrows(), total=links_df.shape[0]):
             wf_from = wf_mapping[row[wf_from_name]]
             wf_to = wf_mapping[row[wf_to_name]]
 
@@ -479,7 +479,6 @@ def create_ticclat_database(delete_existing=False, dbname='ticclat', user="", pa
     with db.cursor() as cursor:
         try:
             cursor.execute(f"CREATE DATABASE {dbname} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
-            result = cursor.fetchall()
         except MySQLdb.ProgrammingError as e:
             if database_exists(engine.url):
                 if not delete_existing:
@@ -487,7 +486,6 @@ def create_ticclat_database(delete_existing=False, dbname='ticclat', user="", pa
                 else:
                     drop_database(engine.url)
                     cursor.execute(f"CREATE DATABASE {dbname} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
-                    result = cursor.fetchall()
             else:
                 raise e
 
