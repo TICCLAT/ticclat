@@ -43,10 +43,13 @@ def run(envvars_path='ENVVARS.txt', db_name='ticclat', reset_db=False,
                 os.environ[parts[0]] = parts[1].strip()
     
     os.environ['dbname'] = db_name
+    if 'host' not in os.environ.keys():
+        os.environ['host'] = 'localhost'
 
     if reset_db:
         create_ticclat_database(delete_existing=True, dbname=os.environ['dbname'],
-                                user=os.environ['user'], passwd=os.environ['password'])
+                                user=os.environ['user'], passwd=os.environ['password'],
+                                host=os.environ['host'])
 
     Session = get_session(os.environ['user'], os.environ['password'], os.environ['dbname'])
 
