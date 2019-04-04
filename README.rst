@@ -29,9 +29,9 @@ Run tests (including coverage) with:
 Setup MySQL
 ***********
 
-Configure server
-----------------
-Run `sudo mysql_secure_installation`_ with the following choices:
+Server security
+---------------
+Run `sudo mysql_secure_installation` with the following choices:
 
 * Validate passwords: no
 * Root password: pick one
@@ -40,13 +40,58 @@ Run `sudo mysql_secure_installation`_ with the following choices:
 * Remove test database and access to it: yes
 * Reload privilege tables now: yes
 
-To run the ingestion script (e.g. the elex lexicon ingestion), the maximum package size has to be high enough.
-We set it to 41943040 (4194304 was not enough) by setting the following line in `/etc/my.cnf`_:
+To allow login as any user with the root password set above,
+you have to switch the authentication plugin for root to
+`mysql_native_password`.
+You can check with
+
+.. code-block:: mysql
+
+  SELECT plugin from mysql.user where User='root';
+
+what plugin you are using currently.
+If it is auth_socket (default on Ubuntu), you can only login
+as root if you are running `mysql` as the Unix root user,
+e.g. by running with `sudo`.
+To change it to `mysql_native_password`, start `mysql -u root` and run
+
+.. code-block:: mysql
+
+  UPDATE mysql.user SET plugin = 'mysql_native_password' WHERE User = 'root';
+
+To make this authentication plugin the default, add the following
+to `/etc/my.cnf` (or another `my.cnf` location, run
+`mysqladmin --help` to see the locations that `mysqld` looks for):
+
+.. code-block:: console
+
+  [mysqld]
+  default-authentication-plugin = mysql_native_password
+
+
+Other settings
+--------------
+
+To run the ingestion script (e.g. the elex lexicon ingestion),
+the maximum package size has to be high enough.
+We set it to 41943040 (4194304 was not enough) by setting
+the following line in `/etc/my.cnf`:
 
 .. code-block:: console
 
   [mysqld]
   max_allowed_packet = 42M
+
+
+Ubuntu
+------
+
+On Ubuntu 18.04, the default mysqld settings in
+`/etc/mysql/mysql.conf.d/mysqld.cnf`
+set the socket to a non-standard location that confuses all the default values
+in MySQLdb.
+Change it to `/tmp/mysql.sock` if you get `OperationError: 2006 ...` when
+running `ticclat` tasks like ingesting corpora or lexica.
 
 
 Documentation

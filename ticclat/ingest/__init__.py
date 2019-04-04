@@ -1,18 +1,21 @@
-from ticclat.ingest import elex, gb, opentaal, sonar
+from ticclat.ingest import elex, gb, opentaal, sonar, twente_spelling_correction_list, inl
 import logging
 
 
 logger = logging.getLogger(__name__)
 
 
-all_sources = {'SoNaR500': sonar,
-               'elex': elex,
-               'groene boekje': gb,
-               'OpenTaal': opentaal,
-               }
+all_sources = {
+    'twente': twente_spelling_correction_list,
+    'inl': inl,
+    'SoNaR500': sonar,
+    'elex': elex,
+    'groene boekje': gb,
+    'OpenTaal': opentaal,
+}
 
 
-def ingest_all(session, base_dir='/data/ponyland_mreynaert_TICCLAT',
+def ingest_all(session, base_dir='/data',
                include=[], exclude=[], **kwargs):
     if len(include) > 0 and len(exclude) > 0:
         raise Exception("ingest_all: Don't use include and exclude at the same time!")
@@ -43,10 +46,13 @@ def run(envvars_path='ENVVARS.txt', db_name='ticclat', reset_db=False,
                 os.environ[parts[0]] = parts[1].strip()
     
     os.environ['dbname'] = db_name
+    if 'host' not in os.environ.keys():
+        os.environ['host'] = 'localhost'
 
     if reset_db:
         create_ticclat_database(delete_existing=True, dbname=os.environ['dbname'],
-                                user=os.environ['user'], passwd=os.environ['password'])
+                                user=os.environ['user'], passwd=os.environ['password'],
+                                host=os.environ['host'])
 
     Session = get_session(os.environ['user'], os.environ['password'], os.environ['dbname'])
 
