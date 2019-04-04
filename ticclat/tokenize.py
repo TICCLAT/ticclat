@@ -53,24 +53,33 @@ def do_nothing(list_of_words):
     return list_of_words
 
 
-def terms_documents_matrix_counters(corpus):
-    """Returns a terms document matrix corpus and related objects of a corpus
+def terms_documents_matrix_word_lists(word_lists):
+    """Returns a terms document matrix and related objects of a corpus
 
     Inputs:
-        tokenizer: generator that returns an iterator of term vectors
-            (Counters), e.g., nltk_tokenize
+        word_lists: iterator over lists of words
     Returns:
         corpus: a sparse terms documents matrix
         v: the vecorizer object containing the vocabulary (i.e., all word forms
             in the corpus)
     """
     v = CountVectorizer(tokenizer=do_nothing, lowercase=False)
-    corpus = v.fit_transform(corpus)
+    corpus = v.fit_transform(word_lists)
 
     return corpus, v
 
 
 def terms_documents_matrix_ticcl_frequency(in_files):
+    """Returns a terms document matrix and related objects of a corpus
+
+    Inputs:
+        in_files: list of ticcl frequency files (one per document in the
+            corpus)
+    Returns:
+        corpus: a sparse terms documents matrix
+        v: the vecorizer object containing the vocabulary (i.e., all word forms
+            in the corpus)
+    """
     v = DictVectorizer()
     corpus = v.fit_transform(ticcl_frequency_bz2(in_files))
 
