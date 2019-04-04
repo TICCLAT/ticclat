@@ -83,6 +83,16 @@ the following line in `/etc/my.cnf`:
   max_allowed_packet = 42M
 
 
+Ubuntu
+------
+
+On Ubuntu 18.04, the default mysqld settings in `/etc/mysql/mysql.conf.d/mysqld.cnf`
+set the socket to a non-standard location that confuses all the default values in
+MySQLdb.
+Change it to `/tmp/mysql.sock` if you get `OperationError: 2006 ...` when running
+`ticclat` tasks like ingesting corpora or lexica.
+
+
 Documentation
 *************
 
