@@ -226,6 +226,21 @@ def test_update_anahashes(dbsession, datafiles):
         assert wf.anahash_id == a
 
 
+@pytest.mark.skip(reason='Install TICCL before testing this.')
+@pytest.mark.datafiles(os.path.join(data_dir(), 'alphabet'))
+def test_update_anahashes_empty_wf(dbsession, datafiles):
+    wfs = pd.DataFrame()
+    wfs['wordform'] = ['wf-a', 'wf-b', 'wf-c', ' ']
+
+    alphabet_file = datafiles.listdir()[0]
+
+    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+
+    # make sure ticcl doesn't choke on the empty wordform (it must not be added
+    # to the database)
+    update_anahashes(dbsession, alphabet_file)
+
+
 @pytest.mark.datafiles(os.path.join(data_dir(), 'alphabet'))
 def test_update_anahashes_nothing_to_update(dbsession, datafiles):
     wfs = pd.DataFrame()
