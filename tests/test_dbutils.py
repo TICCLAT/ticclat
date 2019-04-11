@@ -72,6 +72,19 @@ def test_bulk_add_wordforms_not_unique(dbsession):
     assert len(wrdfrms) == 2
 
 
+def test_bulk_add_wordforms_whitespace(dbsession):
+    wfs = pd.DataFrame()
+    wfs['wordform'] = ['wf1 ', '  wf2', ' ', '    \t']
+
+    print(dbsession)
+
+    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+
+    wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
+
+    assert len(wrdfrms) == 2
+
+
 def test_add_lexicon(dbsession):
     name = 'test lexicon'
 
