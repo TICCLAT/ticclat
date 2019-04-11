@@ -31,6 +31,7 @@ def ingest_all(session, base_dir='/data',
         source.ingest(session, base_dir=base_dir, **kwargs)
 
 
+# For testing use db_name='ticclat_test'
 def run(envvars_path='ENVVARS.txt', db_name='ticclat', reset_db=False,
         alphabet_file='/data/ticcl/nld.aspell.dict.lc.chars', batch_size=5000,
         include=[], exclude=[], ingest=True, anahash=True, **kwargs):
