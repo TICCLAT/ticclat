@@ -11,9 +11,9 @@ from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, \
     WordformLinkSource
 from ticclat.utils import read_json_lines
 from ticclat.dbutils import bulk_add_wordforms, add_lexicon, \
-    get_word_frequency_df, bulk_add_anahashes, connect_anahases_to_wordforms, \
-    update_anahashes, get_wf_mapping, add_lexicon_with_links, \
-    write_wf_links_data
+    get_word_frequency_df, bulk_add_anahashes, \
+    connect_anahashes_to_wordforms, update_anahashes, get_wf_mapping, \
+    add_lexicon_with_links, write_wf_links_data
 
 from . import data_dir
 
@@ -147,7 +147,7 @@ def test_bulk_add_anahashes(dbsession):
     assert [a.anahash for a in ahs] == list(a['anahash'])
 
 
-def test_connect_anahases_to_wordforms(dbsession):
+def test_connect_anahashes_to_wordforms(dbsession):
     wfs = pd.DataFrame()
     wfs['wordform'] = ['wf1', 'wf2', 'wf3']
 
@@ -161,14 +161,14 @@ def test_connect_anahases_to_wordforms(dbsession):
 
     bulk_add_anahashes(dbsession, a)
 
-    connect_anahases_to_wordforms(dbsession, a, wf_mapping)
+    connect_anahashes_to_wordforms(dbsession, a, wf_mapping)
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
     assert [wf.anahash.anahash for wf in wrdfrms] == list(a['anahash'])
 
 
-def test_connect_anahases_to_wordforms_empty(dbsession):
+def test_connect_anahashes_to_wordforms_empty(dbsession):
     wfs = pd.DataFrame()
     wfs['wordform'] = ['wf1', 'wf2', 'wf3']
 
@@ -179,11 +179,11 @@ def test_connect_anahases_to_wordforms_empty(dbsession):
 
     bulk_add_anahashes(dbsession, a)
 
-    connect_anahases_to_wordforms(dbsession, a, a['anahash'].to_dict())
+    connect_anahashes_to_wordforms(dbsession, a, a['anahash'].to_dict())
 
     # nothing was updated the second time around (the values didn't change)
     # (and there is no error when running this)
-    connect_anahases_to_wordforms(dbsession, a, a['anahash'].to_dict())
+    connect_anahashes_to_wordforms(dbsession, a, a['anahash'].to_dict())
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
@@ -219,7 +219,7 @@ def test_update_anahashes(dbsession, datafiles):
     # Three anahashes were added
     assert len(anahashes) == 3
 
-    # The anahases are connected to the correct wordforms
+    # The anahashes are connected to the correct wordforms
     for wf, a in zip(wrdfrms, (3, 2, 1)):
         assert wf.anahash_id == a
 
@@ -236,7 +236,7 @@ def test_update_anahashes_nothing_to_update(dbsession, datafiles):
 
     bulk_add_anahashes(dbsession, a)
 
-    connect_anahases_to_wordforms(dbsession, a, a['anahash'].to_dict())
+    connect_anahashes_to_wordforms(dbsession, a, a['anahash'].to_dict())
     alphabet_file = datafiles.listdir()[0]
     update_anahashes(dbsession, alphabet_file)
 
