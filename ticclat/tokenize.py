@@ -47,7 +47,9 @@ def ticcl_frequency(in_files, max_word_length=255):
 
         with file_open as f:
             for line in f:
-                word, freq = line.split()
+                # Sometimes a word contains a space, so we split only on tab.
+                word, freq = line.split('\t')
+
                 # The corpus may contain wordforms that are too long
                 if len(word) <= max_word_length:
                     c[word] = int(freq)
