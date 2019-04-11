@@ -1,4 +1,5 @@
-from ticclat.ingest import elex, gb, opentaal, sonar, twente_spelling_correction_list, inl
+from ticclat.ingest import elex, gb, opentaal, sonar, inl, sgd, edbo, \
+    twente_spelling_correction_list
 import logging
 
 
@@ -12,6 +13,8 @@ all_sources = {
     'elex': elex,
     'groene boekje': gb,
     'OpenTaal': opentaal,
+    'sgd': sgd,
+    'edbo': edbo,
 }
 
 
