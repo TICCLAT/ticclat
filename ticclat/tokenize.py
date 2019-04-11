@@ -37,10 +37,15 @@ def nltk_tokenize(texts_file, punkt='tokenizers/punkt/dutch.pickle'):
             yield list(chain(*tokens))
 
 
-def ticcl_frequency_bz2(in_files, max_word_length=255):
+def ticcl_frequency(in_files, max_word_length=255):
     for freq_file in in_files:
         c = {}
-        with bz2.open(freq_file, 'rt') as f:
+        if freq_file.endswith('bz2'):
+            file_open = bz2.open(freq_file, 'rt')
+        else:
+            file_open = open(freq_file)
+
+        with file_open as f:
             for line in f:
                 word, freq = line.split()
                 # The corpus may contain wordforms that are too long
@@ -81,6 +86,6 @@ def terms_documents_matrix_ticcl_frequency(in_files):
             in the corpus)
     """
     v = DictVectorizer()
-    corpus = v.fit_transform(ticcl_frequency_bz2(in_files))
+    corpus = v.fit_transform(ticcl_frequency(in_files))
 
     return corpus, v
