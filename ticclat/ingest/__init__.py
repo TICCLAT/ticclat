@@ -22,7 +22,7 @@ def ingest_all(session, base_dir='/data',
     elif len(include) > 0:
         sources = {k: all_sources[k] for k in include}
     elif len(exclude) > 0:
-        sources = {k: v for k, v in all_sources if k not in exclude}
+        sources = {k: v for k, v in all_sources.items() if k not in exclude}
     else:
         sources = all_sources
 
@@ -44,7 +44,7 @@ def run(envvars_path='ENVVARS.txt', db_name='ticclat', reset_db=False,
             parts = line.split('=')
             if len(parts) == 2:
                 os.environ[parts[0]] = parts[1].strip()
-    
+
     os.environ['dbname'] = db_name
     if 'host' not in os.environ.keys():
         os.environ['host'] = 'localhost'
