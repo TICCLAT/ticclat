@@ -83,6 +83,8 @@ def test_bulk_add_wordforms_whitespace(dbsession):
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
     assert len(wrdfrms) == 2
+    assert wrdfrms[0].wordform == 'wf1'
+    assert wrdfrms[1].wordform == 'wf2'
 
 
 def test_add_lexicon(dbsession):

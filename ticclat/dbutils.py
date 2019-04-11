@@ -80,7 +80,7 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
     logger.info('Bulk adding wordforms.')
 
     # remove whitespace from wordforms
-    wfs['wordform'].str.strip()
+    wfs['wordform'] = wfs['wordform'].str.strip()
 
     # remove empty entries
     wfs['wordform'].replace('', np.nan, inplace=True)
