@@ -12,7 +12,7 @@ def ingest(session, base_dir='',
     The file notebooks/ingest/lexicon_to_ticclat.ipynb shows how this can be
     done (basically: dump the wfs DataFrame to csv).
     """
-    wfs = pd.read_csv(os.path.join(base_dir, inl_file))
+    wfs = pd.read_csv(os.path.join(base_dir, inl_file), keep_default_na=False)
 
     with session_scope(session) as s:
         name = 'INL_EE3-5_Dutch_IR'
