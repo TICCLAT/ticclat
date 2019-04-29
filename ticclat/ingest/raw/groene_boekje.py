@@ -177,7 +177,7 @@ def create_GB95_link_df(df_GB1995):
 
 if __name__ == '__main__':
     # basic config
-    db_name = 'ticclat'
+    db_name = 'ticclat_test'
     GB_basepath = "/Users/pbos/projects/ticclat/data/GB/"
     envvars_path = '/Users/pbos/projects/ticclat/ticclat/notebooks/ticclat_db_ingestion/ENVVARS.txt'
 
