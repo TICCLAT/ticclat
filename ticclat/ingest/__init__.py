@@ -1,4 +1,5 @@
-from ticclat.ingest import elex, gb, opentaal, sonar, twente_spelling_correction_list, inl
+from ticclat.ingest import elex, gb, opentaal, sonar, inl, sgd, edbo, \
+    twente_spelling_correction_list
 import logging
 
 
@@ -12,6 +13,8 @@ all_sources = {
     'elex': elex,
     'groene boekje': gb,
     'OpenTaal': opentaal,
+    'sgd': sgd,
+    'edbo': edbo,
 }
 
 
@@ -22,7 +25,7 @@ def ingest_all(session, base_dir='/data',
     elif len(include) > 0:
         sources = {k: all_sources[k] for k in include}
     elif len(exclude) > 0:
-        sources = {k: v for k, v in all_sources if k not in exclude}
+        sources = {k: v for k, v in all_sources.items() if k not in exclude}
     else:
         sources = all_sources
 
@@ -31,6 +34,7 @@ def ingest_all(session, base_dir='/data',
         source.ingest(session, base_dir=base_dir, **kwargs)
 
 
+# For testing use db_name='ticclat_test'
 def run(envvars_path='ENVVARS.txt', db_name='ticclat', reset_db=False,
         alphabet_file='/data/ticcl/nld.aspell.dict.lc.chars', batch_size=5000,
         include=[], exclude=[], ingest=True, anahash=True, **kwargs):
@@ -44,7 +48,7 @@ def run(envvars_path='ENVVARS.txt', db_name='ticclat', reset_db=False,
             parts = line.split('=')
             if len(parts) == 2:
                 os.environ[parts[0]] = parts[1].strip()
-    
+
     os.environ['dbname'] = db_name
     if 'host' not in os.environ.keys():
         os.environ['host'] = 'localhost'

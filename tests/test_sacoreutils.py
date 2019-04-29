@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 
 from ticclat.ticclat_schema import Wordform, Corpus
-from ticclat.tokenize import nltk_tokenize, terms_documents_matrix_counters
+from ticclat.tokenize import nltk_tokenize, terms_documents_matrix_word_lists
 
 from ticclat.sacoreutils import add_corpus_core
 
@@ -19,7 +19,7 @@ def test_add_corpus_core_nltk(dbsession, datafiles):
     texts_iterator = nltk_tokenize(texts_file)
     corpus_name = 'test corpus'
 
-    corpus_m, v = terms_documents_matrix_counters(texts_iterator)
+    corpus_m, v = terms_documents_matrix_word_lists(texts_iterator)
 
     add_corpus_core(dbsession, corpus_m, v, corpus_name, pd.DataFrame())
 

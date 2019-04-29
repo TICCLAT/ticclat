@@ -1,6 +1,8 @@
 import os
 import json
 import logging
+
+import numpy as np
 import pandas as pd
 
 from contextlib import contextmanager
@@ -76,6 +78,13 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
     in this case just "wordform"
     """
     logger.info('Bulk adding wordforms.')
+
+    # remove whitespace from wordforms
+    wfs['wordform'] = wfs['wordform'].str.strip()
+
+    # remove empty entries
+    wfs['wordform'].replace('', np.nan, inplace=True)
+    wfs.dropna(subset=['wordform'], inplace=True)
 
     if not wfs['wordform'].is_unique:
         logger.info('The wordform-column contains duplicate entries. '

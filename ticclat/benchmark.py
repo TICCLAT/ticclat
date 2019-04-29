@@ -9,7 +9,7 @@ from faker import Faker
 
 from ticclat.tokenize import terms_documents_matrix_word_lists
 from ticclat.sacoreutils import add_corpus_core
-from ticclat.dbutils import add_lexicon
+from ticclat.dbutils import add_lexicon, add_lexicon_with_links
 
 logger = logging.getLogger(__name__)
 
@@ -78,3 +78,40 @@ def ingest_lexica(session, num_lexica, num_wf_min, num_wf_max, vocabulary):
         name = f'Lexicon {i}'
         logger.info(f'Generating {name}')
         add_lexicon(session, lexicon_name=name, vocabulary=True, wfs=wfs)
+
+
+def generate_linked_lexica(num_lexica, num_wf_min, num_wf_max, vocabulary):
+    fake = Faker()
+    for i in range(num_lexica):
+        num_wf = np.random.randint(num_wf_min, num_wf_max)
+        if num_wf % 2 != 0:
+            num_wf += 1
+
+        words = fake.words(nb=num_wf, ext_word_list=vocabulary, unique=True)
+
+        half = int(num_wf/2)
+
+        wfs = pd.DataFrame()
+        wfs['from'] = words[:half]
+        wfs['to'] = words[half:]
+        yield wfs
+
+
+def ingest_linked_lexica(session, num_lexica, num_wf_min, num_wf_max,
+                         vocabulary):
+    lexica = generate_linked_lexica(num_lexica, num_wf_min, num_wf_max+1,
+                                    vocabulary)
+
+    for i, wfs in enumerate(lexica):
+        name = f'Linked lexicon {i}'
+
+        is_vocabulary = np.random.rand() > .5
+        from_correct = is_vocabulary
+        print(name, 'is_vocabulary:', is_vocabulary)
+
+        logger.info(f'Generating {name} (is vocabulary: {is_vocabulary})')
+
+        add_lexicon_with_links(session, lexicon_name=name,
+                               vocabulary=is_vocabulary, wfs=wfs,
+                               from_column='from', to_column='to',
+                               from_correct=from_correct, to_correct=True)
