@@ -38,11 +38,15 @@ def ingest_all(session, base_dir='/data',
 # For testing use db_name='ticclat_test', for production db_name='ticclat'
 def run(envvars_path='ENVVARS.txt', db_name='ticclat_test', reset_db=False,
         alphabet_file='/data/ticcl/nld.aspell.dict.lc.chars', batch_size=5000,
-        include=[], exclude=[], ingest=True, anahash=True, **kwargs):
+        include=[], exclude=[], ingest=True, anahash=True, tmpdir=None,
+        **kwargs):
     # Read information to connect to the database and put it in environment variables
     import os
     from ticclat.dbutils import create_ticclat_database, get_session, update_anahashes, session_scope
     from tqdm import tqdm
+    import tempfile
+    
+    tempfile.tempdir = tmpdir
 
     with open(envvars_path) as f:
         for line in f:
