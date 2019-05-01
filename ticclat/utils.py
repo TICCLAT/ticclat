@@ -73,7 +73,7 @@ def chunk_df(df, batch_size=1000):
         yield chunk
 
 
-def write_json_lines(fname, generator):
+def write_json_lines(fh, generator):
     """Write a sequence of dictionaries to file, one dictionary per line
 
     This can be used when doing mass inserts (i.e., inserts not using the ORM)
@@ -81,18 +81,17 @@ def write_json_lines(fname, generator):
     it can be read (using ``read_json_lines``) without using a lot of memory.
 
     Inputs:
-        fname (str): Path to the file to save the data to
+        fh: File handle of the file to save the data to
         generator (generator): Generator that produces objects to write to file
 
     Returns:
         int: the number of records written.
     """
     total = 0
-    with open(fname, 'w') as f:
-        for obj in generator:
-            f.write(json_line(obj))
+    for obj in generator:
+        fh.write(json_line(obj))
 
-            total += 1
+        total += 1
     return total
 
 
@@ -102,14 +101,14 @@ def json_line(obj):
 
 from itertools import takewhile, repeat
 
-def count_lines(filename):
+def count_lines(fh):
     """From https://stackoverflow.com/a/27518377/1199693"""
-    f = open(filename, 'rb')
-    bufgen = takewhile(lambda x: x, (f.raw.read(1024*1024) for _ in repeat(None)))
+    fh.seek(0)
+    bufgen = takewhile(lambda x: x, (fh.raw.read(1024*1024) for _ in repeat(None)))
     return sum( buf.count(b'\n') for buf in bufgen )
 
 
-def read_json_lines(fname):
+def read_json_lines(fh):
     """Generator that reads a dictionary per line from a file
 
     This can be used when doing mass inserts (i.e., inserts not using the ORM)
@@ -118,21 +117,21 @@ def read_json_lines(fname):
     without using a lot of memory.
 
     Inputs:
-        fname (str): Path to the file containing the data, one dictionary
+        fh: File handle of the file containing the data, one dictionary
             (JSON) object per line
 
     Returns:
         iterator over the lines in the input file
     """
-    with open(fname) as f:
-        for line in f:
-            yield json.loads(line)
+    fh.seek(0)
+    for line in fh:
+        yield json.loads(line)
 
 
-def chunk_json_lines(fname, batch_size=1000):
+def chunk_json_lines(fh, batch_size=1000):
     res = []
     i = 0
-    for obj in read_json_lines(fname):
+    for obj in read_json_lines(fh):
         res.append(obj)
         i += 1
         if i == batch_size:
@@ -144,15 +143,13 @@ def chunk_json_lines(fname, batch_size=1000):
 
 
 def get_temp_file():
-    """Create a temporary file and return the path.
+    """Create a temporary file and its file handle.
 
     Returns:
-        Path to the temporary file.
+        File handle of the temporary file.
     """
-    (fd, fname) = tempfile.mkstemp()
-    os.close(fd)
-
-    return fname
+    fh = tempfile.TemporaryFile()
+    return fh
 
 
 def iterate_wf(lst):
