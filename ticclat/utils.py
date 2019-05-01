@@ -148,7 +148,7 @@ def get_temp_file():
     Returns:
         File handle of the temporary file.
     """
-    fh = tempfile.TemporaryFile()
+    fh = tempfile.TemporaryFile(mode='w+')
     return fh
 
 
