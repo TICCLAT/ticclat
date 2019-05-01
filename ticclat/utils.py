@@ -102,10 +102,11 @@ def json_line(obj):
 from itertools import takewhile, repeat
 
 def count_lines(fh):
-    """From https://stackoverflow.com/a/27518377/1199693"""
+    """From https://stackoverflow.com/q/845058/1199693"""
     fh.seek(0)
-    bufgen = takewhile(lambda x: x, (fh.raw.read(1024*1024) for _ in repeat(None)))
-    return sum( buf.count(b'\n') for buf in bufgen )
+    for i, _ in enumerate(fh):
+        pass
+    return i + 1
 
 
 def read_json_lines(fh):
