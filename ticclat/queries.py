@@ -178,3 +178,14 @@ def num_wfs_per_anahash(session):
     logger.debug(f'Executing query:\n{q}')
 
     return session.execute(q)
+
+
+def count_unique_wfs_in_corpus(session, corpus_name):
+    q = select([func.count(distinct(Wordform.wordform_id))]) \
+        .select_from(Corpus.__table__.join(corpusId_x_documentId)
+                     .join(Document).join(TextAttestation).join(Wordform)) \
+        .where(Corpus.name == corpus_name)
+
+    logger.debug(f'Executing query:\n{q}')
+
+    return session.execute(q)
