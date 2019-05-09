@@ -1,5 +1,7 @@
 import logging
 
+import pandas as pd
+
 from sqlalchemy import select, text
 from sqlalchemy.sql import func, distinct, and_, desc
 
@@ -53,6 +55,31 @@ def wordform_in_corpus_over_time(session, wf, corpus_name):
     logger.debug(f'Executing query:\n{q}')
 
     return session.execute(q)
+
+
+def wordform_in_corpora_over_time(session, wf):
+    """Given a wordform, and a corpus, return word frequencies over time.
+
+    Gives both the term frequency and document frequency.
+    """
+    q = select([Corpus.name, Document.pub_year,
+                func.count(Document.document_id).label('document_frequency'),
+                func.sum(TextAttestation.frequency).label('term_frequency'),
+                func.sum(Document.word_count).label('num_words')]) \
+        .select_from(Corpus.__table__.join(corpusId_x_documentId,
+                                           Corpus.corpus_id ==
+                                           corpusId_x_documentId.c.corpus_id)
+                     .join(Document,
+                           Document.document_id ==
+                           corpusId_x_documentId.c.document_id)
+                     .join(TextAttestation).join(Wordform)) \
+        .where(Wordform.wordform == wf) \
+        .group_by(Corpus.name, Document.pub_year, Wordform.wordform,
+                  Wordform.wordform_id)
+
+    logger.debug(f'Executing query:\n{q}')
+
+    return pd.read_sql(q, session.connection())
 
 
 def wfs_min_num_lexica(session, num=2):
