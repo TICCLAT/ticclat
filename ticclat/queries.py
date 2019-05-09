@@ -70,7 +70,8 @@ def wfs_min_num_lexica(session, num=2):
         .group_by(Wordform.wordform_id)
 
     q = select(['*']).select_from(subq.alias()) \
-        .where(text(f'num_lexicons >= {num}'))
+        .where(text(f'num_lexicons >= {num}')) \
+        .order_by(text('num_lexicons'))
 
     logger.debug(f'Executing query:\n{q}')
 
