@@ -3,6 +3,7 @@ import os
 import tempfile
 import warnings
 import json
+import time
 
 import numpy as np
 import pandas as pd
@@ -164,3 +165,26 @@ def set_logger(level='INFO'):
     logging.basicConfig(format="%(asctime)s [%(process)d] %(levelname)-8s "
                         "%(name)s,%(lineno)s\t%(message)s")
     logging.getLogger().setLevel(level)
+
+
+def timeit(method):
+    """Decorator for timing methods.
+
+    Can be used for benchmarking queries.
+
+    Source: https://medium.com/pythonhive/fa04cb6bb36d
+    """
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+
+        if 'log_time' in kw:
+            name = kw.get('log_name', method.__name__.upper())
+            kw['log_time'][name] = int((te - ts) * 1000)
+        else:
+            logger.info('{} took {:.2f} ms'.format(method.__name__,
+                                                   (te - ts) * 1000))
+        return result
+
+    return timed
