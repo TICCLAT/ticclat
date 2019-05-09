@@ -130,57 +130,56 @@ def get_tas(corpus, doc_ids, wf_mapping, p):
 
 def add_corpus_core(session, corpus_matrix, vectorizer, corpus_name,
                     document_metadata=pd.DataFrame(), batch_size=50000):
-    wf_file = get_temp_file()
-    write_json_lines(wf_file, iterate_wf(vectorizer.vocabulary_))
+    with get_temp_file() as wf_file:
+        write_json_lines(wf_file, iterate_wf(vectorizer.vocabulary_))
 
-    # Prepare the documents to be added to the database
-    # FIXME: add proper metadata
-    logger.info('Creating document data')
-    cx = scipy.sparse.csr_matrix(corpus_matrix)
-    word_counts = cx.sum(axis=1)  # sum the rows
+        # Prepare the documents to be added to the database
+        # FIXME: add proper metadata
+        logger.info('Creating document data')
+        cx = scipy.sparse.csr_matrix(corpus_matrix)
+        word_counts = cx.sum(axis=1)  # sum the rows
 
-    wc_list = np.array(word_counts).flatten().tolist()
+        wc_list = np.array(word_counts).flatten().tolist()
 
-    document_metadata['word_count'] = wc_list
+        document_metadata['word_count'] = wc_list
 
-    # Determine which wordforms in the vocabulary need to be added to the
-    # database
-    logger.info('Determine which wordforms need to be added')
-    wf_to_add_file = get_temp_file()
-    with open(wf_to_add_file, 'w') as f:
-        with tqdm(total=count_lines(wf_file)) as pbar:
-            for chunk in chunk_json_lines(wf_file, batch_size=batch_size):
-                # Find out which wordwordforms are not yet in the database
-                wordforms = set([wf['wordform'] for wf in chunk])
-                s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
-                result = session.execute(s).fetchall()
+        # Determine which wordforms in the vocabulary need to be added to the
+        # database
+        logger.info('Determine which wordforms need to be added')
+        with get_temp_file() as wf_to_add_file:
+            with tqdm(total=count_lines(wf_file)) as pbar:
+                for chunk in chunk_json_lines(wf_file, batch_size=batch_size):
+                    # Find out which wordwordforms are not yet in the database
+                    wordforms = set([wf['wordform'] for wf in chunk])
+                    s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
+                    result = session.execute(s).fetchall()
 
-                # wf: (id, wordform, anahash_id, wordform_lowercase)
-                existing_wfs = set([wf[1] for wf in result])
-                for wf in wordforms.difference(existing_wfs):
-                    f.write(json.dumps({'wordform': wf,
-                                        'wordform_lowercase': wf.lower()}))
-                    f.write('\n')
-                pbar.update(batch_size)
+                    # wf: (id, wordform, anahash_id, wordform_lowercase)
+                    existing_wfs = set([wf[1] for wf in result])
+                    for wf in wordforms.difference(existing_wfs):
+                        wf_to_add_file.write(json.dumps({'wordform': wf,
+                                                         'wordform_lowercase': wf.lower()}))
+                        wf_to_add_file.write('\n')
+                    pbar.update(batch_size)
 
-    # Create the corpus (in a session) and get the ID
-    logger.info('Creating the corpus')
-    corpus = Corpus(name=corpus_name)
-    session.add(corpus)
+            # Create the corpus (in a session) and get the ID
+            logger.info('Creating the corpus')
+            corpus = Corpus(name=corpus_name)
+            session.add(corpus)
 
-    # add the documents using ORM, because we need to link them to the
-    # corpus
-    logger.info('Adding the documents')
-    for doc in document_metadata.to_dict(orient='records'):
-        d = Document(**doc)
-        d.document_corpora.append(corpus)
-    session.flush()
-    corpus_id = corpus.corpus_id
+            # add the documents using ORM, because we need to link them to the
+            # corpus
+            logger.info('Adding the documents')
+            for doc in document_metadata.to_dict(orient='records'):
+                d = Document(**doc)
+                d.document_corpora.append(corpus)
+            session.flush()
+            corpus_id = corpus.corpus_id
 
-    # Insert the wordforms that need to be added using SQLAlchemy core (much
-    # faster than using the ORM)
-    logger.info('Adding the wordforms')
-    bulk_add_wordforms_core(session, read_json_lines(wf_to_add_file))
+            # Insert the wordforms that need to be added using SQLAlchemy core (much
+            # faster than using the ORM)
+            logger.info('Adding the wordforms')
+            bulk_add_wordforms_core(session, read_json_lines(wf_to_add_file))
 
     logger.info('Prepare adding the text attestations')
     # make a mapping from
@@ -212,15 +211,10 @@ def add_corpus_core(session, corpus_matrix, vectorizer, corpus_name,
                  vectorizer.vocabulary_.keys()))
 
     logger.info('\tGetting the text attestations')
-    ta_file = get_temp_file()
-    write_json_lines(ta_file, get_tas(corpus_matrix, doc_ids, wf_mapping, p))
+    with get_temp_file() as ta_file:
+        write_json_lines(ta_file, get_tas(corpus_matrix, doc_ids, wf_mapping, p))
 
-    logger.info('Adding the text attestations')
-    total = count_lines(ta_file)
-    bulk_add_textattestations_core(session, read_json_lines(ta_file),
-                                   total=total, batch_size=batch_size)
-
-    # remove temp data
-    os.remove(wf_file)
-    os.remove(wf_to_add_file)
-    os.remove(ta_file)
+        logger.info('Adding the text attestations')
+        total = count_lines(ta_file)
+        bulk_add_textattestations_core(session, read_json_lines(ta_file),
+                                       total=total, batch_size=batch_size)

@@ -222,11 +222,10 @@ def bulk_add_anahashes(session, anahashes, tqdm=None, batch_size=10000):
     logger.debug(f'There are {unique_hashes.shape[0]} unique anahash values.')
 
     total = 0
-    anahashes_to_add_file = get_temp_file()
 
-    if tqdm is not None:
-        pbar = tqdm(total=unique_hashes.shape[0])
-    with open(anahashes_to_add_file, 'w') as f:
+    with get_temp_file() as anahashes_to_add_file:
+        if tqdm is not None:
+            pbar = tqdm(total=unique_hashes.shape[0])
         for chunk in chunk_df(unique_hashes, batch_size=batch_size):
             # Find out which anahashes are not yet in the database.
             ahs = set(list(chunk['anahash']))
@@ -237,17 +236,15 @@ def bulk_add_anahashes(session, anahashes, tqdm=None, batch_size=10000):
             existing_ahs = set([ah[1] for ah in result])
 
             for ah in ahs.difference(existing_ahs):
-                f.write(json.dumps({'anahash': ah}))
-                f.write('\n')
+                anahashes_to_add_file.write(json.dumps({'anahash': ah}))
+                anahashes_to_add_file.write('\n')
                 total += 1
             if tqdm is not None:
                 pbar.update(chunk.shape[0])
-    if tqdm is not None:
-        pbar.close()
+        if tqdm is not None:
+            pbar.close()
 
-    bulk_add_anahashes_core(session, read_json_lines(anahashes_to_add_file))
-
-    os.remove(anahashes_to_add_file)
+        bulk_add_anahashes_core(session, read_json_lines(anahashes_to_add_file))
 
     logger.info('Added {} anahashes.'.format(total))
 
@@ -283,19 +280,17 @@ def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
     logger.info('Connecting anahashes to wordforms.')
 
     logger.debug('Getting wordform/anahash_id pairs.')
-    anahash_to_wf_file = get_temp_file()
-    t = write_json_lines(anahash_to_wf_file, get_anahashes(session, anahashes,
-                                                           df))
+    with get_temp_file() as anahash_to_wf_file:
+        t = write_json_lines(anahash_to_wf_file,
+                             get_anahashes(session, anahashes, df))
 
-    u = Wordform.__table__.update(). \
-        where(Wordform.wordform_id == bindparam('wf_id')). \
-        values(anahash_id=bindparam('a_id'))
+        u = Wordform.__table__.update(). \
+            where(Wordform.wordform_id == bindparam('wf_id')). \
+            values(anahash_id=bindparam('a_id'))
 
-    logger.debug('Adding the connections wordform -> anahash_id.')
-    sql_query_batches(session, u, read_json_lines(anahash_to_wf_file), t,
-                      batch_size)
-
-    os.remove(anahash_to_wf_file)
+        logger.debug('Adding the connections wordform -> anahash_id.')
+        sql_query_batches(session, u, read_json_lines(anahash_to_wf_file), t,
+                          batch_size)
 
     logger.info('Added the anahash of {} wordforms.'.format(t))
 
@@ -329,48 +324,47 @@ def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
 
 def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
                         wf_to_name, lexicon_id, wf_from_correct, wf_to_correct,
-                        wfl_file, wfls_file):
+                        links_file, sources_file):
     num_wf_links = 0
     num_wf_link_sources = 0
-    with open(wfl_file, 'w') as links, open(wfls_file, 'w') as sources:
-        wf_links = defaultdict(bool)
-        for _, row in tqdm(links_df.iterrows(), total=links_df.shape[0]):
-            wf_from = wf_mapping[row[wf_from_name]]
-            wf_to = wf_mapping[row[wf_to_name]]
+    wf_links = defaultdict(bool)
+    for _, row in tqdm(links_df.iterrows(), total=links_df.shape[0]):
+        wf_from = wf_mapping[row[wf_from_name]]
+        wf_to = wf_mapping[row[wf_to_name]]
 
-            # Don't add links to self! and keep track of what was added,
-            # because duplicates may occur
-            if wf_from != wf_to and (wf_from, wf_to) not in wf_links:
-                s = select([WordformLink]). \
-                    where(and_(WordformLink.wordform_from == wf_from,
-                               WordformLink.wordform_to == wf_to))
-                r = session.execute(s).fetchone()
-                if r is None:
-                    # Both directions of the relationship need to be added.
-                    links.write(json_line({'wordform_from': wf_from,
-                                           'wordform_to': wf_to}))
-                    links.write(json_line({'wordform_from': wf_to,
-                                           'wordform_to': wf_from}))
+        # Don't add links to self! and keep track of what was added,
+        # because duplicates may occur
+        if wf_from != wf_to and (wf_from, wf_to) not in wf_links:
+            s = select([WordformLink]). \
+                where(and_(WordformLink.wordform_from == wf_from,
+                            WordformLink.wordform_to == wf_to))
+            r = session.execute(s).fetchone()
+            if r is None:
+                # Both directions of the relationship need to be added.
+                links_file.write(json_line({'wordform_from': wf_from,
+                                        'wordform_to': wf_to}))
+                links_file.write(json_line({'wordform_from': wf_to,
+                                        'wordform_to': wf_from}))
 
-                    num_wf_links += 2
-                # The wordform link sources (in both directions) need to be
-                # written regardless of the existence of the wordform links.
-                line = json_line({'wordform_from': wf_from,
-                                  'wordform_to': wf_to,
-                                  'lexicon_id': lexicon_id,
-                                  'wordform_from_correct': wf_from_correct,
-                                  'wordform_to_correct': wf_to_correct})
-                sources.write(line)
-                line = json_line({'wordform_from': wf_to,
-                                  'wordform_to': wf_from,
-                                  'lexicon_id': lexicon_id,
-                                  'wordform_from_correct': wf_to_correct,
-                                  'wordform_to_correct': wf_from_correct})
-                sources.write(line)
-                num_wf_link_sources += 2
+                num_wf_links += 2
+            # The wordform link sources (in both directions) need to be
+            # written regardless of the existence of the wordform links.
+            line = json_line({'wordform_from': wf_from,
+                                'wordform_to': wf_to,
+                                'lexicon_id': lexicon_id,
+                                'wordform_from_correct': wf_from_correct,
+                                'wordform_to_correct': wf_to_correct})
+            sources_file.write(line)
+            line = json_line({'wordform_from': wf_to,
+                                'wordform_to': wf_from,
+                                'lexicon_id': lexicon_id,
+                                'wordform_from_correct': wf_to_correct,
+                                'wordform_to_correct': wf_from_correct})
+            sources_file.write(line)
+            num_wf_link_sources += 2
 
-                wf_links[(wf_from, wf_to)] = True
-                wf_links[(wf_to, wf_from)] = True
+            wf_links[(wf_from, wf_to)] = True
+            wf_links[(wf_to, wf_from)] = True
 
     return num_wf_links, num_wf_link_sources
 
@@ -392,36 +386,25 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
 
     wf_mapping = get_wf_mapping(session, lexicon_id=lexicon.lexicon_id)
 
-    try:
-        wfl_file = get_temp_file()
-        logger.debug('Writing wordform links to add to "{}".'.format(wfl_file))
+    with get_temp_file() as wfl_file:
+        logger.debug('Writing wordform links to add to (possibly unnamed) temporary file.')
 
-        wfls_file = get_temp_file()
-        msg = 'Writing wordform link sources to add to "{}".'.format(wfls_file)
-        logger.debug(msg)
+        with get_temp_file() as wfls_file:
+            logger.debug('Writing wordform link sources to add to (possibly unnamed) temporary file.')
 
-        num_l, num_s = write_wf_links_data(session, wf_mapping, wfs,
-                                           from_column, to_column,
-                                           lexicon.lexicon_id,
-                                           from_correct, to_correct,
-                                           wfl_file, wfls_file)
+            num_l, num_s = write_wf_links_data(session, wf_mapping, wfs,
+                                               from_column, to_column,
+                                               lexicon.lexicon_id,
+                                               from_correct, to_correct,
+                                               wfl_file, wfls_file)
 
-        logger.info('Inserting {} wordform links.'.format(num_l))
-        sql_insert_batches(session, WordformLink, read_json_lines(wfl_file),
-                           batch_size=batch_size)
+            logger.info('Inserting {} wordform links.'.format(num_l))
+            sql_insert_batches(session, WordformLink, read_json_lines(wfl_file),
+                               batch_size=batch_size)
 
-        logger.info('Inserting {} wordform link sources.'.format(num_s))
-        sql_insert_batches(session, WordformLinkSource,
-                           read_json_lines(wfls_file), batch_size=batch_size)
-    finally:
-        try:
-            os.remove(wfl_file)
-        except FileNotFoundError:
-            pass
-        try:
-            os.remove(wfls_file)
-        except FileNotFoundError:
-            pass
+            logger.info('Inserting {} wordform link sources.'.format(num_s))
+            sql_insert_batches(session, WordformLinkSource,
+                               read_json_lines(wfls_file), batch_size=batch_size)
 
     return lexicon
 
@@ -481,7 +464,7 @@ def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
     return corpus
 
 
-def create_ticclat_database(delete_existing=False, dbname='ticclat', user="", passwd="", host="localhost"):
+def create_ticclat_database(delete_existing=False, dbname='ticclat_test', user="", passwd="", host="localhost"):
     db = MySQLdb.connect(user=user, passwd=passwd, host=host)
     engine = create_engine(f"mysql://{user}:{passwd}@{host}/{dbname}?charset=utf8mb4")
 
