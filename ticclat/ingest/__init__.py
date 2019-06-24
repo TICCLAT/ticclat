@@ -65,7 +65,7 @@ def run(envvars_path='ENVVARS.txt', db_name='ticclat_test', reset_db=False,
                                 user=os.environ['user'], passwd=os.environ['password'],
                                 host=os.environ['host'])
 
-    Session = get_session(os.environ['user'], os.environ['password'], os.environ['dbname'])
+    Session = get_session(os.environ['user'], os.environ['password'], os.environ['dbname'], host=os.environ['host'])
 
     if ingest:
         ingest_all(Session, batch_size=batch_size, include=include,
