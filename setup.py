@@ -51,6 +51,10 @@ setup(
       'mysqlclient',
       'sqlalchemy_utils',
       'sklearn',
+      'python-dotenv',
+      'flask',
+      'click',
+      'gunicorn'
     ],  # FIXME: add your package's dependencies to this list
     setup_requires=[
         # dependency for `python setup.py test`
