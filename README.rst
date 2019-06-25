@@ -123,11 +123,11 @@ Create a `.env` file with the following:
   DATABASE_URL=mysql://[user]:[pass]@[host]:[port]/[db_name]
 
   FLASK_APP=ticclat.flask_app.py
-  FLASK_ENV=PRODUCTION
+  FLASK_ENV=production
   FLASK_DEBUG=0
   
   #for DEV:
-  #FLASK_ENV=DEVELOPMENT
+  #FLASK_ENV=development
   #FLASK_DEBUG=1
 
 You can now run a development server using: `flask run`
