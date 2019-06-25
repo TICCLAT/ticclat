@@ -93,6 +93,51 @@ in MySQLdb.
 Change it to `/tmp/mysql.sock` if you get `OperationError: 2006 ...` when
 running `ticclat` tasks like ingesting corpora or lexica.
 
+Flask web app
+*************
+
+Preparation
+-----------
+
+Starting from Ubuntu (18.04), setup the MySQL database. Then clone this directory, install dependencies (`conda` & `libmysqlclient-dev` & `build-essential` e.g. https://docs.conda.io/en/latest/miniconda.html and `apt-get update && apt-get install -y libmysqlclient-dev build-essential`). 
+
+Setup virtual environment
+-------------------------
+
+.. code-block:: console
+
+  conda create --name ticclat-web
+  conda activate ticclat-web
+  conda install pip
+
+From ticclat directory, install it:
+
+.. code-block:: console
+  pip install -e .
+
+
+Create a `.env` file with the following:
+
+.. code-block:: console
+
+  DATABASE_URL=mysql://[user]:[pass]@[host]:[port]/[db_name]
+
+  FLASK_APP=ticclat.flask_app.py
+  FLASK_ENV=production
+  FLASK_DEBUG=0
+  
+  #for DEV:
+  #FLASK_ENV=development
+  #FLASK_DEBUG=1
+
+You can now run a development server using: `flask run`
+
+Or a production server:
+    
+.. code-block:: console
+
+  export $(cat .env | xargs)
+  gunicorn ticclat.flask_app:app --bind 0.0.0.0:8000
 
 Documentation
 *************
