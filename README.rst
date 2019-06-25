@@ -96,20 +96,25 @@ running `ticclat` tasks like ingesting corpora or lexica.
 Flask web app
 *************
 
------------
 Preparation
+-----------
 
 Starting from Ubuntu (18.04), setup the MySQL database. Then clone this directory, install dependencies (`conda` & `libmysqlclient-dev` & `build-essential` e.g. https://docs.conda.io/en/latest/miniconda.html and `apt-get update && apt-get install -y libmysqlclient-dev build-essential`). 
 
--------------------------
 Setup virtual environment
+-------------------------
 
-`conda create --name ticclat-web`
-`conda activate ticclat-web`
-`conda install pip`
+.. code-block:: console
+
+  conda create --name ticclat-web
+  conda activate ticclat-web
+  conda install pip
 
 From ticclat directory, install it:
-`pip install -e .`
+
+.. code-block:: console
+  pip install -e .
+
 
 Create a `.env` file with the following:
 
