@@ -326,13 +326,28 @@ def test_write_wf_links_data(dbsession, fs):
 
     wfm = get_wf_mapping(dbsession, lexicon=lex)
 
-    num_l, num_s = write_wf_links_data(dbsession, wf_mapping=wfm, links_df=wfs,
-                                       wf_from_name='lemma',
-                                       wf_to_name='variant',
-                                       lexicon_id=lex.lexicon_id,
-                                       wf_from_correct=True,
-                                       wf_to_correct=True,
-                                       wfl_file=wfl_file, wfls_file=wfls_file)
+    links_file = open(wfl_file, 'w')
+    sources_file = open(wfls_file, 'w')
+
+    num_l, num_s = write_wf_links_data(
+        dbsession,
+        wf_mapping=wfm,
+        links_df=wfs,
+        wf_from_name='lemma',
+        wf_to_name='variant',
+        lexicon_id=lex.lexicon_id,
+        wf_from_correct=True,
+        wf_to_correct=True,
+        links_file=links_file,
+        sources_file=sources_file,
+    )
+
+    links_file.close()
+    sources_file.close()
+
+    links_file = open(wfl_file, 'r')
+    sources_file = open(wfls_file, 'r')
+
     assert num_l == 3*2
     assert num_s == 3*2
 
@@ -349,8 +364,11 @@ def test_write_wf_links_data(dbsession, fs):
                            "wordform_from_correct": True,
                            "wordform_to_correct": True})
 
-    for wfls1, wfls2 in zip(read_json_lines(wfls_file), wflsources):
+    for wfls1, wfls2 in zip(read_json_lines(sources_file), wflsources):
         assert wfls1 == wfls2
+
+    links_file.close()
+    sources_file.close()
 
 
 def test_add_lexicon_with_links(dbsession):
