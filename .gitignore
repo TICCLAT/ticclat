@@ -109,3 +109,4 @@ venv.bak/
 ENVVARS.txt
 
 .idea/
+mysql_data/
