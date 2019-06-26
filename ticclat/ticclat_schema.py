@@ -272,3 +272,16 @@ class MorphologicalParadigm(Base):
     wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
     pos = Column(String(10))
     word_type_code = Column(String(10))
+
+class ExternalLink(Base):
+    """Table for storing ids from external sources of wordforms.
+
+    Used for linking wordforms to external sources, such as the WNT, MNW, INT.
+    """
+    __tablename__ = 'external_links'
+
+    external_link_id  = Column(BigInteger().with_variant(Integer, 'sqlite'), 
+                               primary_key=True)
+    wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
+    source_name = Column(String(5))
+    source_id = Column(String(10))
