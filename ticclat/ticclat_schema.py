@@ -258,10 +258,10 @@ class WordformLinkSource(Base):
         return '<WordformLinkSource {} -> {} in "{}">'.format(self.wfls_wflink.linked_from.wordform, self.wfls_wflink.linked_to.wordform, self.wfls_lexicon.lexicon_name)
 
 
-class MorphologicalLink(Base):
-    """Table for storing information about morphological links between wordforms.
+class MorphologicalParadigm(Base):
+    """Table for storing information about morphological paradigms of wordforms.
     """
-    __tablename__ = 'morphological_links'
+    __tablename__ = 'morphological_paradigms'
 
     Z = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
     Y = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
