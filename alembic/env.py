@@ -31,7 +31,7 @@ target_metadata = Base.metadata
 
 
 def get_url():
-    return "mysql+pymysql://%s:%s@%s/%s" % (
+    return "mysql://%s:%s@%s/%s" % (
         os.getenv("DB_USER", "vagrant"),
         os.getenv("DB_PASSWORD", "vagrant"),
         os.getenv("DB_HOST", "localhost"),
