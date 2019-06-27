@@ -11,4 +11,4 @@ INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms265.tsv'
 
 def ingest(session, base_dir='', in_file=INPUT, **kwargs):
     with session_scope(session) as s:
-        add_morphological_paradigms(s, in_file)
+        add_morphological_paradigms(s, os.path.join(base_dir, in_file))

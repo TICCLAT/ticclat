@@ -36,6 +36,8 @@ from ticclat.utils import (
     read_json_lines,
     get_temp_file,
     json_line,
+    split_component_code,
+    morph_iterator,
 )
 from ticclat.sacoreutils import (
     bulk_add_wordforms_core,
