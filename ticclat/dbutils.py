@@ -575,15 +575,8 @@ def add_morphological_paradigms(session, in_file):
     s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
     mapping = session.execute(s).fetchall()
 
-    filtered = defaultdict(dict)
-
     with get_temp_file() as mp_file:
-        for paradigm in morph_iterator(result, mapping):
-            filtered['{}-{}-{}-{}-{}'.format(paradigm['Z'], paradigm['Y'],
-                                             paradigm['X'], paradigm['W'],
-                                             paradigm['V'])] = paradigm
-
-        t = write_json_lines(mp_file, filtered.values())
+        t = write_json_lines(mp_file, morph_iterator(result, mapping))
         logger.info(f'Wrote {t} morphological variants.')
         sql_insert_batches(session, MorphologicalParadigm, 
                            read_json_lines(mp_file), batch_size=50000)
