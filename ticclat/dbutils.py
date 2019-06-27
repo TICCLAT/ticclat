@@ -19,9 +19,11 @@ from sqlalchemy_utils import database_exists
 from sqlalchemy_utils.functions import drop_database
 
 from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, \
-    lexical_source_wordform, WordformLink, WordformLinkSource
+    lexical_source_wordform, WordformLink, WordformLinkSource, \
+    MorphologicalParadigm
 from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
-    read_json_lines, get_temp_file, json_line
+    read_json_lines, get_temp_file, json_line, split_component_code, \
+    morph_iterator
 from ticclat.sacoreutils import bulk_add_wordforms_core, \
     bulk_add_anahashes_core, sql_query_batches, sql_insert_batches
 from ticclat.tokenize import nltk_tokenize
@@ -462,6 +464,49 @@ def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
         corpus.add_document(terms_vector, wfs)
 
     return corpus
+
+
+def add_morphological_paradigms(session, in_file):
+    data = pd.read_csv(in_file, sep='\t', names=['wordform',
+                                                 'corpus_freq',
+                                                 'component_codes',
+                                                 'human_readable_c_code',
+                                                 'first_year',
+                                                 'last_year',
+                                                 'dict_ids',
+                                                 'pos_tags',
+                                                 'int_ids'])
+    # drop first row (contains empty wordform)
+    data = data.drop([0])
+
+    # store wordforms for in database
+    wfs = data[['wordform']]
+    bulk_add_wordforms(session, wfs)
+
+    # get the morphological variants from the pandas dataframe
+    result = defaultdict(list)
+    for row in data.iterrows():
+        codes = row[1]['component_codes'].split('#')
+        wf = row[1]['wordform']
+        for code in codes:
+            result[wf].append(split_component_code(code, wf))
+
+    # lookup wordform ids
+    s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
+    mapping = session.execute(s).fetchall()
+
+    filtered = defaultdict(dict)
+
+    with get_temp_file() as mp_file:
+        for paradigm in morph_iterator(result, mapping):
+            filtered['{}-{}-{}-{}-{}'.format(paradigm['Z'], paradigm['Y'],
+                                             paradigm['X'], paradigm['W'],
+                                             paradigm['V'])] = paradigm
+
+        t = write_json_lines(mp_file, filtered.values())
+        logger.info(f'Wrote {t} morphological variants.')
+        sql_insert_batches(session, MorphologicalParadigm, 
+                           read_json_lines(mp_file), batch_size=50000)
 
 
 def create_ticclat_database(delete_existing=False, dbname='ticclat_test', user="", passwd="", host="localhost"):
