@@ -93,6 +93,66 @@ in MySQLdb.
 Change it to `/tmp/mysql.sock` if you get `OperationError: 2006 ...` when
 running `ticclat` tasks like ingesting corpora or lexica.
 
+Changes to the Database Schema
+------------------------------
+
+To apply changes to the database schema, we use [alembic](https://alembic.sqlalchemy.org/en/latest/index.html).
+
+Alembic is configured to read the information needed to connect to the database 
+database from environment variables:
+
+* `DB_NAME`
+* `DB_USER`
+* `DB_PASSWORD`
+* `DB_HOST`, e.g., localhost
+
+To migrate the database to the latest database schema run:
+
+.. code-block:: console
+  alembic upgrade
+
+**Important note**: if you are creating the database from scratch, **do not** use 
+the alembic database migrations. Instead, use SQLAlchemy to create a complete new 
+instance of the database. 
+
+Flask web app
+*************
+
+Preparation
+-----------
+
+Starting from Ubuntu (18.04), setup the MySQL database. Then clone this directory, install dependencies (`conda` & `libmysqlclient-dev` & `build-essential` e.g. https://docs.conda.io/en/latest/miniconda.html and `apt-get update && apt-get install -y libmysqlclient-dev build-essential`). 
+
+Setup virtual environment
+-------------------------
+
+.. code-block:: console
+
+  conda create --name ticclat-web
+  conda activate ticclat-web
+  conda install pip
+
+From ticclat directory, install it:
+
+.. code-block:: console
+  pip install -e .
+
+
+Create a `.env` file with the following:
+
+.. code-block:: console
+
+  DATABASE_URL=mysql://[user]:[pass]@[host]:[port]/[db_name]
+
+  FLASK_APP=ticclat.flask_app.py
+  FLASK_ENV=PRODUCTION
+  FLASK_DEBUG=0
+  
+  #for DEV:
+  #FLASK_ENV=DEVELOPMENT
+  #FLASK_DEBUG=1
+
+You can now run a development server using: `flask run`, or a production server using gunicorn: `gunicorn ticclat.flask_app`.
 
 Documentation
 *************

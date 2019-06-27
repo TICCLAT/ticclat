@@ -1,5 +1,5 @@
 from ticclat.ingest import elex, gb, opentaal, sonar, inl, sgd, edbo, \
-    twente_spelling_correction_list, dbnl
+    twente_spelling_correction_list, dbnl, morph_par
 import logging
 
 
@@ -16,6 +16,7 @@ all_sources = {
     'sgd': sgd,
     'edbo': edbo,
     'dbnl': dbnl,
+    'morph_par': morph_par
 }
 
 

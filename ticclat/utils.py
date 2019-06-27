@@ -4,6 +4,8 @@ import tempfile
 import warnings
 import json
 import time
+import copy
+import re
 
 import numpy as np
 import pandas as pd
@@ -157,6 +159,38 @@ def get_temp_file():
 def iterate_wf(lst):
     for wf in lst:
         yield {'wordform': wf}
+
+
+def split_component_code(code, wf):
+    regex=r'Z(?P<Z>\d{4})Y(?P<Y>\d{4})X(?P<X>\d{4})W(?P<W>\d{8})V(?P<V>\d{4})_(?P<wt_code>.+)'
+    #print(code)
+    m = re.search(regex, code)
+    if m:
+        #print(m)
+        #print(m.group('wt_code'))
+        return {'Z': int(m.group('Z')),
+                'Y': int(m.group('Y')),
+                'X': int(m.group('X')),
+                'W': int(m.group('W')),
+                'V': int(m.group('V')),
+                'word_type_code': m.group('wt_code'),
+                'wordform': wf}
+    else:
+        #print(wf, code)
+        return None
+
+
+def morph_iterator(result, mapping):
+    for wf in mapping:
+        for code in result[wf['wordform']]:
+            if code is not None:  # ignore incomplete codes for now
+                c = copy.copy(code)
+
+                c['wordform_id'] = wf['wordform_id']
+
+                # we don't need the wordform
+                del c['wordform']
+                yield (c)
 
 
 def set_logger(level='INFO'):

@@ -256,3 +256,32 @@ class WordformLinkSource(Base):
 
     def __str__(self):
         return '<WordformLinkSource {} -> {} in "{}">'.format(self.wfls_wflink.linked_from.wordform, self.wfls_wflink.linked_to.wordform, self.wfls_lexicon.lexicon_name)
+
+
+class MorphologicalParadigm(Base):
+    """Table for storing information about morphological paradigms of wordforms.
+    """
+    __tablename__ = 'morphological_paradigms'
+
+    Z = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    Y = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    X = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    W = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    V = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    
+    wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
+    pos = Column(String(10))
+    word_type_code = Column(String(10))
+
+class ExternalLink(Base):
+    """Table for storing ids from external sources of wordforms.
+
+    Used for linking wordforms to external sources, such as the WNT, MNW, INT.
+    """
+    __tablename__ = 'external_links'
+
+    external_link_id  = Column(BigInteger().with_variant(Integer, 'sqlite'), 
+                               primary_key=True)
+    wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
+    source_name = Column(String(5))
+    source_id = Column(String(10))
