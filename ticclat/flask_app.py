@@ -88,12 +88,12 @@ WHERE wordforms.wordform = %(lookup_word)s
     anahash_variants = df['wordform'].to_list()
 
     query = """
-SELECT * FROM morphological_paradigms AS m1 LEFT JOIN morphological_paradigms AS m2 ON m1.X = m2.X AND m1.Y = m2.Y AND m1.Z = m2.Z AND m1.W = m2.W
+SELECT m1.wordform FROM morphological_paradigms AS m1 LEFT JOIN morphological_paradigms AS m2 ON m1.X = m2.X AND m1.Y = m2.Y AND m1.Z = m2.Z AND m1.W = m2.W
     LEFT JOIN wordforms w on m1.wordform_id = w.wordform_id
 WHERE m2.wordform_id = (SELECT wordform_id FROM wordforms WHERE wordform = %(lookup_word)s);
 """
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
-    morph_variants = df.to_dict()
+    morph_variants = df['wordform'].to_list()
 
     return jsonify({
         'lexicon_variants': lexicon_variants,
