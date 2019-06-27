@@ -93,7 +93,7 @@ SELECT * FROM morphological_paradigms AS m1 LEFT JOIN morphological_paradigms AS
 WHERE m2.wordform_id = (SELECT wordform_id FROM wordforms WHERE wordform = %(lookup_word)s);
 """
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
-    morph_variants = df.to_dict
+    morph_variants = df.to_dict()
 
     return jsonify({
         'lexicon_variants': lexicon_variants,
