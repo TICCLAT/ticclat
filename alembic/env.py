@@ -31,12 +31,16 @@ target_metadata = Base.metadata
 
 
 def get_url():
-    return "mysql://%s:%s@%s/%s" % (
-        os.getenv("DB_USER", "vagrant"),
-        os.getenv("DB_PASSWORD", "vagrant"),
-        os.getenv("DB_HOST", "localhost"),
-        os.getenv("DB_NAME", "ticclat"),
+    return os.environ.get(
+        'DATABASE_URL',
+        "mysql://%s:%s@%s/%s" % (
+            os.getenv("DB_USER", "vagrant"),
+            os.getenv("DB_PASSWORD", "vagrant"),
+            os.getenv("DB_HOST", "localhost"),
+            os.getenv("DB_NAME", "ticclat"),
+        )
     )
+
 
 
 def run_migrations_offline():

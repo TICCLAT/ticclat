@@ -4,12 +4,12 @@ from ticclat.ticclat_schema import Base
 import pytest
 
 
-@pytest.fixture(scope='session')
-def engine(dburl='sqlite:///:memory:'):
+@pytest.fixture(scope="session")
+def engine(dburl="sqlite:///:memory:"):
     return create_engine(dburl)
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.yield_fixture(scope="session")
 def tables(engine):
     Base.metadata.create_all(engine)
     yield

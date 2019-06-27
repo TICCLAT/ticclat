@@ -1,6 +1,15 @@
 # coding: utf-8
-from sqlalchemy import Column, String, Table, ForeignKey, Unicode, Boolean, \
-    Integer, BigInteger, ForeignKeyConstraint
+from sqlalchemy import (
+    Column,
+    String,
+    Table,
+    ForeignKey,
+    Unicode,
+    Boolean,
+    Integer,
+    BigInteger,
+    ForeignKeyConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -8,10 +17,12 @@ Base = declarative_base()
 metadata = Base.metadata
 
 
-corpusId_x_documentId = Table('corpusId_x_documentId', Base.metadata,
-                              Column('corpus_id', BigInteger(), ForeignKey('corpora.corpus_id')),
-                              Column('document_id', BigInteger(), ForeignKey('documents.document_id'))
-                              )
+corpusId_x_documentId = Table(
+    "corpusId_x_documentId",
+    Base.metadata,
+    Column("corpus_id", BigInteger(), ForeignKey("corpora.corpus_id")),
+    Column("document_id", BigInteger(), ForeignKey("documents.document_id")),
+)
 
 # Removed:
 # __table_args__ = (
@@ -20,15 +31,17 @@ corpusId_x_documentId = Table('corpusId_x_documentId', Base.metadata,
 
 
 class TextAttestation(Base):
-    __tablename__ = 'text_attestations'
+    __tablename__ = "text_attestations"
 
-    attestation_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    attestation_id = Column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True
+    )
     frequency = Column(BigInteger())
-    wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
-    document_id = Column(BigInteger(), ForeignKey('documents.document_id'))
+    wordform_id = Column(BigInteger(), ForeignKey("wordforms.wordform_id"))
+    document_id = Column(BigInteger(), ForeignKey("documents.document_id"))
 
-    ta_document = relationship('Document', back_populates='document_wordforms')
-    ta_wordform = relationship('Wordform', back_populates='wordform_documents')
+    ta_document = relationship("Document", back_populates="document_wordforms")
+    ta_wordform = relationship("Wordform", back_populates="wordform_documents")
 
     def __init__(self, document, wordform, frequency):
         self.ta_document = document
@@ -37,13 +50,13 @@ class TextAttestation(Base):
 
 
 class Corpus(Base):
-    __tablename__ = 'corpora'
+    __tablename__ = "corpora"
 
-    corpus_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    corpus_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True)
     name = Column(String(255))
-    corpus_documents = relationship('Document',
-                                    secondary=corpusId_x_documentId,
-                                    back_populates='document_corpora')
+    corpus_documents = relationship(
+        "Document", secondary=corpusId_x_documentId, back_populates="document_corpora"
+    )
 
     def add_document(self, terms_vector, wfs):
         """Add a document to the Corpus.
@@ -69,9 +82,9 @@ class Corpus(Base):
 
 
 class Document(Base):
-    __tablename__ = 'documents'
+    __tablename__ = "documents"
 
-    document_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    document_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True)
     persistent_id = Column(String(255), index=True)
     word_count = Column(BigInteger())
     encoding = Column(BigInteger())
@@ -90,16 +103,23 @@ class Document(Base):
     spelling = Column(String(255))
     parent_document = Column(BigInteger(), index=True)
 
-    document_corpora = relationship('Corpus', secondary=corpusId_x_documentId,
-                                    back_populates='corpus_documents')
-    document_wordforms = relationship('TextAttestation', back_populates='ta_document')
+    document_corpora = relationship(
+        "Corpus", secondary=corpusId_x_documentId, back_populates="corpus_documents"
+    )
+    document_wordforms = relationship("TextAttestation", back_populates="ta_document")
 
 
-lexical_source_wordform = Table('lexical_source_wordform', Base.metadata,
-                                Column('wordform_source_id', BigInteger().with_variant(Integer, 'sqlite'), primary_key=True),
-                                Column('lexicon_id', BigInteger(), ForeignKey('lexica.lexicon_id')),
-                                Column('wordform_id', BigInteger(), ForeignKey('wordforms.wordform_id'))
-                                )
+lexical_source_wordform = Table(
+    "lexical_source_wordform",
+    Base.metadata,
+    Column(
+        "wordform_source_id",
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+    ),
+    Column("lexicon_id", BigInteger(), ForeignKey("lexica.lexicon_id")),
+    Column("wordform_id", BigInteger(), ForeignKey("wordforms.wordform_id")),
+)
 
 
 class Lexicon(Base):
@@ -107,43 +127,47 @@ class Lexicon(Base):
     vocabulary (bool): if True, all words in this lexicon are (supposed to be)
                        valid words, if False, some are misspelled
     """
-    __tablename__ = 'lexica'
 
-    lexicon_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    __tablename__ = "lexica"
+
+    lexicon_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True)
     lexicon_name = Column(String(255))
     vocabulary = Column(Boolean)
 
-    lexicon_wordforms = relationship('Wordform',
-                                     secondary=lexical_source_wordform,
-                                     back_populates='wf_lexica')
+    lexicon_wordforms = relationship(
+        "Wordform", secondary=lexical_source_wordform, back_populates="wf_lexica"
+    )
 
     def __str__(self):
-        return '<Lexicon {}>'.format(self.lexicon_name)
+        return "<Lexicon {}>".format(self.lexicon_name)
 
 
 class Anahash(Base):
-    __tablename__ = 'anahashes'
+    __tablename__ = "anahashes"
 
-    anahash_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    anahash_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True)
     anahash = Column(BigInteger(), unique=True, index=True)
 
     def __str__(self):
-        return '<Anahash {}>'.format(self.anahash)
+        return "<Anahash {}>".format(self.anahash)
 
 
 class Wordform(Base):
-    __tablename__ = 'wordforms'
+    __tablename__ = "wordforms"
 
-    wordform_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    wordform_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True)
     wordform = Column(Unicode(255, convert_unicode=False), unique=True, index=True)
-    anahash_id = Column(BigInteger(), ForeignKey('anahashes.anahash_id'))
+    anahash_id = Column(BigInteger(), ForeignKey("anahashes.anahash_id"))
 
-    anahash = relationship('Anahash')
-    wordform_lowercase = Column(Unicode(255, convert_unicode=False), nullable=False, index=True)
+    anahash = relationship("Anahash")
+    wordform_lowercase = Column(
+        Unicode(255, convert_unicode=False), nullable=False, index=True
+    )
 
-    wf_lexica = relationship('Lexicon', secondary=lexical_source_wordform,
-                             back_populates='lexicon_wordforms')
-    wordform_documents = relationship('TextAttestation', back_populates='ta_wordform')
+    wf_lexica = relationship(
+        "Lexicon", secondary=lexical_source_wordform, back_populates="lexicon_wordforms"
+    )
+    wordform_documents = relationship("TextAttestation", back_populates="ta_wordform")
 
     def link(self, wf):
         """Add WordformLinks between self and another wordfrom and vice versa.
@@ -158,8 +182,7 @@ class Wordform(Base):
             WordformLink(self, wf)
             WordformLink(wf, self)
 
-    def link_with_metadata(self, wf_to, wf_from_correct, wf_to_correct,
-                           lexicon):
+    def link_with_metadata(self, wf_to, wf_from_correct, wf_to_correct, lexicon):
         """Add WordformLinks with metadata.
 
         Adds a WordformLink between self and another wordfrom, and vice versa,
@@ -203,50 +226,64 @@ class Wordform(Base):
             corr (Wordform): A correction candidate of Wordform self
             lexicon (Lexicon): The Lexicon that contains the WordformLink
         """
-        self.link_with_metadata(corr,
-                                wf_from_correct=False,
-                                wf_to_correct=True,
-                                lexicon=lexicon)
+        self.link_with_metadata(
+            corr, wf_from_correct=False, wf_to_correct=True, lexicon=lexicon
+        )
 
     def __str__(self):
-        return '<Wordform {}>'.format(self.wordform_lowercase)
+        return "<Wordform {}>".format(self.wordform_lowercase)
 
 
 class WordformLink(Base):
-    __tablename__ = 'wordform_links'
+    __tablename__ = "wordform_links"
 
-    wordform_from = Column(BigInteger(), ForeignKey('wordforms.wordform_id'), primary_key=True)
-    wordform_to = Column(BigInteger(), ForeignKey('wordforms.wordform_id'), primary_key=True)
+    wordform_from = Column(
+        BigInteger(), ForeignKey("wordforms.wordform_id"), primary_key=True
+    )
+    wordform_to = Column(
+        BigInteger(), ForeignKey("wordforms.wordform_id"), primary_key=True
+    )
 
-    linked_from = relationship('Wordform', backref='links',
-                               primaryjoin=(Wordform.wordform_id == wordform_from))
-    linked_to = relationship('Wordform', backref='links_2_to_1',
-                             primaryjoin=(Wordform.wordform_id == wordform_to))
+    linked_from = relationship(
+        "Wordform", backref="links", primaryjoin=(Wordform.wordform_id == wordform_from)
+    )
+    linked_to = relationship(
+        "Wordform",
+        backref="links_2_to_1",
+        primaryjoin=(Wordform.wordform_id == wordform_to),
+    )
 
     def __init__(self, wf1, wf2):
         self.linked_from = wf1
         self.linked_to = wf2
 
     def __str__(self):
-        return '<WordformLink {} -> {}>'.format(self.linked_from.wordform, self.linked_to.wordform)
+        return "<WordformLink {} -> {}>".format(
+            self.linked_from.wordform, self.linked_to.wordform
+        )
 
 
 class WordformLinkSource(Base):
-    __tablename__ = 'source_x_wordform_link'
+    __tablename__ = "source_x_wordform_link"
     __table_args__ = (
-        ForeignKeyConstraint(['wordform_from', 'wordform_to'], ['wordform_links.wordform_from', 'wordform_links.wordform_to']),
+        ForeignKeyConstraint(
+            ["wordform_from", "wordform_to"],
+            ["wordform_links.wordform_from", "wordform_links.wordform_to"],
+        ),
     )
 
-    source_x_wordform_link_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    source_x_wordform_link_id = Column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True
+    )
     wordform_from = Column(BigInteger(), nullable=False)
     wordform_to = Column(BigInteger(), nullable=False)
-    lexicon_id = Column(BigInteger(), ForeignKey('lexica.lexicon_id'))
+    lexicon_id = Column(BigInteger(), ForeignKey("lexica.lexicon_id"))
 
     wordform_from_correct = Column(Boolean)
     wordform_to_correct = Column(Boolean)
 
-    wfls_wflink = relationship('WordformLink', backref='wf_links')
-    wfls_lexicon = relationship('Lexicon', backref='wfl_lexica')
+    wfls_wflink = relationship("WordformLink", backref="wf_links")
+    wfls_lexicon = relationship("Lexicon", backref="wfl_lexica")
 
     def __init__(self, wflink, wf_from_correct, wf_to_correct, lexicon):
         self.wfls_wflink = wflink
@@ -255,7 +292,11 @@ class WordformLinkSource(Base):
         self.wfls_lexicon = lexicon
 
     def __str__(self):
-        return '<WordformLinkSource {} -> {} in "{}">'.format(self.wfls_wflink.linked_from.wordform, self.wfls_wflink.linked_to.wordform, self.wfls_lexicon.lexicon_name)
+        return '<WordformLinkSource {} -> {} in "{}">'.format(
+            self.wfls_wflink.linked_from.wordform,
+            self.wfls_wflink.linked_to.wordform,
+            self.wfls_lexicon.lexicon_name,
+        )
 
 
 class MorphologicalParadigm(Base):
@@ -268,10 +309,11 @@ class MorphologicalParadigm(Base):
     X = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
     W = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
     V = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
-    
+
     wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
     pos = Column(String(10))
     word_type_code = Column(String(10))
+
 
 class ExternalLink(Base):
     """Table for storing ids from external sources of wordforms.
@@ -280,8 +322,10 @@ class ExternalLink(Base):
     """
     __tablename__ = 'external_links'
 
-    external_link_id  = Column(BigInteger().with_variant(Integer, 'sqlite'), 
-                               primary_key=True)
+    external_link_id = Column(
+        BigInteger().with_variant(Integer, 'sqlite'),
+        primary_key=True
+    )
     wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
     source_name = Column(String(5))
     source_id = Column(String(10))

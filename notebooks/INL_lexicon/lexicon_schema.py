@@ -9,10 +9,16 @@ metadata = Base.metadata
 
 
 class AnalyzedWordform(Base):
-    __tablename__ = 'analyzed_wordforms'
+    __tablename__ = "analyzed_wordforms"
     __table_args__ = (
-        Index('awfKey', 'part_of_speech', 'lemma_id', 'wordform_id',
-              'multiple_lemmata_analysis_id', 'derivation_id'),
+        Index(
+            "awfKey",
+            "part_of_speech",
+            "lemma_id",
+            "wordform_id",
+            "multiple_lemmata_analysis_id",
+            "derivation_id",
+        ),
     )
 
     analyzed_wordform_id = Column(BIGINT(20), primary_key=True)
@@ -33,7 +39,7 @@ class AnalyzedWordform(Base):
 
 
 class Document(Base):
-    __tablename__ = 'documents'
+    __tablename__ = "documents"
 
     document_id = Column(BIGINT(20), primary_key=True)
     persistent_id = Column(String(255), index=True)
@@ -59,10 +65,17 @@ class Document(Base):
 
 
 class Lemmata(Base):
-    __tablename__ = 'lemmata'
+    __tablename__ = "lemmata"
     __table_args__ = (
-        Index('lemmaKeyTuple', 'modern_lemma', 'gloss', 'lemma_part_of_speech',
-              'ne_label', 'language_id', unique=True),
+        Index(
+            "lemmaKeyTuple",
+            "modern_lemma",
+            "gloss",
+            "lemma_part_of_speech",
+            "ne_label",
+            "language_id",
+            unique=True,
+        ),
     )
 
     lemma_id = Column(BIGINT(20), primary_key=True, index=True)
@@ -80,10 +93,17 @@ class Lemmata(Base):
 
 
 class TokenAttestation(Base):
-    __tablename__ = 'token_attestations'
+    __tablename__ = "token_attestations"
     __table_args__ = (
-        Index('tlaKey', 'analyzed_wordform_id', 'derivation_id', 'document_id',
-              'start_pos', 'end_pos', unique=True),
+        Index(
+            "tlaKey",
+            "analyzed_wordform_id",
+            "derivation_id",
+            "document_id",
+            "start_pos",
+            "end_pos",
+            unique=True,
+        ),
     )
 
     attestation_id = Column(BIGINT(20), primary_key=True)
@@ -105,7 +125,7 @@ class TokenAttestation(Base):
 
 
 class Wordform(Base):
-    __tablename__ = 'wordforms'
+    __tablename__ = "wordforms"
 
     wordform_id = Column(BIGINT(20), primary_key=True)
     wordform = Column(VARCHAR(255), unique=True)

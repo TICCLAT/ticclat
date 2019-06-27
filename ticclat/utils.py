@@ -12,6 +12,9 @@ import pandas as pd
 
 import sh
 
+# from itertools import takewhile, repeat
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,30 +35,37 @@ def anahash_df(wfreq, alphabet_file):
         pandas DataFrame containing the word forms as index and anahash values
         as column.
     """
-    logger.info('Running TICCL-anahash.')
+    logger.info("Running TICCL-anahash.")
 
     if wfreq.empty or wfreq is None:
-        msg = 'Input "wfreq" is empty or None. Please input non-empty word ' \
-              'frequency data.'
+        msg = (
+            'Input "wfreq" is empty or None. Please input non-empty word '
+            "frequency data."
+        )
         warnings.warn(msg)
 
     # save word frequency data to temporary file
     (fd, tmpfile) = tempfile.mkstemp()
     os.close(fd)
 
-    wfreq.to_csv(tmpfile, sep='\t', header=False)
+    wfreq.to_csv(tmpfile, sep="\t", header=False)
 
     # run ticcl using sh
     try:
-        sh.TICCL_anahash(['--list', '--alph', alphabet_file, tmpfile])
+        sh.TICCL_anahash(["--list", "--alph", alphabet_file, tmpfile])
     except sh.ErrorReturnCode as e:
-        raise(ValueError('Running TICCL-anahash failed: {}'.format(e.stdout)))
+        raise (ValueError("Running TICCL-anahash failed: {}".format(e.stdout)))
 
     # read anahashes and return dataframe
-    anahashes = pd.read_csv('{}.list'.format(tmpfile), sep='\t', header=None,
-                            names=['anahash'], index_col=0,
-                            # Make sure 'null' is read as string and not NaN
-                            keep_default_na=False)
+    anahashes = pd.read_csv(
+        "{}.list".format(tmpfile),
+        sep="\t",
+        header=None,
+        names=["anahash"],
+        index_col=0,
+        # Make sure 'null' is read as string and not NaN
+        keep_default_na=False,
+    )
     return anahashes
 
 
@@ -99,10 +109,8 @@ def write_json_lines(fh, generator):
 
 
 def json_line(obj):
-    return '{}\n'.format(json.dumps(obj))
+    return "{}\n".format(json.dumps(obj))
 
-
-from itertools import takewhile, repeat
 
 def count_lines(fh):
     """From https://stackoverflow.com/q/845058/1199693"""
@@ -152,13 +160,13 @@ def get_temp_file():
     Returns:
         File handle of the temporary file.
     """
-    fh = tempfile.TemporaryFile(mode='w+')
+    fh = tempfile.TemporaryFile(mode="w+")
     return fh
 
 
 def iterate_wf(lst):
     for wf in lst:
-        yield {'wordform': wf}
+        yield {"wordform": wf}
 
 
 def split_component_code(code, wf):
@@ -206,17 +214,17 @@ def timeit(method):
 
     Source: https://medium.com/pythonhive/fa04cb6bb36d
     """
+
     def timed(*args, **kw):
         ts = time.time()
         result = method(*args, **kw)
         te = time.time()
 
-        if 'log_time' in kw:
-            name = kw.get('log_name', method.__name__.upper())
-            kw['log_time'][name] = int((te - ts) * 1000)
+        if "log_time" in kw:
+            name = kw.get("log_name", method.__name__.upper())
+            kw["log_time"][name] = int((te - ts) * 1000)
         else:
-            logger.info('{} took {:.2f} ms'.format(method.__name__,
-                                                   (te - ts) * 1000))
+            logger.info("{} took {:.2f} ms".format(method.__name__, (te - ts) * 1000))
         return result
 
     return timed

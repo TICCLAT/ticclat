@@ -145,14 +145,21 @@ Create a `.env` file with the following:
   DATABASE_URL=mysql://[user]:[pass]@[host]:[port]/[db_name]
 
   FLASK_APP=ticclat.flask_app.py
-  FLASK_ENV=PRODUCTION
+  FLASK_ENV=production
   FLASK_DEBUG=0
   
   #for DEV:
-  #FLASK_ENV=DEVELOPMENT
+  #FLASK_ENV=development
   #FLASK_DEBUG=1
 
-You can now run a development server using: `flask run`, or a production server using gunicorn: `gunicorn ticclat.flask_app`.
+You can now run a development server using: `flask run`
+
+Or a production server:
+    
+.. code-block:: console
+
+  export $(cat .env | xargs)
+  gunicorn ticclat.flask_app:app --bind 0.0.0.0:8000
 
 Documentation
 *************
