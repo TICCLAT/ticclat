@@ -7,7 +7,8 @@ from ..dbutils import session_scope, add_morphological_paradigms
 
 import glob
 
-INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms265.tsv'
+INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms267.TYPOLIST6.tsv'
+
 
 def ingest(session, base_dir='', in_file=INPUT, **kwargs):
     with session_scope(session) as s:
