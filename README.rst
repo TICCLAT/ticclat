@@ -93,6 +93,28 @@ in MySQLdb.
 Change it to `/tmp/mysql.sock` if you get `OperationError: 2006 ...` when
 running `ticclat` tasks like ingesting corpora or lexica.
 
+Changes to the Database Schema
+------------------------------
+
+To apply changes to the database schema, we use [alembic](https://alembic.sqlalchemy.org/en/latest/index.html).
+
+Alembic is configured to read the information needed to connect to the database 
+database from environment variables:
+
+* `DB_NAME`
+* `DB_USER`
+* `DB_PASSWORD`
+* `DB_HOST`, e.g., localhost
+
+To migrate the database to the latest database schema run:
+
+.. code-block:: console
+  alembic upgrade
+
+**Important note**: if you are creating the database from scratch, **do not** use 
+the alembic database migrations. Instead, use SQLAlchemy to create a complete new 
+instance of the database. 
+
 Flask web app
 *************
 

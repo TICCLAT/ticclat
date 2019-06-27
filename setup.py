@@ -43,6 +43,7 @@ setup(
         "pandas",
         "sh",
         "SQLAlchemy",
+        'alembic',
         "tqdm",
         "nltk",
         "mysqlclient",
