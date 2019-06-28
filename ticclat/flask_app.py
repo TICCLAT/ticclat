@@ -11,9 +11,9 @@ from ticclat import settings
 from ticclat import raw_queries
 from ticclat.ticclat_schema import Corpus
 
-print(settings.DATABASE_URL)
 engine = create_engine(settings.DATABASE_URL)
-session = sessionmaker(bind=engine)()
+Session = sessionmaker(bind=engine)
+session = Session()
 md = sqlalchemy.MetaData()
 
 app = Flask(__name__)

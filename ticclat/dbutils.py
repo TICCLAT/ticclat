@@ -28,6 +28,7 @@ from ticclat.ticclat_schema import (
     WordformLink,
     WordformLinkSource,
     MorphologicalParadigm,
+    MorphParadigm,
 )
 from ticclat.utils import (
     chunk_df,
@@ -557,36 +558,36 @@ def add_morphological_paradigms(session, in_file):
                                                  'pos_tags',
                                                  'int_ids'])
     # drop first row (contains empty wordform)
-    data = data.drop([0])
+    data = data.drop([0]).reset_index(drop=True)
 
     # store wordforms for in database
     wfs = data[['wordform']]
     bulk_add_wordforms(session, wfs)
 
-    # get the morphological variants from the pandas dataframe
-    result = defaultdict(list)
-    for row in data.iterrows():
-        codes = row[1]['component_codes'].split('#')
-        wf = row[1]['wordform']
-        for code in codes:
-            result[wf].append(split_component_code(code, wf))
-
     # lookup wordform ids
-    s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
-    mapping = session.execute(s).fetchall()
+    s = select([Wordform.wordform_id, Wordform.wordform]).where(Wordform.wordform.in_(wfs['wordform']))
+    results = session.execute(s).fetchall()
+    mapping = {r[1]: r[0] for r in results}  # maps wordform to wordform_id
 
-    filtered = defaultdict(dict)
+    df = data
+    df['pos'] = df['pos_tags']
+    df['wordform_id'] = df['wordform'].map(mapping)
+    df_codes = pd.DataFrame(list(df['component_codes'].map(split_component_code)))
+    df = pd.concat([df, df_codes], axis=1)
+    df = df.where((pd.notnull(df)), None)
+    table: pd.DataFrame = df[['wordform_id', 'Z', 'Y', 'X', 'W', 'V', 'word_type_code', 'pos']]
 
-    with get_temp_file() as mp_file:
-        for paradigm in morph_iterator(result, mapping):
-            filtered['{}-{}-{}-{}-{}'.format(paradigm['Z'], paradigm['Y'],
-                                             paradigm['X'], paradigm['W'],
-                                             paradigm['V'])] = paradigm
+    sql_insert_batches(session, MorphParadigm, table.to_dict(orient='records'), len(table))
 
-        t = write_json_lines(mp_file, filtered.values())
-        logger.info(f'Wrote {t} morphological variants.')
-        sql_insert_batches(session, MorphologicalParadigm, 
-                           read_json_lines(mp_file), batch_size=50000)
+    # table.to_sql(
+    #     name=MorphParadigm.__tablename__,
+    #     con=session,
+    #     if_exists='append',
+    #     index=False,
+    #     chunksize=10000,
+    # )
+
+
 
 
 def create_ticclat_database(

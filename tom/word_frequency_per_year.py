@@ -5,7 +5,7 @@ import pandas
 connection = engine.connect()
 
 query = """
-SELECT SUM(1e9 * frequency/word_count) AS normalized_frequency, ROUND(
+SELECT 1e9 * SUM(frequency)/SUM(word_count) AS normalized_frequency, ROUND(
 CASE
     WHEN pub_year IS NOT NULL THEN pub_year
     ELSE (year_from + year_to) / 2
@@ -17,8 +17,9 @@ GROUP BY year
 HAVING year IS NOT NULL
 ORDER BY year ASC
     """
-df = pandas.read_sql(query, connection, params={'lookup_word': 'scheurbuik'})
+df = pandas.read_sql(query, connection, params={'lookup_word': 'internet'})
 
 # df.sort_index(by='year').plot.bar(x='year', y='sum_word_count')
 df.plot.scatter(x='year', y='normalized_frequency', )
 plt.show()
+

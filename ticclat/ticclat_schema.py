@@ -299,6 +299,22 @@ class WordformLinkSource(Base):
         )
 
 
+class MorphParadigm(Base):
+    """Table for storing information about morphological paradigms of wordforms.
+    """
+    __tablename__ = 'morph_paradigms'
+
+    wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'), primary_key=True)
+    Z = Column(BigInteger())
+    Y = Column(BigInteger())
+    X = Column(BigInteger())
+    W = Column(BigInteger())
+    V = Column(BigInteger())
+    word_type_code = Column(String(10))
+    pos = Column(String(10))
+
+
+
 class MorphologicalParadigm(Base):
     """Table for storing information about morphological paradigms of wordforms.
     """

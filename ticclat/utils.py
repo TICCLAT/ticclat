@@ -169,10 +169,11 @@ def iterate_wf(lst):
         yield {"wordform": wf}
 
 
-def split_component_code(code, wf):
+def split_component_code(code):
     regex=r'Z(?P<Z>\d{4})Y(?P<Y>\d{4})X(?P<X>\d{4})W(?P<W>\d{8})V(?P<V>\d{4})_(?P<wt_code>.+)'
     #print(code)
-    m = re.search(regex, code)
+    # note: some codes consist of multiple codes, separated with #
+    m = re.search(regex, code.split('#')[0])
     if m:
         #print(m)
         #print(m.group('wt_code'))
@@ -182,7 +183,7 @@ def split_component_code(code, wf):
                 'W': int(m.group('W')),
                 'V': int(m.group('V')),
                 'word_type_code': m.group('wt_code'),
-                'wordform': wf}
+                }
     else:
         #print(wf, code)
         return None
