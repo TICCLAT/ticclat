@@ -3,13 +3,15 @@ import os
 
 import pandas
 import sqlalchemy
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from ticclat import settings
+from ticclat import raw_queries
 from ticclat.ticclat_schema import Corpus
 
+print(settings.DATABASE_URL)
 engine = create_engine(settings.DATABASE_URL)
 session = sessionmaker(bind=engine)()
 md = sqlalchemy.MetaData()
@@ -32,7 +34,9 @@ if os.environ.get("FLASK_ENV", "development") == "production":
 
 @app.route("/")
 def home():
-    return "Welcome to TICCLAT."
+    route_iterator = app.url_map.iter_rules()
+    routes = [str(rule) for rule in route_iterator]
+    return jsonify(sorted(routes))
 
 
 @app.route("/tables")
@@ -49,49 +53,44 @@ def table_columns(table_name: str):
 @app.route("/corpora")
 def corpora():
     def corpus_repr(corpus):
-        return {"name": corpus.name, "num_documents": len(corpus.corpus_documents)}
+        return {"name": corpus.name, "num_documents": len(corpus.corpus_documents), "id": corpus.corpus_id}
 
     return jsonify(list(map(corpus_repr, session.query(Corpus).all())))
+
+
+@app.route("/word_frequency_per_year/<word_name>")
+def word_frequency_per_year(word_name: str):
+    corpus_id = request.args.get('corpus_id')
+    if corpus_id:
+        corpus_id = int(corpus_id)
+    connection = engine.connect()
+    query = raw_queries.query_word_frequency_per_year(corpus_id)
+    df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
+    resp = jsonify(df.to_dict(orient='record'))
+    resp.headers['X-QUERY'] = json.dumps(query)
+    return resp
+
+
+@app.route("/word_frequency_per_corpus/<word_name>")
+def word_frequency_per_corpus(word_name: str):
+    connection = engine.connect()
+    query = raw_queries.query_word_frequency_per_corpus()
+    df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
+    return jsonify(df.to_dict(orient='record'))
 
 
 @app.route("/word/<word_name>")
 def word(word_name: str):
     connection = engine.connect()
-    query = """
-SELECT    wordforms.wordform, 
-          lexicon_name 
-FROM      wordform_links 
-LEFT JOIN wordforms 
-ON        wordform_links.wordform_to = wordforms.wordform_id 
-LEFT JOIN source_x_wordform_link 
-ON        wordform_links.wordform_from = source_x_wordform_link.wordform_from 
-AND       wordform_links.wordform_to = source_x_wordform_link.wordform_to 
-LEFT JOIN lexica 
-ON        source_x_wordform_link.lexicon_id = lexica.lexicon_id 
-WHERE     wordform_links.wordform_from = 
-          ( 
-                 SELECT wordform_id 
-                 FROM   wordforms 
-                 WHERE  wordform = %(lookup_word)s
-          )
-"""
+    query =raw_queries.query_word_links()
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
     lexicon_variants = df.to_dict(orient='records')
 
-    query = """
-SELECT wf2.wordform
-FROM wordforms
-       LEFT JOIN wordforms AS wf2 ON wordforms.anahash_id = wf2.anahash_id
-WHERE wordforms.wordform = %(lookup_word)s
-    """
+    query = raw_queries.query_anahash_links()
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
     anahash_variants = df['wordform'].to_list()
 
-    query = """
-SELECT wordform FROM morphological_paradigms AS m1 LEFT JOIN morphological_paradigms AS m2 ON m1.X = m2.X AND m1.Y = m2.Y AND m1.Z = m2.Z AND m1.W = m2.W
-    LEFT JOIN wordforms w on m1.wordform_id = w.wordform_id
-WHERE m2.wordform_id = (SELECT wordform_id FROM wordforms WHERE wordform = %(lookup_word)s);
-"""
+    query = raw_queries.query_morph_links()
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
     morph_variants = df['wordform'].to_list()
 
