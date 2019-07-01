@@ -87,6 +87,7 @@ def word_frequency_per_corpus(word_name: str):
 @app.route("/word_frequency_per_corpus_per_year/<word_name>")
 def word_frequency_per_corpus_per_year(word_name: str):
     r = queries.wordform_in_corpora_over_time(session, wf=word_name)
+    r = r.dropna(subset=['pub_year'])
     r['normalized_term_frequency'] = r['term_frequency'] / r['num_words'] * 100.0
 
     result = {}
