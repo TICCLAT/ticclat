@@ -90,13 +90,31 @@ def word_frequency_per_corpus_per_year(word_name: str):
     r = r.dropna(subset=['pub_year'])
     r['normalized_term_frequency'] = r['term_frequency'] / r['num_words'] * 100.0
 
-    result = {}
+    # get domain and range
+    min_year = r['pub_year'].min()
+    max_year = r['pub_year'].max()
+
+    min_freq = r['normalized_term_frequency'].min()
+    max_freq = r['normalized_term_frequency'].max()
+
+    md = {
+        'min_year': min_year,
+        'max_year': max_year,
+        'min_freq': min_freq,
+        'max_freq': max_freq
+    }
+
+    # create result
+    result = []
     for name, data in r.groupby('name'):
-        result[name] = []
+        corpus_data = {'name': name, 'data': []}
         for row in data.iterrows():
-            result[name].append({'year': row[1]['pub_year'], 'freq': row[1]['normalized_term_frequency']})
+            corpus_data['data'].append(
+                {'year': row[1]['pub_year'], 
+                 'freq': row[1]['normalized_term_frequency']})
+        result.append(corpus_data)
     
-    return jsonify(result)
+    return jsonify({'metadata': md, 'data': result})
 
 
 @app.route("/word/<word_name>")
