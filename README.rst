@@ -109,7 +109,7 @@ database from environment variables:
 To migrate the database to the latest database schema run:
 
 .. code-block:: console
-  alembic upgrade
+  alembic upgrade head
 
 **Important note**: if you are creating the database from scratch, **do not** use 
 the alembic database migrations. Instead, use SQLAlchemy to create a complete new 
