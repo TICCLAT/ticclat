@@ -157,7 +157,7 @@ class Wordform(Base):
 
     wordform_id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True)
     wordform = Column(Unicode(255, convert_unicode=False), unique=True, index=True)
-    anahash_id = Column(BigInteger(), ForeignKey("anahashes.anahash_id"))
+    anahash_id = Column(BigInteger(), ForeignKey("anahashes.anahash_id", ondelete='SET NULL'))
 
     anahash = relationship("Anahash")
     wordform_lowercase = Column(
