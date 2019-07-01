@@ -299,22 +299,6 @@ class WordformLinkSource(Base):
         )
 
 
-class MorphologicalParadigm(Base):
-    """Table for storing information about morphological paradigms of wordforms.
-    """
-    __tablename__ = 'morphological_paradigms'
-
-    Z = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
-    Y = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
-    X = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
-    W = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
-    V = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
-
-    wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
-    pos = Column(String(10))
-    word_type_code = Column(String(10))
-
-
 class ExternalLink(Base):
     """Table for storing ids from external sources of wordforms.
 
