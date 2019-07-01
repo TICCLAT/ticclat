@@ -50,7 +50,7 @@ def run(
     envvars_path="ENVVARS.txt",
     db_name="ticclat_test",
     reset_db=False,
-    alphabet_file="/data/ticcl/nld.aspell.dict.lc.chars",
+    alphabet_file="/data/ALPH/nld.aspell.dict.clip20.lc.LD3.charconfus.clip20.lc.chars",
     batch_size=5000,
     include=[],
     exclude=[],
@@ -58,6 +58,7 @@ def run(
     anahash=True,
     tmpdir="/data/tmp",
     loglevel="INFO",
+    reset_anahashes=False,
     **kwargs
 ):
     # Read information to connect to the database and put it in environment variables
@@ -68,6 +69,8 @@ def run(
         update_anahashes,
         session_scope,
     )
+    from ticclat.ticclat_schema import Anahash
+
     from tqdm import tqdm
     import tempfile
 
@@ -105,6 +108,12 @@ def run(
         ingest_all(
             Session, batch_size=batch_size, include=include, exclude=exclude, **kwargs
         )
+
+    if reset_anahashes:
+        logger.info("removing all existing anahashes...")
+        with session_scope(Session) as session:
+            num_rows_deleted = session.query(Anahash).delete()
+        logger.info(f"removed {num_rows_deleted} anahashes")
 
     if anahash:
         logger.info("adding anahashes...")
