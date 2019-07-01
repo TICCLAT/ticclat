@@ -7,17 +7,22 @@ from flask import Flask, jsonify, request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from flask_sqlalchemy_session import flask_scoped_session
+
 from ticclat import settings
 from ticclat import raw_queries
+from ticclat import queries
 from ticclat.ticclat_schema import Corpus
 
 print(settings.DATABASE_URL)
 engine = create_engine(settings.DATABASE_URL)
-session = sessionmaker(bind=engine)()
+session_factory = sessionmaker(bind=engine)
 md = sqlalchemy.MetaData()
 
 app = Flask(__name__)
 app.config.update()
+
+session = flask_scoped_session(session_factory, app)
 
 # error handler in production:
 if os.environ.get("FLASK_ENV", "development") == "production":
@@ -77,6 +82,20 @@ def word_frequency_per_corpus(word_name: str):
     query = raw_queries.query_word_frequency_per_corpus()
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
     return jsonify(df.to_dict(orient='record'))
+
+
+@app.route("/word_frequency_per_corpus_per_year/<word_name>")
+def word_frequency_per_corpus_per_year(word_name: str):
+    r = queries.wordform_in_corpora_over_time(session, wf=word_name)
+    r['normalized_term_frequency'] = r['term_frequency'] / r['num_words'] * 100.0
+
+    result = {}
+    for name, data in r.groupby('name'):
+        result[name] = []
+        for row in data.iterrows():
+            result[name].append({'year': row[1]['pub_year'], 'freq': row[1]['normalized_term_frequency']})
+    
+    return jsonify(result)
 
 
 @app.route("/word/<word_name>")

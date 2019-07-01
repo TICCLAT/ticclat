@@ -17,7 +17,8 @@ with open("README.rst") as readme_file:
 setup(
     name="ticclat",
     version=version["__version__"],
-    description="TICCLAT is a tool for text-induced corpus correction and lexical assessment.",
+    description=
+    "TICCLAT is a tool for text-induced corpus correction and lexical assessment.",
     long_description=readme + "\n\n",
     author="Janneke van der Zwaan",
     author_email="j.vanderzwaan@esciencecenter.nl",
@@ -48,6 +49,7 @@ setup(
         "nltk",
         "mysqlclient",
         "sqlalchemy_utils",
+        "Flask-SQLAlchemy-Session",
         "sklearn",
         "python-dotenv",
         "flask",
