@@ -113,6 +113,7 @@ def wordform_in_corpora_over_time(session, wf):
         .group_by(
             Corpus.name, Document.pub_year, Wordform.wordform, Wordform.wordform_id
         )
+        .order_by(Document.pub_year)
     )
 
     logger.debug(f"Executing query:\n{q}")
