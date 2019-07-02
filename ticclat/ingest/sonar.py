@@ -19,6 +19,8 @@ def ingest(session, base_dir="", sonar_dir="SONAR500", **kwargs):
         os.path.basename(f).split(".", 1)[0] for f in in_files
     ]
     document_metadata["language"] = "nl"
+    document_metadata["year_from"] = 1950
+    document_metadata["year_to"] = 2010
     # More metadata?
 
     with session_scope(session) as s:
