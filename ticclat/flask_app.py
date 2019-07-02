@@ -107,14 +107,14 @@ def word_frequency_per_corpus_per_year(word_name: str):
     # create result
     result = []
     for name, data in r.groupby('name'):
-        corpus_data = {'name': name, 'data': []}
+        corpus_data = {'name': name, 'frequencies': []}
         for row in data.iterrows():
-            corpus_data['data'].append(
+            corpus_data['frequencies'].append(
                 {'year': row[1]['pub_year'], 
                  'freq': row[1]['normalized_term_frequency']})
         result.append(corpus_data)
     
-    return jsonify({'metadata': md, 'data': result})
+    return jsonify({'wordform': word_name, 'metadata': md, 'corpora': result})
 
 
 @app.route("/word/<word_name>")
