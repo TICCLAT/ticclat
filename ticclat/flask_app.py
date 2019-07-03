@@ -25,37 +25,39 @@ app.config.update()
 session = flask_scoped_session(session_factory, app)
 
 # error handler in production:
-if os.environ.get("FLASK_ENV", "development") == "production":
-
+if os.environ.get('FLASK_ENV', 'development') == 'production':
     @app.errorhandler(Exception)
     def handle_bad_request(e):
         code = 500
         try:
             code = e.code
-        except Exception as e:
+        except:
             pass
-        return jsonify({"type": e.__class__.__name__, "message": str(e)}), code
+        return jsonify({
+            'type': e.__class__.__name__,
+            'message': str(e),
+        }), code
 
 
-@app.route("/")
+@app.route('/')
 def home():
     route_iterator = app.url_map.iter_rules()
     routes = [str(rule) for rule in route_iterator]
     return jsonify(sorted(routes))
 
 
-@app.route("/tables")
+@app.route('/tables')
 def tables():
     return jsonify(engine.table_names())
 
 
-@app.route("/tables/<table_name>")
+@app.route('/tables/<table_name>')
 def table_columns(table_name: str):
     table = sqlalchemy.Table(table_name, md, autoload=True, autoload_with=engine)
     return jsonify({i[0]: str(i[1].type) for i in table.c.items()})
 
 
-@app.route("/corpora")
+@app.route('/corpora')
 def corpora():
     def corpus_repr(corpus):
         return {"name": corpus.name, "num_documents": len(corpus.corpus_documents), "id": corpus.corpus_id}
