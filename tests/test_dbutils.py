@@ -93,6 +93,36 @@ def test_bulk_add_wordforms_whitespace(dbsession):
     assert wrdfrms[1].wordform == "wf2"
 
 
+def test_bulk_add_wordforms_drop_empty_and_nan(dbsession):
+    wfs = pd.DataFrame()
+    wfs["wordform"] = ["wf1", "", "wf2", np.NaN]
+
+    print(dbsession)
+
+    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+
+    wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
+
+    assert len(wrdfrms) == 2
+    assert wrdfrms[0].wordform == "wf1"
+    assert wrdfrms[1].wordform == "wf2"
+
+
+def test_bulk_add_wordforms_replace_spaces(dbsession):
+    wfs = pd.DataFrame()
+    wfs["wordform"] = ["wf 1", "wf2"]
+
+    print(dbsession)
+
+    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+
+    wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
+
+    assert len(wrdfrms) == 2
+    assert wrdfrms[0].wordform == "wf_1"
+    assert wrdfrms[1].wordform == "wf2"
+
+
 def test_add_lexicon(dbsession):
     name = "test lexicon"
 

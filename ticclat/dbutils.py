@@ -135,6 +135,9 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
     # remove whitespace from wordforms
     wfs["wordform"] = wfs["wordform"].str.strip()
 
+    # replace spaces with underscores
+    wfs['wordform'] = wfs['wordform'].str.replace(' ', '_')
+
     # remove empty entries
     wfs["wordform"].replace("", np.nan, inplace=True)
     wfs.dropna(subset=["wordform"], inplace=True)
@@ -600,8 +603,6 @@ def add_morphological_paradigms(session, in_file):
     # lookup wordform ids
     s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
     mapping = session.execute(s).fetchall()
-
-    filtered = defaultdict(dict)
 
     with get_temp_file() as mp_file:
         t = write_json_lines(mp_file, morph_iterator(result, mapping))
