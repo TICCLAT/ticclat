@@ -28,16 +28,30 @@ def ingest(session, base_dir="", data_dir="DBNL", **kwargs):
     document_metadata["language"] = ["lim" if "LIM" in f else "nl" for f in in_files]
 
     years = [os.path.basename(f).rsplit(".", 2)[1].split("_")[0] for f in in_files]
-    year_from = [int(y.split("+")[0]) for y in years]
-    year_to = [
+    year_from_tmp = [int(y.split("+")[0]) for y in years]
+    year_to_tmp = [
         int(y.split("+")[0]) + int(y.split("+")[1])
         if len(y.split("+")) > 1
         else int(y.split("+")[0])
         for y in years
     ]
 
+    pub_year = []
+    year_from = []
+    year_to = []
+    for f, t in zip(year_from_tmp, year_to_tmp):
+        if f == t:
+            pub_year.append(f)
+            year_from.append(None)
+            year_to.append(None)
+        else:
+            pub_year.append(None)
+            year_from.append(f)
+            year_to.append(t)
+
     document_metadata["year_from"] = year_from
     document_metadata["year_to"] = year_to
+    document_metadata["pub_year"] = pub_year
     # More metadata?
 
     with session_scope(session) as s:
