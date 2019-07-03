@@ -575,8 +575,6 @@ def add_morphological_paradigms(session, in_file):
     s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
     mapping = session.execute(s).fetchall()
 
-    filtered = defaultdict(dict)
-
     with get_temp_file() as mp_file:
         t = write_json_lines(mp_file, morph_iterator(result, mapping))
         logger.info(f'Wrote {t} morphological variants.')
