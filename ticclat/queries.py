@@ -331,8 +331,8 @@ def get_wf_variants(session, wf):
         p = {'paradigm_code': c}
         for variant in get_paradigm_variants(session, paradigm).fetchall():
             vd = {'wordform': variant.wordform}
-            result = wordform_in_corpora_over_time(session, wf=variant.wordform)
-            vd['corpora'] = result
+            r, md = wordform_in_corpora_over_time(session, wf=variant.wordform)
+            vd['corpora'] = r
 
             if variant.word_type_code not in p.keys():
                 if variant.word_type_code == 'HCL':
