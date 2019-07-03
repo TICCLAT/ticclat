@@ -109,6 +109,9 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
     # remove whitespace from wordforms
     wfs["wordform"] = wfs["wordform"].str.strip()
 
+    # replace spaces with underscores
+    wfs['wordform'] = wfs['wordform'].str.replace(' ', '_')
+
     # remove empty entries
     wfs["wordform"].replace("", np.nan, inplace=True)
     wfs.dropna(subset=["wordform"], inplace=True)
