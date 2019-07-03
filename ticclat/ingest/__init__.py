@@ -65,9 +65,10 @@ def run(
     import os
     from ticclat.dbutils import (
         create_ticclat_database,
-        get_session,
+        get_session_from_env,
         update_anahashes,
         session_scope,
+        load_envvars_file,
     )
     from ticclat.ticclat_schema import Anahash
 
@@ -78,15 +79,7 @@ def run(
 
     tempfile.tempdir = tmpdir
 
-    with open(envvars_path) as f:
-        for line in f:
-            parts = line.split("=")
-            if len(parts) == 2:
-                os.environ[parts[0]] = parts[1].strip()
-
-    os.environ["dbname"] = db_name
-    if "host" not in os.environ.keys():
-        os.environ["host"] = "localhost"
+    load_envvars_file(envvars_path, db_name=db_name, return_sessionmaker=False)
 
     if reset_db:
         create_ticclat_database(
@@ -97,12 +90,7 @@ def run(
             host=os.environ["host"],
         )
 
-    Session = get_session(
-        os.environ["user"],
-        os.environ["password"],
-        os.environ["dbname"],
-        host=os.environ["host"],
-    )
+    Session = get_session_from_env()
 
     if ingest:
         ingest_all(

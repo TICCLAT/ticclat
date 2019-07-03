@@ -77,6 +77,32 @@ def get_session(
     return sessionmaker(bind=engine)
 
 
+def get_session_from_env(**kwargs):
+    Session = get_session(
+        os.environ["user"],
+        os.environ["password"],
+        os.environ["dbname"],
+        host=os.environ["host"],
+    )
+    return Session
+
+
+def load_envvars_file(envvars_path, db_name=None, return_sessionmaker=True):
+    with open(envvars_path) as f:
+        for line in f:
+            parts = line.split("=")
+            if len(parts) == 2:
+                os.environ[parts[0]] = parts[1].strip()
+
+    if db_name is not None:
+        os.environ["dbname"] = db_name
+    if "host" not in os.environ.keys():
+        os.environ["host"] = "localhost"
+
+    if return_sessionmaker:
+        return get_session_from_env()
+
+
 def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=None):
     wf = None
 
