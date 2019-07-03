@@ -145,7 +145,7 @@ def wordform_in_corpora_over_time(session, wf):
             corpus_data['frequencies'].append(
                 {'year': row[1]['pub_year'], 
                 'freq': row[1]['normalized_tf']})
-            result.append(corpus_data)
+        result.append(corpus_data)
 
     return result, md
 
