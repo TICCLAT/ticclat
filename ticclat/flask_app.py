@@ -86,35 +86,9 @@ def word_frequency_per_corpus(word_name: str):
 
 @app.route("/word_frequency_per_corpus_per_year/<word_name>")
 def word_frequency_per_corpus_per_year(word_name: str):
-    r = queries.wordform_in_corpora_over_time(session, wf=word_name)
-    r = r.dropna(subset=['pub_year'])
-    r['normalized_term_frequency'] = r['term_frequency'] / r['num_words'] * 100.0
-
-    # get domain and range
-    min_year = r['pub_year'].min()
-    max_year = r['pub_year'].max()
-
-    min_freq = r['normalized_term_frequency'].min()
-    max_freq = r['normalized_term_frequency'].max()
-
-    md = {
-        'min_year': min_year,
-        'max_year': max_year,
-        'min_freq': min_freq,
-        'max_freq': max_freq
-    }
-
-    # create result
-    result = []
-    for name, data in r.groupby('name'):
-        corpus_data = {'name': name, 'frequencies': []}
-        for row in data.iterrows():
-            corpus_data['frequencies'].append(
-                {'year': row[1]['pub_year'], 
-                 'freq': row[1]['normalized_term_frequency']})
-        result.append(corpus_data)
+    r, md = queries.wordform_in_corpora_over_time(session, wf=word_name)
     
-    return jsonify({'wordform': word_name, 'metadata': md, 'corpora': result})
+    return jsonify({'wordform': word_name, 'metadata': md, 'corpora': r})
 
 
 @app.route("/word/<word_name>")
@@ -138,4 +112,9 @@ def word(word_name: str):
         'morph_variants': morph_variants,
     })
 
+@app.route("/variants/<word_name>")
+def variants(word_name: str):
+    result = queries.get_wf_variants(session, word_name)
+    return jsonify({'wordform': word_name,
+                    'paradigms': result})
 
