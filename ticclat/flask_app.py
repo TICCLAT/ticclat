@@ -31,7 +31,7 @@ if os.environ.get('FLASK_ENV', 'development') == 'production':
         code = 500
         try:
             code = e.code
-        except:
+        except AttributeError:
             pass
         return jsonify({
             'type': e.__class__.__name__,
