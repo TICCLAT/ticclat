@@ -107,6 +107,10 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
     # remove whitespace from wordforms
     wfs['wordform'] = wfs['wordform'].str.strip()
 
+    # replace underscores with asterisk
+    # underscore means space and asterisk means misc character
+    wfs['wordform'] = wfs['wordform'].str.replace('_', '*')
+
     # replace spaces with underscores
     wfs['wordform'] = wfs['wordform'].str.replace(' ', '_')
 

@@ -117,6 +117,21 @@ def test_bulk_add_wordforms_replace_spaces(dbsession):
     assert wrdfrms[1].wordform == "wf2"
 
 
+def test_bulk_add_wordforms_replace_underscores(dbsession):
+    wfs = pd.DataFrame()
+    wfs["wordform"] = ["wf_1", "wf 2"]
+
+    print(dbsession)
+
+    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+
+    wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
+
+    assert len(wrdfrms) == 2
+    assert wrdfrms[0].wordform == "wf*1"
+    assert wrdfrms[1].wordform == "wf_2"
+
+
 def test_add_lexicon(dbsession):
     name = 'test lexicon'
 
