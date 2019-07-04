@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Documentation about ticclat"""
 
-from .__version__ import __version__
+from .__version__ import __version__  # noqa
 
 import logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())

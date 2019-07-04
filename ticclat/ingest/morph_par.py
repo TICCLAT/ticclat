@@ -1,11 +1,6 @@
-import re
-import copy
 import os.path
-import pandas as pd
 
 from ..dbutils import session_scope, add_morphological_paradigms
-
-import glob
 
 INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms267.TYPOLIST6.tsv'
 

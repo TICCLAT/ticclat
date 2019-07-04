@@ -26,10 +26,10 @@ def ingest(session, base_dir='', data_dir='DBNL', **kwargs):
                                   for f in in_files]
     document_metadata['language'] = ['lim' if 'LIM' in f else 'nl'
                                      for f in in_files]
-    
+
     years = [os.path.basename(f).rsplit('.', 2)[1].split('_')[0] for f in in_files]
     year_from = [int(y.split('+')[0]) for y in years]
-    year_to   = [int(y.split('+')[0]) + int(y.split('+')[1]) if len(y.split('+')) > 1 else int(y.split('+')[0]) for y in years]
+    year_to = [int(y.split('+')[0]) + int(y.split('+')[1]) if len(y.split('+')) > 1 else int(y.split('+')[0]) for y in years]
 
     document_metadata['year_from'] = year_from
     document_metadata['year_to'] = year_to

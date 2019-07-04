@@ -14,7 +14,7 @@ def ingest(session, base_dir='', data_dir='EDBO', **kwargs):
     # We are currently storing pub_year as int (which has some advantages),
     # how should we incorporate these files?
     # For now, we are ignoring them.
-    in_files = glob.glob(os.path.join(in_dir, '*1'+'[0-9]' * 3+'.clean'))
+    in_files = glob.glob(os.path.join(in_dir, '*1' + '[0-9]' * 3 + '.clean'))
 
     corpus_matrix, v = terms_documents_matrix_ticcl_frequency(in_files)
 
