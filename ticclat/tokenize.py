@@ -16,7 +16,7 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
 
 
-def nltk_tokenize(texts_file, punkt="tokenizers/punkt/dutch.pickle"):
+def nltk_tokenize(texts_file, punkt='tokenizers/punkt/dutch.pickle'):
     """
     Inputs:
         texts_file (str): File name of a file that contains the texts. This
@@ -26,12 +26,13 @@ def nltk_tokenize(texts_file, punkt="tokenizers/punkt/dutch.pickle"):
     Yields:
         Counter: term-frequency vector representing a document.
     """
-    nltk.download("punkt")
+    nltk.download('punkt')
     tokenizer = nltk.data.load(punkt)
 
     with open(texts_file) as f:
         for line in f:
-            tokens = [word_tokenize(sent) for sent in tokenizer.tokenize(line.strip())]
+            tokens = [word_tokenize(sent)
+                      for sent in tokenizer.tokenize(line.strip())]
 
             yield list(chain(*tokens))
 
@@ -39,15 +40,15 @@ def nltk_tokenize(texts_file, punkt="tokenizers/punkt/dutch.pickle"):
 def ticcl_frequency(in_files, max_word_length=255):
     for freq_file in in_files:
         c = {}
-        if freq_file.endswith("bz2"):
-            file_open = bz2.open(freq_file, "rt")
+        if freq_file.endswith('bz2'):
+            file_open = bz2.open(freq_file, 'rt')
         else:
             file_open = open(freq_file)
 
         with file_open as f:
             for line in f:
                 # Sometimes a word contains a space, so we split only on tab.
-                word, freq = line.split("\t")
+                word, freq = line.split('\t')
 
                 # The corpus may contain wordforms that are too long
                 if len(word) <= max_word_length:
