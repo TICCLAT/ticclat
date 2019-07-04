@@ -69,7 +69,7 @@ def clean_wordform_df(wordform_df):
     # remove parentheses around some words
     wordform_df = wordform_df.sort_values().str.strip("()")
     # remove abbreviations
-    abbreviation = wordform_df.str.contains('\.$')
+    abbreviation = wordform_df.str.contains(r'\.$')
     wordform_df = wordform_df[~abbreviation]
     # remove duplicates
     wordform_df = pd.Series(wordform_df.unique())
@@ -128,7 +128,7 @@ def clean_wordform_series(wordform_series, remove_duplicates=False):
     # remove parentheses around some words
     wordform_series = wordform_series.sort_values().str.strip("()")
     # remove abbreviations
-    abbreviation = wordform_series.str.contains('\.$')
+    abbreviation = wordform_series.str.contains(r'\.$')
     wordform_series = wordform_series[~abbreviation]
 
     if remove_duplicates:
