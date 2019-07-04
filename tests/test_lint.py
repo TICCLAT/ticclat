@@ -21,7 +21,7 @@ def test_pep8_conformance():
         for i, path in enumerate(paths):
             paths[i] = os.path.join(package_root, path)
 
-    style = pycodestyle.StyleGuide(ignore=['E501'])
+    style = pycodestyle.StyleGuide(ignore=['E501', 'W503'])
     style.options.exclude.extend(exclude_paths)
 
     success = style.check_files(check_paths).total_errors == 0
