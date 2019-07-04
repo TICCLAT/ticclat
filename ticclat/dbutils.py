@@ -139,7 +139,7 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
                         total += 1
                         to_add.append(
                             {'wordform': row['wordform'],
-                            'wordform_lowercase': row['wordform'].lower()}
+                             'wordform_lowercase': row['wordform'].lower()}
                         )
 
                 if to_add != []:
@@ -365,29 +365,29 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
         if wf_from != wf_to and (wf_from, wf_to) not in wf_links:
             s = select([WordformLink]). \
                 where(and_(WordformLink.wordform_from == wf_from,
-                            WordformLink.wordform_to == wf_to))
+                           WordformLink.wordform_to == wf_to))
             r = session.execute(s).fetchone()
             if r is None:
                 # Both directions of the relationship need to be added.
                 links_file.write(json_line({'wordform_from': wf_from,
-                                        'wordform_to': wf_to}))
+                                            'wordform_to': wf_to}))
                 links_file.write(json_line({'wordform_from': wf_to,
-                                        'wordform_to': wf_from}))
+                                            'wordform_to': wf_from}))
 
                 num_wf_links += 2
             # The wordform link sources (in both directions) need to be
             # written regardless of the existence of the wordform links.
             line = json_line({'wordform_from': wf_from,
-                                'wordform_to': wf_to,
-                                'lexicon_id': lexicon_id,
-                                'wordform_from_correct': wf_from_correct,
-                                'wordform_to_correct': wf_to_correct})
+                              'wordform_to': wf_to,
+                              'lexicon_id': lexicon_id,
+                              'wordform_from_correct': wf_from_correct,
+                              'wordform_to_correct': wf_to_correct})
             sources_file.write(line)
             line = json_line({'wordform_from': wf_to,
-                                'wordform_to': wf_from,
-                                'lexicon_id': lexicon_id,
-                                'wordform_from_correct': wf_to_correct,
-                                'wordform_to_correct': wf_from_correct})
+                              'wordform_to': wf_from,
+                              'lexicon_id': lexicon_id,
+                              'wordform_from_correct': wf_to_correct,
+                              'wordform_to_correct': wf_from_correct})
             sources_file.write(line)
             num_wf_link_sources += 2
 
@@ -524,7 +524,7 @@ def add_morphological_paradigms(session, in_file):
     with get_temp_file() as mp_file:
         t = write_json_lines(mp_file, morph_iterator(result, mapping))
         logger.info(f'Wrote {t} morphological variants.')
-        sql_insert_batches(session, MorphologicalParadigm, 
+        sql_insert_batches(session, MorphologicalParadigm,
                            read_json_lines(mp_file), batch_size=50000)
 
 

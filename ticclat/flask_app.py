@@ -89,14 +89,14 @@ def word_frequency_per_corpus(word_name: str):
 @app.route("/word_frequency_per_corpus_per_year/<word_name>")
 def word_frequency_per_corpus_per_year(word_name: str):
     r, md = queries.wordform_in_corpora_over_time(session, wf=word_name)
-    
+
     return jsonify({'wordform': word_name, 'metadata': md, 'corpora': r})
 
 
 @app.route("/word/<word_name>")
 def word(word_name: str):
     connection = engine.connect()
-    query =raw_queries.query_word_links()
+    query = raw_queries.query_word_links()
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
     lexicon_variants = df.to_dict(orient='records')
 
@@ -114,9 +114,9 @@ def word(word_name: str):
         'morph_variants': morph_variants,
     })
 
+
 @app.route("/variants/<word_name>")
 def variants(word_name: str):
     result = queries.get_wf_variants(session, word_name)
     return jsonify({'wordform': word_name,
                     'paradigms': result})
-

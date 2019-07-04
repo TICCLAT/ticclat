@@ -7,6 +7,7 @@ from ..sacoreutils import add_corpus_core
 
 import glob
 
+
 def ingest(session, base_dir='',
            sonar_dir='SONAR500', **kwargs):
     in_dir = os.path.join(base_dir, sonar_dir)

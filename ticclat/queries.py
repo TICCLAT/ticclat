@@ -21,11 +21,11 @@ def wordform_in_corpora(session, wf):
                 func.count(Document.document_id).label('document_frequency'),
                 func.sum(TextAttestation.frequency).label('term_frequency')]) \
         .select_from(Corpus.__table__.join(corpusId_x_documentId,
-                                           Corpus.corpus_id ==
-                                           corpusId_x_documentId.c.corpus_id)
+                                           Corpus.corpus_id
+                                           == corpusId_x_documentId.c.corpus_id)
                      .join(Document,
-                           Document.document_id ==
-                           corpusId_x_documentId.c.document_id)
+                           Document.document_id
+                           == corpusId_x_documentId.c.document_id)
                      .join(TextAttestation).join(Wordform)) \
         .where(Wordform.wordform == wf) \
         .group_by(Corpus.name, Wordform.wordform, Wordform.wordform_id)
@@ -44,11 +44,11 @@ def wordform_in_corpus_over_time(session, wf, corpus_name):
                 func.count(Document.document_id).label('document_frequency'),
                 func.sum(TextAttestation.frequency).label('term_frequency')]) \
         .select_from(Corpus.__table__.join(corpusId_x_documentId,
-                                           Corpus.corpus_id ==
-                                           corpusId_x_documentId.c.corpus_id)
+                                           Corpus.corpus_id
+                                           == corpusId_x_documentId.c.corpus_id)
                      .join(Document,
-                           Document.document_id ==
-                           corpusId_x_documentId.c.document_id)
+                           Document.document_id
+                           == corpusId_x_documentId.c.document_id)
                      .join(TextAttestation).join(Wordform)) \
         .where(and_(Wordform.wordform == wf, Corpus.name == corpus_name)) \
         .group_by(Document.pub_year, Wordform.wordform, Wordform.wordform_id)
@@ -115,8 +115,8 @@ def wordform_in_corpora_over_time(session, wf):
         corpus_data = {'name': name, 'frequencies': []}
         for row in data.iterrows():
             corpus_data['frequencies'].append(
-                {'year': row[1]['pub_year'], 
-                'freq': row[1]['normalized_tf']})
+                {'year': row[1]['pub_year'],
+                 'freq': row[1]['normalized_tf']})
         result.append(corpus_data)
 
     return result, md
@@ -177,11 +177,13 @@ def count_wfs_per_document_corpus(session, corpus_name):
         SQLAlchemy query result.
     """
     q = select([Document.title,
-               func.count(distinct(Wordform.wordform_id)).label('tot_freq')]) \
-        .select_from(
-            Corpus.__table__.join(corpusId_x_documentId).join(Document)
-            .join(TextAttestation).join(Wordform)
-        ).where(Corpus.name == corpus_name).group_by(Document.title)
+                func.count(distinct(Wordform.wordform_id)).label('tot_freq')])
+    q = q.select_from(
+        Corpus.__table__
+              .join(corpusId_x_documentId).join(Document)
+              .join(TextAttestation).join(Wordform)
+    )
+    q = q.where(Corpus.name == corpus_name).group_by(Document.title)
 
     logger.debug(f'Executing query:\n{q}')
 
@@ -257,6 +259,7 @@ def count_unique_wfs_in_corpus(session, corpus_name):
 
     return session.execute(q)
 
+
 def get_wf_variants(session, wf):
     paradigms = []
     for paradigm in get_wf_paradigms(session, wf).fetchall():
@@ -274,7 +277,7 @@ def get_wf_variants(session, wf):
                     p[variant.word_type_code] = []
 
             if variant.word_type_code == 'HCL':
-                # We should have a single HCL for each paradigm. Warn if that 
+                # We should have a single HCL for each paradigm. Warn if that
                 # is not the case.
                 if p[variant.word_type_code] is not None:
                     logger.warn(f'Found duplicate HCL for {variant.wordform}.')
@@ -288,10 +291,10 @@ def get_wf_variants(session, wf):
 
 def get_wf_paradigms(session, wf):
     q = select([Wordform.wordform_id,
-                Wordform.wordform, 
-                MorphologicalParadigm.Z, 
-                MorphologicalParadigm.Y, 
-                MorphologicalParadigm.X, 
+                Wordform.wordform,
+                MorphologicalParadigm.Z,
+                MorphologicalParadigm.Y,
+                MorphologicalParadigm.X,
                 MorphologicalParadigm.W,
                 MorphologicalParadigm.word_type_code]) \
         .select_from(MorphologicalParadigm.__table__.join(Wordform)) \
@@ -300,11 +303,11 @@ def get_wf_paradigms(session, wf):
 
 
 def get_paradigm_variants(session, paradigm):
-    q = select([Wordform.wordform, 
+    q = select([Wordform.wordform,
                 MorphologicalParadigm]) \
-            .select_from(Wordform.__table__.join(MorphologicalParadigm)) \
-            .where(and_(MorphologicalParadigm.Z == paradigm.Z,
-                        MorphologicalParadigm.Y == paradigm.Y,
-                        MorphologicalParadigm.X == paradigm.X,
-                        MorphologicalParadigm.W == paradigm.W))
+        .select_from(Wordform.__table__.join(MorphologicalParadigm)) \
+        .where(and_(MorphologicalParadigm.Z == paradigm.Z,
+                    MorphologicalParadigm.Y == paradigm.Y,
+                    MorphologicalParadigm.X == paradigm.X,
+                    MorphologicalParadigm.W == paradigm.W))
     return session.execute(q)

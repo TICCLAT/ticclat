@@ -48,9 +48,9 @@ def run(envvars_path="ENVVARS.txt", db_name="ticclat_test", reset_db=False,
 
     from tqdm import tqdm
     import tempfile
-    
+
     logger.setLevel(loglevel)
-    
+
     tempfile.tempdir = tmpdir
 
     load_envvars_file(envvars_path, db_name=db_name, return_sessionmaker=False)
@@ -64,7 +64,7 @@ def run(envvars_path="ENVVARS.txt", db_name="ticclat_test", reset_db=False,
 
     if ingest:
         ingest_all(Session, batch_size=batch_size, include=include,
-                exclude=exclude, **kwargs)
+                   exclude=exclude, **kwargs)
 
     if reset_anahashes:
         logger.info("removing all existing anahashes...")

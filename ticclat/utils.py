@@ -102,8 +102,6 @@ def json_line(obj):
     return '{}\n'.format(json.dumps(obj))
 
 
-from itertools import takewhile, repeat
-
 def count_lines(fh):
     """From https://stackoverflow.com/q/845058/1199693"""
     fh.seek(0)
@@ -162,17 +160,17 @@ def iterate_wf(lst):
 
 
 def split_component_code(code, wf):
-    regex=r'Z(?P<Z>\d{4})Y(?P<Y>\d{4})X(?P<X>\d{4})W(?P<W>\d{8})V(?P<V>\d{4})_(?P<wt_code>\w{3})(?P<wt_num>\d{3})?'
+    regex = r'Z(?P<Z>\d{4})Y(?P<Y>\d{4})X(?P<X>\d{4})W(?P<W>\d{8})V(?P<V>\d{4})_(?P<wt_code>\w{3})(?P<wt_num>\d{3})?'
     m = re.search(regex, code)
     if m:
         wt_num = None
         if m.group('wt_num'):
             wt_num = int(m.group('wt_num'))
-        return {'Z': int(m.group('Z')), 
-                'Y': int(m.group('Y')), 
-                'X': int(m.group('X')), 
-                'W': int(m.group('W')), 
-                'V': int(m.group('V')), 
+        return {'Z': int(m.group('Z')),
+                'Y': int(m.group('Y')),
+                'X': int(m.group('X')),
+                'W': int(m.group('W')),
+                'V': int(m.group('V')),
                 'word_type_code': m.group('wt_code'),
                 'word_type_number': wt_num,
                 'wordform': wf}

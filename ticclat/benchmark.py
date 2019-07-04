@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def random_corpus(num_documents, num_tokens_min, num_tokens_max, vocabulary):
     fake = Faker()
     for i in range(num_documents):
-        num_tokens = np.random.randint(num_tokens_min, num_tokens_max+1)
+        num_tokens = np.random.randint(num_tokens_min, num_tokens_max + 1)
 
         yield fake.words(nb=num_tokens, ext_word_list=vocabulary, unique=False)
 
@@ -25,7 +25,7 @@ def random_corpus(num_documents, num_tokens_min, num_tokens_max, vocabulary):
 def corpus_metadata(num_documents, language, year_min, year_max):
     md = pd.DataFrame()
     md['language'] = [language for i in range(num_documents)]
-    md['pub_year'] = [np.random.randint(year_min, year_max+1)
+    md['pub_year'] = [np.random.randint(year_min, year_max + 1)
                       for i in range(num_documents)]
 
     return md
@@ -36,12 +36,12 @@ def generate_corpora(num_corpora, num_documents_min, num_documents_max,
                      num_tokens_max, vocabulary):
     for i in range(num_corpora):
         num_documents = np.random.randint(num_documents_min,
-                                          num_documents_max+1)
+                                          num_documents_max + 1)
 
-        md = corpus_metadata(num_documents, language, year_min, year_max+1)
+        md = corpus_metadata(num_documents, language, year_min, year_max + 1)
 
         word_lists = random_corpus(num_documents, num_tokens_min,
-                                   num_tokens_max+1, vocabulary)
+                                   num_tokens_max + 1, vocabulary)
         corpus, v = terms_documents_matrix_word_lists(word_lists)
 
         yield corpus, v, md
@@ -73,7 +73,7 @@ def generate_lexica(num_lexica, num_wf_min, num_wf_max, vocabulary):
 
 
 def ingest_lexica(session, num_lexica, num_wf_min, num_wf_max, vocabulary):
-    lexica = generate_lexica(num_lexica, num_wf_min, num_wf_max+1, vocabulary)
+    lexica = generate_lexica(num_lexica, num_wf_min, num_wf_max + 1, vocabulary)
     for i, wfs in enumerate(lexica):
         name = f'Lexicon {i}'
         logger.info(f'Generating {name}')
@@ -89,7 +89,7 @@ def generate_linked_lexica(num_lexica, num_wf_min, num_wf_max, vocabulary):
 
         words = fake.words(nb=num_wf, ext_word_list=vocabulary, unique=True)
 
-        half = int(num_wf/2)
+        half = int(num_wf / 2)
 
         wfs = pd.DataFrame()
         wfs['from'] = words[:half]
@@ -99,7 +99,7 @@ def generate_linked_lexica(num_lexica, num_wf_min, num_wf_max, vocabulary):
 
 def ingest_linked_lexica(session, num_lexica, num_wf_min, num_wf_max,
                          vocabulary):
-    lexica = generate_linked_lexica(num_lexica, num_wf_min, num_wf_max+1,
+    lexica = generate_linked_lexica(num_lexica, num_wf_min, num_wf_max + 1,
                                     vocabulary)
 
     for i, wfs in enumerate(lexica):
