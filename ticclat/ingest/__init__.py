@@ -1,5 +1,5 @@
 from ticclat.ingest import elex, gb, opentaal, sonar, inl, sgd, edbo, \
-    twente_spelling_correction_list, dbnl
+    twente_spelling_correction_list, dbnl, morph_par
 import logging
 
 
@@ -16,6 +16,7 @@ all_sources = {
     'sgd': sgd,
     'edbo': edbo,
     'dbnl': dbnl,
+    'morph_par': morph_par
 }
 
 
@@ -36,40 +37,40 @@ def ingest_all(session, base_dir='/data',
 
 
 # For testing use db_name='ticclat_test', for production db_name='ticclat'
-def run(envvars_path='ENVVARS.txt', db_name='ticclat_test', reset_db=False,
-        alphabet_file='/data/ticcl/nld.aspell.dict.lc.chars', batch_size=5000,
-        include=[], exclude=[], ingest=True, anahash=True, tmpdir='/data/tmp',
-        loglevel='INFO', **kwargs):
+def run(envvars_path="ENVVARS.txt", db_name="ticclat_test", reset_db=False,
+        alphabet_file="/data/ALPH/nld.aspell.dict.clip20.lc.LD3.charconfus.clip20.lc.chars",
+        batch_size=5000, include=[], exclude=[], ingest=True, anahash=True,
+        tmpdir="/data/tmp", loglevel="INFO", reset_anahashes=False, **kwargs):
     # Read information to connect to the database and put it in environment variables
     import os
-    from ticclat.dbutils import create_ticclat_database, get_session, update_anahashes, session_scope
+    from ticclat.dbutils import create_ticclat_database, get_session_from_env, update_anahashes, session_scope, load_envvars_file
+    from ticclat.ticclat_schema import Anahash
+
     from tqdm import tqdm
     import tempfile
-    
+
     logger.setLevel(loglevel)
-    
+
     tempfile.tempdir = tmpdir
 
-    with open(envvars_path) as f:
-        for line in f:
-            parts = line.split('=')
-            if len(parts) == 2:
-                os.environ[parts[0]] = parts[1].strip()
-
-    os.environ['dbname'] = db_name
-    if 'host' not in os.environ.keys():
-        os.environ['host'] = 'localhost'
+    load_envvars_file(envvars_path, db_name=db_name, return_sessionmaker=False)
 
     if reset_db:
         create_ticclat_database(delete_existing=True, dbname=os.environ['dbname'],
                                 user=os.environ['user'], passwd=os.environ['password'],
                                 host=os.environ['host'])
 
-    Session = get_session(os.environ['user'], os.environ['password'], os.environ['dbname'], host=os.environ['host'])
+    Session = get_session_from_env()
 
     if ingest:
         ingest_all(Session, batch_size=batch_size, include=include,
-                exclude=exclude, **kwargs)
+                   exclude=exclude, **kwargs)
+
+    if reset_anahashes:
+        logger.info("removing all existing anahashes...")
+        with session_scope(Session) as session:
+            num_rows_deleted = session.query(Anahash).delete()
+        logger.info(f"removed {num_rows_deleted} anahashes")
 
     if anahash:
         logger.info("adding anahashes...")

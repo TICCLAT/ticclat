@@ -19,9 +19,9 @@ from sqlalchemy_utils import database_exists
 from sqlalchemy_utils.functions import drop_database
 
 from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, \
-    lexical_source_wordform, WordformLink, WordformLinkSource
+    lexical_source_wordform, WordformLink, WordformLinkSource, MorphologicalParadigm
 from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
-    read_json_lines, get_temp_file, json_line
+    read_json_lines, get_temp_file, json_line, split_component_code, morph_iterator
 from ticclat.sacoreutils import bulk_add_wordforms_core, \
     bulk_add_anahashes_core, sql_query_batches, sql_insert_batches
 from ticclat.tokenize import nltk_tokenize
@@ -51,8 +51,33 @@ def get_session(user, password, dbname, host='localhost',
     return sessionmaker(bind=engine)
 
 
-def get_or_create_wordform(session, wordform, has_analysis=False,
-                           wordform_id=None):
+def get_session_from_env(**kwargs):
+    Session = get_session(
+        os.environ["user"],
+        os.environ["password"],
+        os.environ["dbname"],
+        host=os.environ["host"],
+    )
+    return Session
+
+
+def load_envvars_file(envvars_path, db_name=None, return_sessionmaker=True):
+    with open(envvars_path) as f:
+        for line in f:
+            parts = line.split("=")
+            if len(parts) == 2:
+                os.environ[parts[0]] = parts[1].strip()
+
+    if db_name is not None:
+        os.environ["dbname"] = db_name
+    if "host" not in os.environ.keys():
+        os.environ["host"] = "localhost"
+
+    if return_sessionmaker:
+        return get_session_from_env()
+
+
+def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=None):
     wf = None
 
     # does the wordform already exist?
@@ -81,6 +106,13 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
 
     # remove whitespace from wordforms
     wfs['wordform'] = wfs['wordform'].str.strip()
+
+    # replace underscores with asterisk
+    # underscore means space and asterisk means misc character
+    wfs['wordform'] = wfs['wordform'].str.replace('_', '*')
+
+    # replace spaces with underscores
+    wfs['wordform'] = wfs['wordform'].str.replace(' ', '_')
 
     # remove empty entries
     wfs['wordform'].replace('', np.nan, inplace=True)
@@ -111,7 +143,7 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
                         total += 1
                         to_add.append(
                             {'wordform': row['wordform'],
-                            'wordform_lowercase': row['wordform'].lower()}
+                             'wordform_lowercase': row['wordform'].lower()}
                         )
 
                 if to_add != []:
@@ -337,29 +369,29 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
         if wf_from != wf_to and (wf_from, wf_to) not in wf_links:
             s = select([WordformLink]). \
                 where(and_(WordformLink.wordform_from == wf_from,
-                            WordformLink.wordform_to == wf_to))
+                           WordformLink.wordform_to == wf_to))
             r = session.execute(s).fetchone()
             if r is None:
                 # Both directions of the relationship need to be added.
                 links_file.write(json_line({'wordform_from': wf_from,
-                                        'wordform_to': wf_to}))
+                                            'wordform_to': wf_to}))
                 links_file.write(json_line({'wordform_from': wf_to,
-                                        'wordform_to': wf_from}))
+                                            'wordform_to': wf_from}))
 
                 num_wf_links += 2
             # The wordform link sources (in both directions) need to be
             # written regardless of the existence of the wordform links.
             line = json_line({'wordform_from': wf_from,
-                                'wordform_to': wf_to,
-                                'lexicon_id': lexicon_id,
-                                'wordform_from_correct': wf_from_correct,
-                                'wordform_to_correct': wf_to_correct})
+                              'wordform_to': wf_to,
+                              'lexicon_id': lexicon_id,
+                              'wordform_from_correct': wf_from_correct,
+                              'wordform_to_correct': wf_to_correct})
             sources_file.write(line)
             line = json_line({'wordform_from': wf_to,
-                                'wordform_to': wf_from,
-                                'lexicon_id': lexicon_id,
-                                'wordform_from_correct': wf_to_correct,
-                                'wordform_to_correct': wf_from_correct})
+                              'wordform_to': wf_from,
+                              'lexicon_id': lexicon_id,
+                              'wordform_from_correct': wf_to_correct,
+                              'wordform_to_correct': wf_from_correct})
             sources_file.write(line)
             num_wf_link_sources += 2
 
@@ -464,7 +496,43 @@ def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
     return corpus
 
 
-def create_ticclat_database(delete_existing=False, dbname='ticclat_test', user="", passwd="", host="localhost"):
+def add_morphological_paradigms(session, in_file):
+    data = pd.read_csv(in_file, sep='\t', names=['wordform',
+                                                 'corpus_freq',
+                                                 'component_codes',
+                                                 'human_readable_c_code',
+                                                 'first_year',
+                                                 'last_year',
+                                                 'dict_ids',
+                                                 'pos_tags',
+                                                 'int_ids'])
+    # drop first row (contains empty wordform)
+    data = data.drop([0])
+
+    # store wordforms for in database
+    wfs = data[['wordform']]
+    bulk_add_wordforms(session, wfs)
+
+    # get the morphological variants from the pandas dataframe
+    result = defaultdict(list)
+    for row in data.iterrows():
+        codes = row[1]['component_codes'].split('#')
+        wf = row[1]['wordform']
+        for code in codes:
+            result[wf].append(split_component_code(code, wf))
+
+    # lookup wordform ids
+    s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
+    mapping = session.execute(s).fetchall()
+
+    with get_temp_file() as mp_file:
+        t = write_json_lines(mp_file, morph_iterator(result, mapping))
+        logger.info(f'Wrote {t} morphological variants.')
+        sql_insert_batches(session, MorphologicalParadigm,
+                           read_json_lines(mp_file), batch_size=50000)
+
+
+def create_ticclat_database(delete_existing=False, dbname="ticclat_test", user="", passwd="", host="localhost"):
     db = MySQLdb.connect(user=user, passwd=passwd, host=host)
     engine = create_engine(f"mysql://{user}:{passwd}@{host}/{dbname}?charset=utf8mb4")
 

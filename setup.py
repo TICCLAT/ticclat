@@ -15,10 +15,10 @@ with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 setup(
-    name='ticclat',
-    version=version['__version__'],
+    name="ticclat",
+    version=version["__version__"],
     description="TICCLAT is a tool for text-induced corpus correction and lexical assessment.",
-    long_description=readme + '\n\n',
+    long_description=readme + "\n\n",
     author="Janneke van der Zwaan",
     author_email='j.vanderzwaan@esciencecenter.nl',
     url='https://github.com/ticclat/ticclat',
@@ -43,14 +43,20 @@ setup(
     ],
     test_suite='tests',
     install_requires=[
-      'pandas',
-      'sh',
-      'SQLAlchemy',
-      'tqdm',
-      'nltk',
-      'mysqlclient',
-      'sqlalchemy_utils',
-      'sklearn',
+        "pandas",
+        "sh",
+        "SQLAlchemy",
+        'alembic',
+        "tqdm",
+        "nltk",
+        "mysqlclient",
+        "sqlalchemy_utils",
+        "Flask-SQLAlchemy-Session",
+        "sklearn",
+        "python-dotenv",
+        "flask",
+        "click",
+        "gunicorn",
     ],  # FIXME: add your package's dependencies to this list
     setup_requires=[
         # dependency for `python setup.py test`
@@ -68,6 +74,6 @@ setup(
         'pytest-datafiles',
     ],
     extras_require={
-        'dev':  ['prospector[with_pyroma]', 'yapf', 'isort'],
+        'dev': ['prospector[with_pyroma]', 'yapf', 'isort'],
     }
 )

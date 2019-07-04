@@ -16,5 +16,5 @@ def ingest(session, base_dir='',
         from_correct = True
         to_column = 'variant'
         to_correct = True
-        
+
         add_lexicon_with_links(s, name, vocabulary, l_wf_pairs, from_column, to_column, from_correct, to_correct, **kwargs)

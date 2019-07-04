@@ -3,6 +3,7 @@ import pandas as pd
 
 from ..dbutils import add_lexicon, session_scope
 
+
 def ingest(session, base_dir='',
            inl_file='INL/INL_lexicon.csv', **kwargs):
     """

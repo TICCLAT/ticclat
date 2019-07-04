@@ -136,7 +136,7 @@ class Wordform(Base):
 
     wordform_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
     wordform = Column(Unicode(255, convert_unicode=False), unique=True, index=True)
-    anahash_id = Column(BigInteger(), ForeignKey('anahashes.anahash_id'))
+    anahash_id = Column(BigInteger(), ForeignKey("anahashes.anahash_id", ondelete='SET NULL'))
 
     anahash = relationship('Anahash')
     wordform_lowercase = Column(Unicode(255, convert_unicode=False), nullable=False, index=True)
@@ -255,4 +255,44 @@ class WordformLinkSource(Base):
         self.wfls_lexicon = lexicon
 
     def __str__(self):
-        return '<WordformLinkSource {} -> {} in "{}">'.format(self.wfls_wflink.linked_from.wordform, self.wfls_wflink.linked_to.wordform, self.wfls_lexicon.lexicon_name)
+        return '<WordformLinkSource {} -> {} in "{}">'.format(
+            self.wfls_wflink.linked_from.wordform,
+            self.wfls_wflink.linked_to.wordform,
+            self.wfls_lexicon.lexicon_name,
+        )
+
+
+class MorphologicalParadigm(Base):
+    """Table for storing information about morphological paradigms of wordforms.
+    """
+    __tablename__ = 'morphological_paradigms'
+
+    paradigm_id = Column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True
+    )
+
+    Z = Column(BigInteger(), index=True)
+    Y = Column(BigInteger(), index=True)
+    X = Column(BigInteger(), index=True)
+    W = Column(BigInteger(), index=True)
+    V = Column(BigInteger(), index=True)
+    word_type_code = Column(String(10), index=True)
+    word_type_number = Column(BigInteger(), index=True)
+
+    wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
+
+
+class ExternalLink(Base):
+    """Table for storing ids from external sources of wordforms.
+
+    Used for linking wordforms to external sources, such as the WNT, MNW, INT.
+    """
+    __tablename__ = 'external_links'
+
+    external_link_id = Column(
+        BigInteger().with_variant(Integer, 'sqlite'),
+        primary_key=True
+    )
+    wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
+    source_name = Column(String(5))
+    source_id = Column(String(10))

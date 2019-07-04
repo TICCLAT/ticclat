@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import pandas as pd
-import numpy as np
 import os
 import sqlalchemy
 import sqlalchemy_utils
@@ -36,16 +35,16 @@ def load_GB95(path):
 
 
 # note that these are regex formatted, i.e. with special characters escaped
-diacritic_markers = {'@`': '\u0300',    # accent grave
-                     "@\\'": '\u0301',  # accent aigu
-                     '@\\"': '\u0308', # trema
-                     '@\+': '\u0327',   # cedilla
-                     '@\^': '\u0302',   # accent circumflex
-                     '@=': '\u0303',    # tilde
-                     '@@': "'",         # apostrophe (not actually a diacritic)
-                     '@2': '\u2082',    # subscript 2
-                     '@n': '\u0308n'    # trema followed by n
-                    }
+diacritic_markers = {r'@`': '\u0300',    # accent grave
+                     r"@\'": '\u0301',   # accent aigu
+                     r'@\\': '\u0308',   # trema
+                     r'@\+': '\u0327',   # cedilla
+                     r'@\^': '\u0302',   # accent circumflex
+                     r'@=': '\u0303',    # tilde
+                     r'@@': "'",         # apostrophe (not actually a diacritic)
+                     r'@2': '\u2082',    # subscript 2
+                     r'@n': '\u0308n'    # trema followed by n
+                     }
 
 
 def nd_any(*args):
@@ -70,7 +69,7 @@ def clean_wordform_df(wordform_df):
     # remove parentheses around some words
     wordform_df = wordform_df.sort_values().str.strip("()")
     # remove abbreviations
-    abbreviation = wordform_df.str.contains('\.$')
+    abbreviation = wordform_df.str.contains(r'\.$')
     wordform_df = wordform_df[~abbreviation]
     # remove duplicates
     wordform_df = pd.Series(wordform_df.unique())
@@ -82,13 +81,12 @@ def clean_disambiguation_column(df):
     df['disambiguation'][df['disambiguation'] == 'andere bett.'] = None
     df['disambiguation'][df['disambiguation'] == 'andere bet.'] = None
     df['disambiguation'][df['disambiguation'].str.contains(" ", na=False)
-                                & ~df['disambiguation'].str.contains(",", na=False)] = None
+                         & ~df['disambiguation'].str.contains(",", na=False)] = None
     df['disambiguation'][df['disambiguation'].str.contains("[^,] ", na=False)] = (
-        df['disambiguation']
-         [df['disambiguation'].str.contains("[^,] ", na=False)]
-         .str.split(', ')
-         .map(lambda x: [i for i in x if not ' ' in i])
-         .map(lambda x: None if len(x) == 0 else ', '.join(x))
+        df['disambiguation'][df['disambiguation'].str.contains("[^,] ", na=False)]
+        .str.split(', ')
+        .map(lambda x: [i for i in x if ' ' not in i])
+        .map(lambda x: None if len(x) == 0 else ', '.join(x))
     )
     df['disambiguation'][df['disambiguation'].str.contains(", -", na=False)] = None
 
@@ -99,7 +97,7 @@ def create_GB95_wordform_df(df_GB1995):
     data = df_GB1995.drop(["syllables", "see also", "grammatical tag", "article",
                            "plural/past/attrib syllables", "diminu/compara/past plural syllables",
                            "past perfect/superla syllables"], axis=1)
-    
+
     df = clean_disambiguation_column(data)
 
     wordform_df = pd.concat((df["word"],
@@ -130,9 +128,9 @@ def clean_wordform_series(wordform_series, remove_duplicates=False):
     # remove parentheses around some words
     wordform_series = wordform_series.sort_values().str.strip("()")
     # remove abbreviations
-    abbreviation = wordform_series.str.contains('\.$')
+    abbreviation = wordform_series.str.contains(r'\.$')
     wordform_series = wordform_series[~abbreviation]
-    
+
     if remove_duplicates:
         wordform_series = pd.Series(wordform_series.unique())
     return wordform_series
@@ -153,12 +151,12 @@ def create_GB95_link_df(df_GB1995):
     has_comma1 = link_df['wordform_1'].str.contains(',')
     link_df = pd.concat((link_df[~has_comma1],) + tuple(pd.DataFrame({'wordform_1': row['wordform_1'].split(', '),
                                                                       'wordform_2': (row['wordform_2'],) * len(row['wordform_1'].split(', '))})
-                                                         for ix, row in link_df[has_comma1].iterrows()))
+                                                        for ix, row in link_df[has_comma1].iterrows()))
 
     has_comma2 = link_df['wordform_2'].str.contains(',')
     link_df = pd.concat((link_df[~has_comma2],) + tuple(pd.DataFrame({'wordform_1': (row['wordform_1'],) * len(row['wordform_2'].split(', ')),
                                                                       'wordform_2': row['wordform_2'].split(', ')})
-                                                         for ix, row in link_df[has_comma2].iterrows()))
+                                                        for ix, row in link_df[has_comma2].iterrows()))
 
     link_df = link_df.reset_index(drop=True)
 
@@ -186,7 +184,6 @@ if __name__ == '__main__':
     GB1995_path = GB_basepath + "1995-2005/1995/GB95_002.csv"
     GB2005_path = GB_basepath + "1995-2005/2005/GB05_002.csv"
 
-
     # Read information to connect to the database and put it in environment variables
     with open(envvars_path) as f:
         for line in f:
@@ -194,10 +191,10 @@ if __name__ == '__main__':
             if len(parts) == 2:
                 os.environ[parts[0]] = parts[1].strip()
 
-
-    engine = sqlalchemy.create_engine("mysql://{}:{}@localhost/{}?charset=utf8mb4".format(os.environ['user'], 
-                                                                        os.environ['password'], 
-                                                                        os.environ['dbname']))
+    url = "mysql://{}:{}@localhost/{}?charset=utf8mb4"
+    engine = sqlalchemy.create_engine(url.format(os.environ['user'],
+                                                 os.environ['password'],
+                                                 os.environ['dbname']))
     if not sqlalchemy_utils.database_exists(engine.url):
         sqlalchemy_utils.create_database(engine.url)
 
@@ -221,7 +218,7 @@ if __name__ == '__main__':
 
     # load links into TICCLAT database
     with ticclat.dbutils.session_scope(Session) as session:
-        lexicon = session.query(ticclat.ticclat_schema.Lexicon).filter(ticclat.ticclat_schema.Lexicon.lexicon_name=='Groene Boekje 1995').first()
+        lexicon = session.query(ticclat.ticclat_schema.Lexicon).filter(ticclat.ticclat_schema.Lexicon.lexicon_name == 'Groene Boekje 1995').first()
         if lexicon is None:
             raise Exception("No lexicon found!")
         for idx, row in tqdm.tqdm(link_df.iterrows(), total=link_df.shape[0]):

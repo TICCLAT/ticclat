@@ -3,7 +3,6 @@
 Functionality for faster bulk inserts without using the ORM.
 More info: https://docs.sqlalchemy.org/en/latest/faq/performance.html
 """
-import os
 import logging
 import json
 import scipy
