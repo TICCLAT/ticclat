@@ -35,15 +35,15 @@ def load_GB95(path):
 
 
 # note that these are regex formatted, i.e. with special characters escaped
-diacritic_markers = {'@`': '\u0300',    # accent grave
-                     "@\\'": '\u0301',  # accent aigu
-                     '@\\"': '\u0308',  # trema
-                     '@\+': '\u0327',   # cedilla
-                     '@\^': '\u0302',   # accent circumflex
-                     '@=': '\u0303',    # tilde
-                     '@@': "'",         # apostrophe (not actually a diacritic)
-                     '@2': '\u2082',    # subscript 2
-                     '@n': '\u0308n'    # trema followed by n
+diacritic_markers = {r'@`': '\u0300',    # accent grave
+                     r"@\'": '\u0301',   # accent aigu
+                     r'@\\': '\u0308',   # trema
+                     r'@\+': '\u0327',   # cedilla
+                     r'@\^': '\u0302',   # accent circumflex
+                     r'@=': '\u0303',    # tilde
+                     r'@@': "'",         # apostrophe (not actually a diacritic)
+                     r'@2': '\u2082',    # subscript 2
+                     r'@n': '\u0308n'    # trema followed by n
                      }
 
 

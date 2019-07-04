@@ -378,8 +378,8 @@ def test_write_wf_links_data(dbsession, fs):
     links_file = open(wfl_file, 'r')
     sources_file = open(wfls_file, 'r')
 
-    assert num_l == 3*2
-    assert num_s == 3*2
+    assert num_l == 3 * 2
+    assert num_s == 3 * 2
 
     wflinks = []
     for wf1, wf2 in zip(wfs['lemma'], wfs['variant']):
