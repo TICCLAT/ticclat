@@ -2,12 +2,12 @@ import logging
 
 import pandas as pd
 
-from sqlalchemy import select, text
+from sqlalchemy import select, text, Table
 from sqlalchemy.sql import func, distinct, and_, desc
 
 from ticclat.ticclat_schema import Lexicon, Wordform, Anahash, Document, \
     Corpus, lexical_source_wordform, corpusId_x_documentId, TextAttestation, \
-    MorphologicalParadigm
+    MorphologicalParadigm, MorphologicalParadigmUnique
 
 logger = logging.getLogger(__name__)
 
@@ -262,7 +262,7 @@ def count_unique_wfs_in_corpus(session, corpus_name):
 
 def get_wf_variants(session, wf):
     paradigms = []
-    for paradigm in get_wf_paradigms(session, wf).fetchall():
+    for paradigm in get_wf_paradigms_unique(session, wf).fetchall():
         c = f'Z{paradigm.Z:04}Y{paradigm.Y:04}X{paradigm.X:04}W{paradigm.W:08}'
         p = {'paradigm_code': c}
         for variant in get_paradigm_variants(session, paradigm).fetchall():
@@ -287,6 +287,19 @@ def get_wf_variants(session, wf):
         paradigms.append(p)
 
     return paradigms
+
+
+def get_wf_paradigms_unique(session, wf):
+    q = select([Wordform.wordform_id,
+                Wordform.wordform,
+                MorphologicalParadigmUnique.Z,
+                MorphologicalParadigmUnique.Y,
+                MorphologicalParadigmUnique.X,
+                MorphologicalParadigmUnique.W,
+                MorphologicalParadigmUnique.word_type_code]) \
+        .select_from(MorphologicalParadigmUnique.__table__.join(Wordform)) \
+        .where(Wordform.wordform == wf)
+    return session.execute(q)
 
 
 def get_wf_paradigms(session, wf):
