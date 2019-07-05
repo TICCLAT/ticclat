@@ -1,5 +1,7 @@
+from ticclat.utils import set_logger
 from ticclat.ingest import elex, gb, opentaal, sonar, inl, sgd, edbo, \
     twente_spelling_correction_list, dbnl, morph_par
+
 import logging
 
 
@@ -49,7 +51,7 @@ def run(envvars_path="ENVVARS.txt", db_name="ticclat_test", reset_db=False,
     from tqdm import tqdm
     import tempfile
 
-    logger.setLevel(loglevel)
+    set_logger(loglevel)
 
     tempfile.tempdir = tmpdir
 
