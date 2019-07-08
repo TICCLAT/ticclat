@@ -14,7 +14,6 @@ from ticclat import raw_queries
 from ticclat import queries
 from ticclat.ticclat_schema import Corpus
 
-print(settings.DATABASE_URL)
 engine = create_engine(settings.DATABASE_URL)
 session_factory = sessionmaker(bind=engine)
 md = sqlalchemy.MetaData()
@@ -22,6 +21,22 @@ md = sqlalchemy.MetaData()
 app = Flask(__name__)
 app.config.update()
 
+
+# CORS
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    if request.method == 'OPTIONS':
+        response.headers['Access-Control-Allow-Methods'] = 'DELETE, GET, POST, PUT'
+        headers = request.headers.get('Access-Control-Request-Headers')
+        if headers:
+            response.headers['Access-Control-Allow-Headers'] = headers
+    return response
+
+
+app.after_request(add_cors_headers)
+
+
+# DB session
 session = flask_scoped_session(session_factory, app)
 
 # error handler in production:
