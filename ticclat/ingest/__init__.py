@@ -58,6 +58,7 @@ def run(envvars_path="ENVVARS.txt", db_name="ticclat_test", reset_db=False,
     load_envvars_file(envvars_path, db_name=db_name, return_sessionmaker=False)
 
     if reset_db:
+        logger.info(f'Reseting database "{os.environ["dbname"]}".')
         create_ticclat_database(delete_existing=True, dbname=os.environ['dbname'],
                                 user=os.environ['user'], passwd=os.environ['password'],
                                 host=os.environ['host'])

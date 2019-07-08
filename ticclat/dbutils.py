@@ -521,13 +521,15 @@ def add_morphological_paradigms(session, in_file):
         for code in codes:
             result[wf].append(split_component_code(code, wf))
 
-    # lookup wordform ids
+    logger.info('Looking up wordform ids.')
     s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
     mapping = session.execute(s).fetchall()
 
+    logger.info('Writing morphological variants to file.')
     with get_temp_file() as mp_file:
         t = write_json_lines(mp_file, morph_iterator(result, mapping))
         logger.info(f'Wrote {t} morphological variants.')
+        logger.info('Inserting morphological variants to the database.')
         sql_insert_batches(session, MorphologicalParadigm,
                            read_json_lines(mp_file), batch_size=50000)
 
