@@ -1,4 +1,5 @@
 import os.path
+import numpy as np
 import pandas as pd
 
 from ..dbutils import session_scope
@@ -51,6 +52,9 @@ def ingest(session, base_dir='', data_dir='DBNL', **kwargs):
     document_metadata["year_from"] = year_from
     document_metadata["year_to"] = year_to
     document_metadata["pub_year"] = pub_year
+
+    # None is replaced by np.nan, so replaces nans with None again
+    document_metadata = document_metadata.replace({np.nan: None})
     # More metadata?
 
     with session_scope(session) as s:
