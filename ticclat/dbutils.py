@@ -241,6 +241,10 @@ def get_wf_mapping(session, lexicon=None, lexicon_id=None):
     for r in result:
         wf_mapping[r['wordform']] = r[lexical_source_wordform.c.wordform_id]
 
+    # Make sure a KeyError is raised, if we try to look up a word that is not
+    # in the database (because we preprocessed it)
+    wf_mapping.default_factory = None
+
     return wf_mapping
 
 

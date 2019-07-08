@@ -457,3 +457,60 @@ def test_add_lexicon_with_links(dbsession):
             .first()
         assert wfl is not None
         assert wfl.wfls_lexicon == lex
+
+
+def test_add_lexicon_with_links_preprocessing(dbsession):
+    name = 'linked test lexicon'
+
+    wfs = pd.DataFrame()
+    # TODO: we need to fix the preprocessing of wordforms.
+    # When bulk adding wordforms, they are preprocessed, but the original
+    # wordforms stay the same. This gives a problem when the links between
+    # wordforms are added, because we are looking up unpreprcoessed wordforms
+    # that do not exist.
+    # Strangely enough, the test code does not raise a foreign key constraint
+    # violation (which the 'production' code does). By turning the default dict
+    # into a normal dict again, we get a KeyError. Which can be fixed by also
+    # preprocessing the original wfs dataframe.
+    wfs['lemma'] = ['wf 1', 'wf_2', 'wf3']
+    wfs['variant'] = ['wf1s', 'wf2s', 'wf3s']
+
+    add_lexicon_with_links(dbsession,
+                           lexicon_name=name,
+                           vocabulary=True,
+                           wfs=wfs,
+                           from_column='lemma',
+                           to_column='variant',
+                           from_correct=True,
+                           to_correct=True)
+
+    lex = dbsession.query(Lexicon).filter(Lexicon.lexicon_name == name).first()
+
+    assert lex.vocabulary
+    assert len(lex.lexicon_wordforms) == 6
+
+    for w1, w2 in zip(wfs['lemma'], wfs['variant']):
+        wf1 = dbsession.query(Wordform).filter(Wordform.wordform == w1).first()
+        wf2 = dbsession.query(Wordform).filter(Wordform.wordform == w2).first()
+
+        # check wordform links
+        links = [w.linked_to for w in wf1.links]
+        assert wf2 in links
+
+        links = [w.linked_to for w in wf2.links]
+        assert wf1 in links
+
+        # check wordform link sources
+        wfl = dbsession.query(WordformLinkSource) \
+            .filter(and_(WordformLinkSource.wordform_from == wf1.wordform_id,
+                         WordformLinkSource.wordform_to == wf2.wordform_id)) \
+            .first()
+        assert wfl is not None
+        assert wfl.wfls_lexicon == lex
+
+        wfl = dbsession.query(WordformLinkSource) \
+            .filter(and_(WordformLinkSource.wordform_from == wf2.wordform_id,
+                         WordformLinkSource.wordform_to == wf1.wordform_id)) \
+            .first()
+        assert wfl is not None
+        assert wfl.wfls_lexicon == lex
