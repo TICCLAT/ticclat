@@ -21,7 +21,8 @@ from sqlalchemy_utils.functions import drop_database
 from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, \
     lexical_source_wordform, WordformLink, WordformLinkSource, MorphologicalParadigm
 from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
-    read_json_lines, get_temp_file, json_line, split_component_code, morph_iterator
+    read_json_lines, get_temp_file, json_line, split_component_code, \
+    morph_iterator, preprocess_wordforms
 from ticclat.sacoreutils import bulk_add_wordforms_core, \
     bulk_add_anahashes_core, sql_query_batches, sql_insert_batches
 from ticclat.tokenize import nltk_tokenize
@@ -104,15 +105,7 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
     """
     logger.info('Bulk adding wordforms.')
 
-    # remove whitespace from wordforms
-    wfs['wordform'] = wfs['wordform'].str.strip()
-
-    # replace underscores with asterisk
-    # underscore means space and asterisk means misc character
-    wfs['wordform'] = wfs['wordform'].str.replace('_', '*')
-
-    # replace spaces with underscores
-    wfs['wordform'] = wfs['wordform'].str.replace(' ', '_')
+    wfs = preprocess_wordforms(wfs)
 
     # remove empty entries
     wfs['wordform'].replace('', np.nan, inplace=True)
@@ -421,6 +414,8 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
                           batch_size=batch_size)
 
     wf_mapping = get_wf_mapping(session, lexicon_id=lexicon.lexicon_id)
+
+    wfs = preprocess_wordforms(wfs, columns=[from_column, to_column])
 
     with get_temp_file() as wfl_file:
         logger.debug('Writing wordform links to add to (possibly unnamed) temporary file.')

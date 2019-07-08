@@ -197,6 +197,21 @@ def set_logger(level='INFO'):
     logging.getLogger().setLevel(level)
 
 
+def preprocess_wordforms(wfs, columns=['wordform']):
+    for col in columns:
+        # remove whitespace from wordforms
+        wfs[col] = wfs[col].str.strip()
+
+        # replace underscores with asterisk
+        # underscore means space and asterisk means misc character
+        wfs[col] = wfs[col].str.replace('_', '*')
+
+        # replace spaces with underscores
+        wfs[col] = wfs[col].str.replace(' ', '_')
+
+    return wfs
+
+
 def timeit(method):
     """Decorator for timing methods.
 

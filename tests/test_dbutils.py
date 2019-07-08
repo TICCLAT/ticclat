@@ -462,16 +462,10 @@ def test_add_lexicon_with_links(dbsession):
 def test_add_lexicon_with_links_preprocessing(dbsession):
     name = 'linked test lexicon'
 
+    # Please note that wfs is updated with preprocessed wordforms during
+    # add_lexicon_with_links. So, for this test, we don't have to explicitly
+    # preprocess wfs.
     wfs = pd.DataFrame()
-    # TODO: we need to fix the preprocessing of wordforms.
-    # When bulk adding wordforms, they are preprocessed, but the original
-    # wordforms stay the same. This gives a problem when the links between
-    # wordforms are added, because we are looking up unpreprcoessed wordforms
-    # that do not exist.
-    # Strangely enough, the test code does not raise a foreign key constraint
-    # violation (which the 'production' code does). By turning the default dict
-    # into a normal dict again, we get a KeyError. Which can be fixed by also
-    # preprocessing the original wfs dataframe.
     wfs['lemma'] = ['wf 1', 'wf_2', 'wf3']
     wfs['variant'] = ['wf1s', 'wf2s', 'wf3s']
 
