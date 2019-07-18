@@ -7,6 +7,10 @@ from ..dbutils import session_scope, add_morphological_paradigms, empty_table
 
 logger = logging.getLogger(__name__)
 
+# ! In this version of the data, the first line contains noise and is removed
+# ! before ingesting the data.
+# ! When changing the input file, please check if the first line of the file
+# ! still needs to be removed.
 INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms267.TYPOLIST6.tsv'
 
 
