@@ -8,12 +8,13 @@ import pandas as pd
 from sqlalchemy import and_
 
 from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, \
-    WordformLinkSource
+    WordformLinkSource, MorphologicalParadigm
 from ticclat.utils import read_json_lines
 from ticclat.dbutils import bulk_add_wordforms, add_lexicon, \
     get_word_frequency_df, bulk_add_anahashes, \
     connect_anahashes_to_wordforms, update_anahashes, get_wf_mapping, \
-    add_lexicon_with_links, write_wf_links_data
+    add_lexicon_with_links, write_wf_links_data, add_morphological_paradigms, \
+    empty_table
 
 from . import data_dir
 
@@ -508,3 +509,32 @@ def test_add_lexicon_with_links_preprocessing(dbsession):
             .first()
         assert wfl is not None
         assert wfl.wfls_lexicon == lex
+
+
+@pytest.mark.datafiles(os.path.join(data_dir(), 'morph_par.tsv'))
+def test_ingest_add_morphological_paradigms(dbsession, datafiles):
+    # table morphological paradigms should be empty
+    n = dbsession.query(MorphologicalParadigm).count()
+    assert n == 0
+
+    add_morphological_paradigms(dbsession, datafiles.listdir()[0])
+
+    # after adding there should be three morpological paradigms
+    n = dbsession.query(MorphologicalParadigm).count()
+    assert n == 3
+
+
+@pytest.mark.datafiles(os.path.join(data_dir(), 'morph_par.tsv'))
+def test_ingest_add_morp_pars_with_empty_table(dbsession, datafiles):
+    # table morphological paradigms should be empty
+    n = dbsession.query(MorphologicalParadigm).count()
+    assert n == 0
+
+    add_morphological_paradigms(dbsession, datafiles.listdir()[0])
+    empty_table(dbsession, MorphologicalParadigm)
+    add_morphological_paradigms(dbsession, datafiles.listdir()[0])
+
+    # after adding, emptying, and adding there should be three morpological
+    # paradigms
+    n = dbsession.query(MorphologicalParadigm).count()
+    assert n == 3

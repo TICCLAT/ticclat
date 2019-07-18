@@ -552,3 +552,12 @@ def create_ticclat_database(delete_existing=False, dbname="ticclat_test", user="
 
     # create tables
     Base.metadata.create_all(engine)
+
+
+def empty_table(session, table_class):
+    n = session.query(table_class).count()
+
+    if n > 0:
+        logger.info(f'Table "{table_class.__table__.name}" is not empty.')
+        logger.info('Deleting rows...')
+        session.query(table_class).delete()
