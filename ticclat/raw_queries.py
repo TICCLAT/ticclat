@@ -64,3 +64,31 @@ SELECT wordform FROM morphological_paradigms AS m1 LEFT JOIN morphological_parad
     LEFT JOIN wordforms w on m1.wordform_id = w.wordform_id
 WHERE m2.wordform_id = (SELECT wordform_id FROM wordforms WHERE wordform = %(lookup_word)s);
 """
+
+
+def find_lemmas_for_wordform():
+    return """
+SELECT paradigm_id, wordform, W, X, Y, Z FROM morphological_paradigms
+    LEFT JOIN wordforms on morphological_paradigms.wordform_id = wordforms.wordform_id
+    WHERE (Z,Y,X,W) IN (
+        SELECT Z, Y, X, W
+        FROM morphological_paradigms
+                 LEFT JOIN wordforms w on morphological_paradigms.wordform_id = w.wordform_id
+        WHERE wordform = %(lookup_word)s
+    )
+    AND word_type_code = 'HCL'
+    """
+
+
+def find_morphological_variants_for_lemma():
+    return """
+SELECT mp2.V, mp2.word_type_code, wordform
+FROM morphological_paradigms mp1
+         LEFT JOIN morphological_paradigms mp2 ON
+             mp1.W = mp2.W AND
+             mp1.X = mp2.X AND
+             mp1.Y = mp2.Y AND
+             mp1.Z = mp2.Z
+         LEFT JOIN wordforms ON mp2.wordform_id = wordforms.wordform_id
+WHERE mp1.paradigm_id = %(paradigm_id)s
+"""
