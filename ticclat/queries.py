@@ -320,8 +320,7 @@ def get_lexica_data(session, wordform):
         .select_from(lexical_source_wordform.join(Wordform).join(Lexicon)) \
         .where(and_(Wordform.wordform==wordform, Lexicon.vocabulary == True))
     result = session.execute(q).fetchall()
-    lexicon_entries = [{'wordform': row.wordform,
-                        'lexicon_name': row.lexicon_name,
+    lexicon_entries = [{'lexicon_name': row.lexicon_name,
                         'correct': True} for row in result]
 
     # Get lexica with links containing this word
@@ -334,8 +333,7 @@ def get_lexica_data(session, wordform):
     result = session.execute(q).fetchall()
 
     for row in result:
-        lexicon_entries.append({'wordform': row.wordform,
-                                'lexicon_name': row.lexicon_name,
+        lexicon_entries.append({'lexicon_name': row.lexicon_name,
                                 'correct': row.wordform_from_correct})
 
     # sort result alphabetically on lexicon name
