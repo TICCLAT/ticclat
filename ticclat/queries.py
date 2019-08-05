@@ -318,7 +318,7 @@ def get_lexica_data(session, wordform):
     # Get vocabularies (=lexica without links) with this word
     q = select([Wordform, Lexicon]) \
         .select_from(lexical_source_wordform.join(Wordform).join(Lexicon)) \
-        .where(and_(Wordform.wordform==wordform, Lexicon.vocabulary == True))
+        .where(and_(Wordform.wordform == wordform, Lexicon.vocabulary is True))
     result = session.execute(q).fetchall()
     lexicon_entries = [{'wordform': row.wordform,
                         'lexicon_name': row.lexicon_name,
@@ -327,10 +327,11 @@ def get_lexica_data(session, wordform):
     # Get lexica with links containing this word
     q = select([Wordform, Lexicon, WordformLinkSource]) \
         .select_from(
-            Wordform.__table__.join(WordformLink,
-                onclause=Wordform.wordform_id == WordformLink.wordform_from) \
-            .join(WordformLinkSource).join(Lexicon)) \
-        .where(and_(Wordform.wordform==wordform, Lexicon.vocabulary == False))
+            Wordform.__table__
+            .join(WordformLink, onclause=Wordform.wordform_id == WordformLink.wordform_from)
+            .join(WordformLinkSource)
+            .join(Lexicon)) \
+        .where(and_(Wordform.wordform == wordform, Lexicon.vocabulary is False))
     result = session.execute(q).fetchall()
 
     for row in result:
@@ -339,4 +340,4 @@ def get_lexica_data(session, wordform):
                                 'correct': row.wordform_from_correct})
 
     # sort result alphabetically on lexicon name
-    return sorted(lexicon_entries, key = lambda i: i['lexicon_name'])
+    return sorted(lexicon_entries, key=lambda i: i['lexicon_name'])
