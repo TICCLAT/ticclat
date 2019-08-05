@@ -151,5 +151,3 @@ def morphological_variants_for_lemma(paradigm_id: int):
     query = raw_queries.find_morphological_variants_for_lemma()
     df = pandas.read_sql(query, connection, params={'paradigm_id': paradigm_id})
     return jsonify(df.to_dict(orient='record'))
-
-
