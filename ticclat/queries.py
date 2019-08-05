@@ -7,7 +7,7 @@ from sqlalchemy.sql import func, distinct, and_, desc
 
 from ticclat.ticclat_schema import Lexicon, Wordform, Anahash, Document, \
     Corpus, lexical_source_wordform, corpusId_x_documentId, TextAttestation, \
-    MorphologicalParadigm
+    MorphologicalParadigm, WordformLinkSource, WordformLink
 
 logger = logging.getLogger(__name__)
 
@@ -311,3 +311,32 @@ def get_paradigm_variants(session, paradigm):
                     MorphologicalParadigm.X == paradigm.X,
                     MorphologicalParadigm.W == paradigm.W))
     return session.execute(q)
+
+
+def get_lexica_data(session, wordform):
+
+    # Get vocabularies (=lexica without links) with this word
+    q = select([Wordform, Lexicon]) \
+        .select_from(lexical_source_wordform.join(Wordform).join(Lexicon)) \
+        .where(and_(Wordform.wordform==wordform, Lexicon.vocabulary == True))
+    result = session.execute(q).fetchall()
+    lexicon_entries = [{'wordform': row.wordform,
+                        'lexicon_name': row.lexicon_name,
+                        'correct': True} for row in result]
+
+    # Get lexica with links containing this word
+    q = select([Wordform, Lexicon, WordformLinkSource]) \
+        .select_from(
+            Wordform.__table__.join(WordformLink,
+                onclause=Wordform.wordform_id == WordformLink.wordform_from) \
+            .join(WordformLinkSource).join(Lexicon)) \
+        .where(and_(Wordform.wordform==wordform, Lexicon.vocabulary == False))
+    result = session.execute(q).fetchall()
+
+    for row in result:
+        lexicon_entries.append({'wordform': row.wordform,
+                                'lexicon_name': row.lexicon_name,
+                                'correct': row.wordform_from_correct})
+
+    # sort result alphabetically on lexicon name
+    return sorted(lexicon_entries, key = lambda i: i['lexicon_name'])

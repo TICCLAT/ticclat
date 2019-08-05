@@ -135,3 +135,9 @@ def variants(word_name: str):
     result = queries.get_wf_variants(session, word_name)
     return jsonify({'wordform': word_name,
                     'paradigms': result})
+
+
+@app.route("/lexica/<word_name>")
+def lexica(word_name: str):
+    result = queries.get_lexica_data(session, word_name)
+    return jsonify(result)
