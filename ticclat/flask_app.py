@@ -135,3 +135,21 @@ def variants(word_name: str):
     result = queries.get_wf_variants(session, word_name)
     return jsonify({'wordform': word_name,
                     'paradigms': result})
+
+
+@app.route("/lemmas_for_wordform/<word_form>")
+def lemmas_for_wordform(word_form: str):
+    connection = engine.connect()
+    query = raw_queries.find_lemmas_for_wordform()
+    df = pandas.read_sql(query, connection, params={'lookup_word': word_form})
+    return jsonify(df.to_dict(orient='record'))
+
+
+@app.route("/morphological_variants_for_lemma/<paradigm_id>")
+def morphological_variants_for_lemma(paradigm_id: int):
+    connection = engine.connect()
+    query = raw_queries.find_morphological_variants_for_lemma()
+    df = pandas.read_sql(query, connection, params={'paradigm_id': paradigm_id})
+    return jsonify(df.to_dict(orient='record'))
+
+
