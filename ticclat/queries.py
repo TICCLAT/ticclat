@@ -317,6 +317,7 @@ def get_lexica_data(session, wordform):
         .select_from(lexical_source_wordform.join(Wordform).join(Lexicon)) \
         .where(and_(Wordform.wordform == wordform,
                     Lexicon.vocabulary == True))  # noqa E712
+    logger.debug(f'Executing query:\n{q}')
     result = session.execute(q).fetchall()
     lexicon_entries = [{'lexicon_name': row.lexicon_name,
                         'correct': True} for row in result]
@@ -328,6 +329,7 @@ def get_lexica_data(session, wordform):
         .join(WordformLinkSource).join(Lexicon)) \
         .where(and_(Wordform.wordform == wordform,
                     Lexicon.vocabulary == False))  # noqa E712
+    logger.debug(f'Executing query:\n{q}')
     result = session.execute(q).fetchall()
 
     for row in result:
