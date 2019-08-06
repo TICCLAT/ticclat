@@ -96,9 +96,12 @@ running `ticclat` tasks like ingesting corpora or lexica.
 Changes to the Database Schema
 ------------------------------
 
+**Important note**: Alembic stripts were removed. Use most recent database dumps
+to get the newest version of the database.
+
 To apply changes to the database schema, we use [alembic](https://alembic.sqlalchemy.org/en/latest/index.html).
 
-Alembic is configured to read the information needed to connect to the database 
+Alembic is configured to read the information needed to connect to the database
 database from environment variables:
 
 * `DB_NAME`
@@ -112,9 +115,9 @@ To migrate the database to the latest database schema run:
 
   alembic upgrade head
 
-**Important note**: if you are creating the database from scratch, **do not** use 
-the alembic database migrations. Instead, use SQLAlchemy to create a complete new 
-instance of the database. 
+**Important note**: if you are creating the database from scratch, **do not** use
+the alembic database migrations. Instead, use SQLAlchemy to create a complete new
+instance of the database.
 
 Flask web app
 *************
@@ -122,7 +125,7 @@ Flask web app
 Preparation
 -----------
 
-Starting from Ubuntu (18.04), setup the MySQL database. Then clone this directory, install dependencies (`conda` & `libmysqlclient-dev` & `build-essential` e.g. https://docs.conda.io/en/latest/miniconda.html and `apt-get update && apt-get install -y libmysqlclient-dev build-essential`). 
+Starting from Ubuntu (18.04), setup the MySQL database. Then clone this directory, install dependencies (`conda` & `libmysqlclient-dev` & `build-essential` e.g. https://docs.conda.io/en/latest/miniconda.html and `apt-get update && apt-get install -y libmysqlclient-dev build-essential`).
 
 Setup virtual environment
 -------------------------
@@ -148,7 +151,7 @@ Create a `.env` file with the following:
   FLASK_APP=ticclat.flask_app.py
   FLASK_ENV=production
   FLASK_DEBUG=0
-  
+
   #for DEV:
   #FLASK_ENV=development
   #FLASK_DEBUG=1
@@ -156,7 +159,7 @@ Create a `.env` file with the following:
 You can now run a development server using: `flask run`
 
 Or a production server:
-    
+
 .. code-block:: console
 
   export $(cat .env | xargs)
