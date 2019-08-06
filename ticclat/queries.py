@@ -264,26 +264,23 @@ def get_wf_variants(session, wf):
     paradigms = []
     for paradigm in get_wf_paradigms(session, wf).fetchall():
         c = f'Z{paradigm.Z:04}Y{paradigm.Y:04}X{paradigm.X:04}W{paradigm.W:08}'
-        p = {'paradigm_code': c}
+        p = {'paradigm_code': c, 'lemma': None, 'variants': []}
         for variant in get_paradigm_variants(session, paradigm).fetchall():
             vd = {'wordform': variant.wordform}
             r, md = wordform_in_corpora_over_time(session, wf=variant.wordform)
             vd['corpora'] = r
+            vd['word_type_code'] = variant.word_type_code
+            vd['V'] = variant.V
+            vd['word_type_number'] = variant.word_type_number
 
-            if variant.word_type_code not in p.keys():
-                if variant.word_type_code == 'HCL':
-                    p[variant.word_type_code] = None
-                else:
-                    p[variant.word_type_code] = []
+            p['variants'].append(vd)
 
             if variant.word_type_code == 'HCL':
                 # We should have a single HCL for each paradigm. Warn if that
                 # is not the case.
-                if p[variant.word_type_code] is not None:
+                if p['lemma'] is not None:
                     logger.warn(f'Found duplicate HCL for {variant.wordform}.')
-                p[variant.word_type_code] = vd
-            else:
-                p[variant.word_type_code].append(vd)
+                p['lemma'] = variant.wordform
         paradigms.append(p)
 
     return paradigms
