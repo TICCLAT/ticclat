@@ -323,7 +323,8 @@ def get_lexica_data(session, wordform):
                         'correct': True} for row in result]
 
     # Get lexica with links containing this word
-    q = select([Wordform, Lexicon, WordformLinkSource]) \
+    q = select([Wordform, Lexicon, WordformLinkSource.wordform_from_correct],
+               distinct=True) \
         .select_from(Wordform.__table__.join(WordformLink,
             onclause=Wordform.wordform_id == WordformLink.wordform_from)
         .join(WordformLinkSource).join(Lexicon)) \
