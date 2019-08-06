@@ -315,19 +315,19 @@ def get_lexica_data(session, wordform):
     # Get vocabularies (=lexica without links) with this word
     q = select([Wordform, Lexicon]) \
         .select_from(lexical_source_wordform.join(Wordform).join(Lexicon)) \
-        .where(and_(Wordform.wordform == wordform, Lexicon.vocabulary is True))
+        .where(and_(Wordform.wordform == wordform,
+                    Lexicon.vocabulary == True))  # noqa E712
     result = session.execute(q).fetchall()
     lexicon_entries = [{'lexicon_name': row.lexicon_name,
                         'correct': True} for row in result]
 
     # Get lexica with links containing this word
     q = select([Wordform, Lexicon, WordformLinkSource]) \
-        .select_from(
-            Wordform.__table__
-            .join(WordformLink, onclause=Wordform.wordform_id == WordformLink.wordform_from)
-            .join(WordformLinkSource)
-            .join(Lexicon)) \
-        .where(and_(Wordform.wordform == wordform, Lexicon.vocabulary is False))
+        .select_from(Wordform.__table__.join(WordformLink,
+            onclause=Wordform.wordform_id == WordformLink.wordform_from)
+        .join(WordformLinkSource).join(Lexicon)) \
+        .where(and_(Wordform.wordform == wordform,
+                    Lexicon.vocabulary == False))  # noqa E712
     result = session.execute(q).fetchall()
 
     for row in result:
