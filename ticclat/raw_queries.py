@@ -82,13 +82,42 @@ SELECT paradigm_id, wordform, W, X, Y, Z FROM morphological_paradigms
 
 def find_morphological_variants_for_lemma():
     return """
-SELECT mp2.V, mp2.word_type_code, wordform
-FROM morphological_paradigms mp1
-         LEFT JOIN morphological_paradigms mp2 ON
-             mp1.W = mp2.W AND
-             mp1.X = mp2.X AND
-             mp1.Y = mp2.Y AND
-             mp1.Z = mp2.Z
-         LEFT JOIN wordforms ON mp2.wordform_id = wordforms.wordform_id
-WHERE mp1.paradigm_id = %(paradigm_id)s
+SELECT V,
+       word_type_code,
+       wordform,
+       wordform_id,
+       COUNT(DISTINCT corpus_id) AS num_corpora,
+       COUNT(DISTINCT lexicon_id) AS num_lexica,
+       MIN(year) AS min_year,
+       MAX(year) AS max_year,
+       COUNT(DISTINCT code) AS num_paradigms
+FROM (SELECT mp2.V,
+             mp2.word_type_code,
+             wordform,
+             wordforms.wordform_id,
+             d.document_id,
+             c.corpus_id,
+             lsw.lexicon_id,
+             (mp3.W + mp3.X + mp3.Y + mp3.Z) AS code,
+             CASE
+                 WHEN d.pub_year IS NOT NULL THEN d.pub_year
+                 ELSE ROUND((d.year_from + d.year_to) / 2)
+             END
+             AS year
+      FROM morphological_paradigms mp1
+               LEFT JOIN morphological_paradigms mp2 ON
+                mp1.W = mp2.W AND
+                mp1.X = mp2.X AND
+                mp1.Y = mp2.Y AND
+                mp1.Z = mp2.Z
+               LEFT JOIN wordforms ON mp2.wordform_id = wordforms.wordform_id
+               LEFT JOIN text_attestations ta on wordforms.wordform_id = ta.wordform_id
+               LEFT JOIN documents d on ta.document_id = d.document_id
+               LEFT JOIN corpusId_x_documentId cIxdI on d.document_id = cIxdI.document_id
+               LEFT JOIN corpora c on cIxdI.corpus_id = c.corpus_id
+               LEFT JOIN lexical_source_wordform lsw on wordforms.wordform_id = lsw.wordform_id
+               LEFT JOIN morphological_paradigms mp3 ON wordforms.wordform_id = mp3.wordform_id
+      WHERE mp1.paradigm_id = %(paradigm_id)s
+     ) AS wordform_stats
+GROUP BY V, word_type_code, wordform, wordform_id
 """
