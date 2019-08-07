@@ -157,6 +157,7 @@ def lemmas_for_wordform(word_form: str):
     connection = engine.connect()
     query = raw_queries.find_lemmas_for_wordform()
     df = pandas.read_sql(query, connection, params={'lookup_word': word_form})
+    df = df.fillna(0)
     return jsonify(df.to_dict(orient='record'))
 
 
@@ -165,6 +166,7 @@ def morphological_variants_for_lemma(paradigm_id: int):
     connection = engine.connect()
     query = raw_queries.find_morphological_variants_for_lemma()
     df = pandas.read_sql(query, connection, params={'paradigm_id': paradigm_id})
+    df = df.fillna(0)
     return jsonify(df.to_dict(orient='record'))
 
 
