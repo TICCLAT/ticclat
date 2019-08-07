@@ -109,9 +109,6 @@ def word_frequency_per_corpus_per_year(word_name: str, start_year=None, end_year
     r, md = queries.wordform_in_corpora_over_time(session, wf=word_name,
         start_year=start_year, end_year=end_year)
 
-    print(r)
-    print(md)
-
     return jsonify({'wordform': word_name, 'metadata': md, 'corpora': r})
 
 
