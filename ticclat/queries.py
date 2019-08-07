@@ -64,12 +64,7 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
 
     Gives both the term frequency and document frequency.
     """
-    if start_year is None or end_year is None:
-        s, e = get_corpora_year_range(session)
-        if start_year is None:
-            start_year = s
-        if end_year is None:
-            end_year = e
+    start_year, end_year = set_year_range(session, start_year, end_year)
 
     q = (
         select(
@@ -282,14 +277,18 @@ def count_unique_wfs_in_corpus(session, corpus_name):
     return session.execute(q)
 
 
-def get_wf_variants(session, wf):
+def get_wf_variants(session, wf, start_year=None, end_year=None):
+    start_year, end_year = set_year_range(session, start_year, end_year)
+
     paradigms = []
     for paradigm in get_wf_paradigms(session, wf).fetchall():
         c = f'Z{paradigm.Z:04}Y{paradigm.Y:04}X{paradigm.X:04}W{paradigm.W:08}'
         p = {'paradigm_code': c, 'lemma': None, 'variants': []}
         for variant in get_paradigm_variants(session, paradigm).fetchall():
             vd = {'wordform': variant.wordform}
-            r, md = wordform_in_corpora_over_time(session, wf=variant.wordform)
+            r, md = wordform_in_corpora_over_time(session, wf=variant.wordform,
+                                                  start_year=start_year,
+                                                  end_year=end_year)
             vd['corpora'] = r
             vd['word_type_code'] = variant.word_type_code
             vd['V'] = variant.V
@@ -381,3 +380,27 @@ def get_corpora_year_range(session):
         .select_from(Document)
     r = session.execute(q)
     return r.fetchone()
+
+
+def set_year_range(session, start_year, end_year):
+    """Change start_year and end_year to the database value if they are None.
+
+    Args:
+        session (sqlalchemy.orm.session.Session): SQLAlchemy session object.
+        start_year (int or None): start year for which word frequency data
+            should be retrieved.
+        end_year (int or None): end year for which word frequency data should
+            be retrieved.
+
+    Returns:
+        Returns:
+        start (int): Earliest year
+        end (int): Latest year
+    """
+    if start_year is None or end_year is None:
+        s, e = get_corpora_year_range(session)
+        if start_year is None:
+            start_year = s
+        if end_year is None:
+            end_year = e
+    return start_year, end_year
