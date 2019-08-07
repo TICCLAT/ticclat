@@ -107,7 +107,8 @@ def word_frequency_per_corpus(word_name: str):
 @app.route("/word_frequency_per_corpus_per_year/<word_name>/0/<end_year>")
 def word_frequency_per_corpus_per_year(word_name: str, start_year=None, end_year=None):
     r, md = queries.wordform_in_corpora_over_time(session, wf=word_name,
-        start_year=start_year, end_year=end_year)
+                                                  start_year=start_year,
+                                                  end_year=end_year)
 
     return jsonify({'wordform': word_name, 'metadata': md, 'corpora': r})
 
