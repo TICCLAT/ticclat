@@ -166,14 +166,13 @@ def morphological_variants_for_lemma(paradigm_id: int):
     return jsonify(df.to_dict(orient='record'))
 
 
-<<<<<<< HEAD
 @app.route("/year_range")
 def year_range():
     start, end = queries.get_corpora_year_range(session)
 
     return jsonify({'start': start, 'end': end})
 
-=======
+
 @app.route("/regexp_search/<regexp>")
 def regexp_search(regexp: str):
     connection = engine.connect()
@@ -185,4 +184,3 @@ def regexp_search(regexp: str):
         'total': int(df['rows'][0]),
         'words': words
     })
->>>>>>> 03c4c9510ef8b46d8c4c8caad30cf87842481542
