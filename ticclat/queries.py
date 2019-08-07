@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import pandas as pd
 
 from sqlalchemy import select, text
@@ -110,10 +111,18 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
 
     # get domain and range
     min_year = df['pub_year'].min()
+    if np.isnan(min_year):
+        min_year = 0
     max_year = df['pub_year'].max()
+    if np.isnan(max_year):
+        max_year = 0
 
     min_freq = df['normalized_tf'].min()
+    if np.isnan(min_freq):
+        min_freq = 0.0
     max_freq = df['normalized_tf'].max()
+    if np.isnan(max_freq):
+        max_freq = 0.0
 
     md = {
         'min_year': int(min_year),
