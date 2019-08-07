@@ -58,11 +58,18 @@ def wordform_in_corpus_over_time(session, wf, corpus_name):
     return session.execute(q)
 
 
-def wordform_in_corpora_over_time(session, wf):
+def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
     """Given a wordform, and a corpus, return word frequencies over time.
 
     Gives both the term frequency and document frequency.
     """
+    if start_year is None or end_year is None:
+        s, e = get_corpora_year_range(session)
+        if start_year is None:
+            start_year = s
+        if end_year is None:
+            end_year = e
+
     q = (
         select(
             [
@@ -82,7 +89,13 @@ def wordform_in_corpora_over_time(session, wf):
             .join(TextAttestation)
             .join(Wordform)
         )
-        .where(Wordform.wordform == wf)
+        .where(
+            and_(
+                Wordform.wordform == wf,
+                Document.pub_year >= start_year,
+                Document.pub_year <= end_year
+            )
+        )
         .group_by(
             Corpus.name, Document.pub_year, Wordform.wordform, Wordform.wordform_id
         )
@@ -103,10 +116,10 @@ def wordform_in_corpora_over_time(session, wf):
     max_freq = df['normalized_tf'].max()
 
     md = {
-        'min_year': min_year,
-        'max_year': max_year,
-        'min_freq': min_freq,
-        'max_freq': max_freq
+        'min_year': int(min_year),
+        'max_year': int(max_year),
+        'min_freq': float(min_freq),
+        'max_freq': float(max_freq)
     }
 
     # create result
@@ -339,3 +352,23 @@ def get_lexica_data(session, wordform):
 
     # sort result alphabetically on lexicon name
     return sorted(lexicon_entries, key=lambda i: i['lexicon_name'])
+
+
+def get_corpora_year_range(session):
+    """Get the earliest and latest publication years over all the corpora.
+
+    Does not yet include year ranges (represented using Document.year_from and
+    Document.year_to).
+
+    Args:
+        session (sqlalchemy.orm.session.Session): SQLAlchemy session object.
+
+    Returns:
+        start (int): Earliest year
+        end (int): Latest year
+    """
+    q = select([func.min(Document.pub_year).label('min_year'),
+                func.max(Document.pub_year).label('max_year')]) \
+        .select_from(Document)
+    r = session.execute(q)
+    return r.fetchone()

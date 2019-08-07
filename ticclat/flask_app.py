@@ -102,8 +102,15 @@ def word_frequency_per_corpus(word_name: str):
 
 
 @app.route("/word_frequency_per_corpus_per_year/<word_name>")
-def word_frequency_per_corpus_per_year(word_name: str):
-    r, md = queries.wordform_in_corpora_over_time(session, wf=word_name)
+@app.route("/word_frequency_per_corpus_per_year/<word_name>/<start_year>")
+@app.route("/word_frequency_per_corpus_per_year/<word_name>/<start_year>/<end_year>")
+@app.route("/word_frequency_per_corpus_per_year/<word_name>/0/<end_year>")
+def word_frequency_per_corpus_per_year(word_name: str, start_year=None, end_year=None):
+    r, md = queries.wordform_in_corpora_over_time(session, wf=word_name,
+        start_year=start_year, end_year=end_year)
+
+    print(r)
+    print(md)
 
     return jsonify({'wordform': word_name, 'metadata': md, 'corpora': r})
 
@@ -157,3 +164,11 @@ def morphological_variants_for_lemma(paradigm_id: int):
     query = raw_queries.find_morphological_variants_for_lemma()
     df = pandas.read_sql(query, connection, params={'paradigm_id': paradigm_id})
     return jsonify(df.to_dict(orient='record'))
+
+
+@app.route("/year_range")
+def year_range():
+    start, end = queries.get_corpora_year_range(session)
+
+    return jsonify({'start': start, 'end': end})
+
