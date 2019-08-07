@@ -166,9 +166,23 @@ def morphological_variants_for_lemma(paradigm_id: int):
     return jsonify(df.to_dict(orient='record'))
 
 
+<<<<<<< HEAD
 @app.route("/year_range")
 def year_range():
     start, end = queries.get_corpora_year_range(session)
 
     return jsonify({'start': start, 'end': end})
 
+=======
+@app.route("/regexp_search/<regexp>")
+def regexp_search(regexp: str):
+    connection = engine.connect()
+    query = """SELECT SQL_CALC_FOUND_ROWS wordform FROM wordforms wf1 WHERE wf1.wordform REGEXP %(regexp)s LIMIT 500"""
+    df = pandas.read_sql(query, connection, params={'regexp': regexp})
+    words = df['wordform'].to_list()
+    df = pandas.read_sql('SELECT FOUND_ROWS() AS rows', connection)
+    return jsonify({
+        'total': int(df['rows'][0]),
+        'words': words
+    })
+>>>>>>> 03c4c9510ef8b46d8c4c8caad30cf87842481542
