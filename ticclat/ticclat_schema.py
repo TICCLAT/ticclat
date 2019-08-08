@@ -296,3 +296,18 @@ class ExternalLink(Base):
     wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
     source_name = Column(String(5))
     source_id = Column(String(10))
+
+
+class WordformFrequencies(Base):
+    """Materialized view containing overall frequencies of wordforms
+
+    The data in this table can be used to filter wordforms on frequency. This
+    is necessary, because there is a lot of noise in the wordforms table, and
+    this makes aggregating over all wordforms expensive.
+    """
+    __tablename__ = 'wordform_frequency'
+
+    wordform_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    wordform = Column(Unicode(255, convert_unicode=False), index=True,
+                      unique=True)
+    frequency = Column(BigInteger())

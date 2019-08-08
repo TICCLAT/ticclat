@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from tqdm import tqdm
 
-from sqlalchemy import create_engine, select, bindparam, and_
+from sqlalchemy import create_engine, select, bindparam, and_, func
 from sqlalchemy.orm import sessionmaker
 
 # for create_database:
@@ -19,12 +19,13 @@ from sqlalchemy_utils import database_exists
 from sqlalchemy_utils.functions import drop_database
 
 from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, \
-    lexical_source_wordform, WordformLink, WordformLinkSource, MorphologicalParadigm
+    lexical_source_wordform, WordformLink, WordformLinkSource, \
+    MorphologicalParadigm, WordformFrequencies, TextAttestation
 from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
     read_json_lines, get_temp_file, json_line, split_component_code, \
     morph_iterator, preprocess_wordforms
 from ticclat.sacoreutils import bulk_add_wordforms_core, \
-    bulk_add_anahashes_core, sql_query_batches, sql_insert_batches
+    bulk_add_anahashes_core, sql_query_batches, sql_insert_batches, sql_insert
 from ticclat.tokenize import nltk_tokenize
 
 logger = logging.getLogger(__name__)
@@ -555,9 +556,36 @@ def create_ticclat_database(delete_existing=False, dbname="ticclat_test", user="
 
 
 def empty_table(session, table_class):
-    n = session.query(table_class).count()
+    n = session.query(table_class).first()
 
-    if n > 0:
+    if n:
         logger.info(f'Table "{table_class.__table__.name}" is not empty.')
         logger.info('Deleting rows...')
-        session.query(table_class).delete()
+        Base.metadata.drop_all(bind=session.get_bind(),
+                               tables=[table_class.__table__])
+        Base.metadata.create_all(session.get_bind(),
+                                 tables=[table_class.__table__])
+
+
+def create_wf_frequencies_table(session):
+    logger.info('Creating wordform_frequencies table.')
+    # Make sure the wordform_frequency table exists (create it if it doesn't)
+    Base.metadata.create_all(session.get_bind(),
+                             tables=[WordformFrequencies.__table__])
+
+    empty_table(session, WordformFrequencies)
+
+    logger.info('Calculating wordform frequencies.')
+    q = select([Wordform, func.sum(TextAttestation.frequency).label('freq')]) \
+        .select_from(Wordform.__table__.join(TextAttestation)) \
+        .group_by(Wordform.wordform_id)
+    r = session.execute(q)
+
+    def iterate_results(result):
+        for row in tqdm(result.fetchall()):
+            yield {'wordform': row.wordform,
+                   'wordform_id': row.wordform_id,
+                   'frequency': row.freq}
+
+    logger.info('Inserting wordform frequencies into the database.')
+    sql_insert(session, WordformFrequencies, iterate_results(r))
