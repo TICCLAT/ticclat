@@ -76,11 +76,11 @@ def load_envvars_file(env_path):
 
     db_url = os.environ.get('DATABASE_URL', None)
     if db_url:
-        regex = r'//(?P<user>.+):(?P<password>.+)@(?P<host>.+)/(?P<dbname>.+)'
+        regex = r'//(?P<user>.+):(?P<passwd>.+)@(?P<host>.+)/(?P<dbname>.+)'
         m = re.search(regex, db_url)
         if m:
             os.environ['user'] = m.group('user').strip()
-            os.environ['password'] = m.group('password').strip()
+            os.environ['password'] = m.group('passwd').strip()
             os.environ['host'] = m.group('host').strip()
             os.environ['dbname'] = m.group('dbname').strip()
 
