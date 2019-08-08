@@ -38,8 +38,7 @@ def ingest_all(session, base_dir='/data',
         source.ingest(session, base_dir=base_dir, **kwargs)
 
 
-# For testing use db_name='ticclat_test', for production db_name='ticclat'
-def run(envvars_path="ENVVARS.txt", db_name="ticclat_test", reset_db=False,
+def run(env=".env", reset_db=False,
         alphabet_file="/data/ALPH/nld.aspell.dict.clip20.lc.LD3.charconfus.clip20.lc.chars",
         batch_size=5000, include=[], exclude=[], ingest=True, anahash=True,
         tmpdir="/data/tmp", loglevel="INFO", reset_anahashes=False, **kwargs):
@@ -55,7 +54,7 @@ def run(envvars_path="ENVVARS.txt", db_name="ticclat_test", reset_db=False,
 
     tempfile.tempdir = tmpdir
 
-    load_envvars_file(envvars_path, db_name=db_name, return_sessionmaker=False)
+    load_envvars_file(env)
 
     if reset_db:
         logger.info(f'Reseting database "{os.environ["dbname"]}".')

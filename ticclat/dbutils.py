@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import logging
 
@@ -63,20 +64,25 @@ def get_session_from_env(**kwargs):
     return Session
 
 
-def load_envvars_file(envvars_path, db_name=None, return_sessionmaker=True):
-    with open(envvars_path) as f:
+def load_envvars_file(env_path):
+    with open(env_path) as f:
         for line in f:
-            parts = line.split("=")
-            if len(parts) == 2:
-                os.environ[parts[0]] = parts[1].strip()
+            if not line.startswith('#'):
+                parts = line.split("=")
+                if len(parts) == 2:
+                    m = f'Setting environment variable: {parts[0]}={parts[1]}'
+                    logger.debug(m)
+                    os.environ[parts[0]] = parts[1].strip()
 
-    if db_name is not None:
-        os.environ["dbname"] = db_name
-    if "host" not in os.environ.keys():
-        os.environ["host"] = "localhost"
-
-    if return_sessionmaker:
-        return get_session_from_env()
+    db_url = os.environ.get('DATABASE_URL', None)
+    if db_url:
+        regex = r'//(?P<user>.+):(?P<password>.+)@(?P<host>.+)/(?P<dbname>.+)'
+        m = re.search(regex, db_url)
+        if m:
+            os.environ['user'] = m.group('user').strip()
+            os.environ['password'] = m.group('password').strip()
+            os.environ['host'] = m.group('host').strip()
+            os.environ['dbname'] = m.group('dbname').strip()
 
 
 def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=None):
