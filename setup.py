@@ -54,6 +54,7 @@ setup(
         "flask",
         "click",
         "gunicorn",
+        "bokeh"
     ],  # FIXME: add your package's dependencies to this list
     setup_requires=[
         # dependency for `python setup.py test`

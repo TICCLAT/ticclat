@@ -4,19 +4,12 @@ import os
 import pandas
 import sqlalchemy
 from flask import Flask, jsonify, request
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 from flask_sqlalchemy_session import flask_scoped_session
 
-from ticclat import settings
-from ticclat import raw_queries
-from ticclat import queries
+from ticclat import raw_queries, queries, db
+from ticclat.plots.blueprint import plots as plots_blueprint
 from ticclat.ticclat_schema import Corpus
-
-engine = create_engine(settings.DATABASE_URL)
-session_factory = sessionmaker(bind=engine)
-md = sqlalchemy.MetaData()
 
 app = Flask(__name__)
 app.config.update()
@@ -35,9 +28,10 @@ def add_cors_headers(response):
 
 app.after_request(add_cors_headers)
 
+app.register_blueprint(plots_blueprint, url_prefix='/plots')
 
 # DB session
-session = flask_scoped_session(session_factory, app)
+session = flask_scoped_session(db.session_factory, app)
 
 # error handler in production:
 if os.environ.get('FLASK_ENV', 'development') == 'production':
@@ -63,12 +57,12 @@ def home():
 
 @app.route('/tables')
 def tables():
-    return jsonify(engine.table_names())
+    return jsonify(db.engine.table_names())
 
 
 @app.route('/tables/<table_name>')
 def table_columns(table_name: str):
-    table = sqlalchemy.Table(table_name, md, autoload=True, autoload_with=engine)
+    table = sqlalchemy.Table(table_name, db.md, autoload=True, autoload_with=db.engine)
     return jsonify({i[0]: str(i[1].type) for i in table.c.items()})
 
 
@@ -85,7 +79,7 @@ def word_frequency_per_year(word_name: str):
     corpus_id = request.args.get('corpus_id')
     if corpus_id:
         corpus_id = int(corpus_id)
-    connection = engine.connect()
+    connection = db.engine.connect()
     query = raw_queries.query_word_frequency_per_year(corpus_id)
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
     resp = jsonify(df.to_dict(orient='record'))
@@ -95,7 +89,7 @@ def word_frequency_per_year(word_name: str):
 
 @app.route("/word_frequency_per_corpus/<word_name>")
 def word_frequency_per_corpus(word_name: str):
-    connection = engine.connect()
+    connection = db.engine.connect()
     query = raw_queries.query_word_frequency_per_corpus()
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
     return jsonify(df.to_dict(orient='record'))
@@ -115,7 +109,7 @@ def word_frequency_per_corpus_per_year(word_name: str, start_year=None, end_year
 
 @app.route("/word/<word_name>")
 def word(word_name: str):
-    connection = engine.connect()
+    connection = db.engine.connect()
     query = raw_queries.query_word_links()
     df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
     lexicon_variants = df.to_dict(orient='records')
@@ -156,7 +150,7 @@ def lexica(word_name: str):
 
 @app.route("/lemmas_for_wordform/<word_form>")
 def lemmas_for_wordform(word_form: str):
-    connection = engine.connect()
+    connection = db.engine.connect()
     query = raw_queries.find_lemmas_for_wordform()
     df = pandas.read_sql(query, connection, params={'lookup_word': word_form})
     df = df.fillna(0)
@@ -165,7 +159,7 @@ def lemmas_for_wordform(word_form: str):
 
 @app.route("/morphological_variants_for_lemma/<paradigm_id>")
 def morphological_variants_for_lemma(paradigm_id: int):
-    connection = engine.connect()
+    connection = db.engine.connect()
     query = raw_queries.find_morphological_variants_for_lemma()
     df = pandas.read_sql(query, connection, params={'paradigm_id': paradigm_id})
     df = df.fillna(0)
@@ -181,7 +175,7 @@ def year_range():
 
 @app.route("/regexp_search/<regexp>")
 def regexp_search(regexp: str):
-    connection = engine.connect()
+    connection = db.engine.connect()
     query = """SELECT SQL_CALC_FOUND_ROWS wordform FROM wordforms wf1 WHERE wf1.wordform REGEXP %(regexp)s LIMIT 500"""
     df = pandas.read_sql(query, connection, params={'regexp': regexp})
     words = df['wordform'].to_list()
