@@ -119,6 +119,49 @@ To migrate the database to the latest database schema run:
 the alembic database migrations. Instead, use SQLAlchemy to create a complete new
 instance of the database.
 
+Data ingestion
+**************
+
+The ticclat package contains scripts for ingesting data into the database.
+To run the scripts, create an ``.env`` file as debscribed under
+`Setup virtual environment`_. In the directory where the `.env` file is located,
+type `python` and then:
+
+.. code-block:: console
+
+  >>> from ticclat import ingest
+  >>> ingest.run()
+
+You can conigure ``run()`` by providing arguments:
+
+* ``env``: path to the ``.env`` file (default: ``.env``)
+* ``reset_db``: delete the database and recreate it before ingesting data (default: ``False``)
+* ``alphabet_file``: path to the alphabet file (required for calculating anahashes;
+  default: `/data/ALPH/nld.aspell.dict.clip20.lc.LD3.charconfus.clip20.lc.chars`)
+* ``batch_size``: size of database batches (default: 5000) (We should look into how this is used.)
+* ``include``: list of data sources to ingest (default: ``[]``)
+* ``exclude``: list of data sources to exclude from ingesting (default: ``[]``)
+* ``ingest``: boolean indicating whether data should be ingested (default: ``True``)
+* ``anahash``: boolean indicating whether anahashes should be calculated (default: ``True``)
+* ``tmpdir``: directory to use for storing temporary data (default: ``/data/tmp``)
+* ``loglevel``: what log messages to show (default: ``INFO``)
+* ``reset_anahashes`` boolean indicating whether the anahashes table should be
+  emptied (default: ``False``)
+* ``base_dir``: path to the directory containing the source datafiles
+
+The following sources can be ingested (and added to the ``include`` and ``exclude`` lists):
+
+* ``twente``: spelling correction lexicon
+* ``inl``: lexicon
+* ``SoNaR500``: corpus
+* ``elex``: lexicon
+* ``groene boekje``: lexicon
+* ``OpenTaal``: lexicon
+* ``sgd``: Staten Generaal Digitaal, corpus
+* ``edbo``: Early Dutch Books Online, corpus
+* ``dbnl``: Digitale Bibliotheek voor de Nederlandse letteren
+* ``morph_par``: Morphological Paradigms
+
 Flask web app
 *************
 
