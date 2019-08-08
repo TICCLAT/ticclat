@@ -121,3 +121,14 @@ FROM (SELECT mp2.V,
      ) AS wordform_stats
 GROUP BY V, word_type_code, wordform, wordform_id
 """
+
+def fill_wordform_frequency_table():
+    return """
+INSERT INTO wordform_frequency(wordform_id, wordform, frequency)
+SELECT wordforms.wordform_id       AS wordform_id,
+       wordforms.wordform          AS wordform,
+       COALESCE(SUM(frequency), 0) AS frequency
+FROM wordforms
+         LEFT JOIN text_attestations ON wordforms.wordform_id = text_attestations.wordform_id
+GROUP BY wordforms.wordform_id
+    """
