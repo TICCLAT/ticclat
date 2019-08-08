@@ -284,6 +284,12 @@ def get_wf_variants(session, wf, start_year=None, end_year=None):
     for paradigm in get_wf_paradigms(session, wf).fetchall():
         c = f'Z{paradigm.Z:04}Y{paradigm.Y:04}X{paradigm.X:04}W{paradigm.W:08}'
         p = {'paradigm_code': c, 'lemma': None, 'variants': []}
+
+        min_years = []
+        max_years = []
+
+        min_freqs = []
+        max_freqs = []
         for variant in get_paradigm_variants(session, paradigm).fetchall():
             vd = {'wordform': variant.wordform}
             r, md = wordform_in_corpora_over_time(session, wf=variant.wordform,
@@ -302,9 +308,24 @@ def get_wf_variants(session, wf, start_year=None, end_year=None):
                 if p['lemma'] is not None:
                     logger.warn(f'Found duplicate HCL for {variant.wordform}.')
                 p['lemma'] = variant.wordform
+
+            min_years.append(md['min_year'])
+            max_years.append(md['max_year'])
+
+            min_freqs.append(md['min_freq'])
+            max_freqs.append(md['max_freq'])
         paradigms.append(p)
 
-    return paradigms
+        metadata = {
+            # to prevent min_year from being 0, we compare to the database
+            # start_year
+            'min_year': max(min(min_years), start_year),
+            'max_year': max(max_years),
+            'min_freq': min(min_freqs),
+            'max_freq': max(max_freqs)
+        }
+
+    return paradigms, metadata
 
 
 def get_wf_paradigms(session, wf):

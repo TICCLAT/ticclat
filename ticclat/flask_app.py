@@ -140,10 +140,12 @@ def word(word_name: str):
 @app.route("/variants/<word_name>/<start_year>/<end_year>")
 @app.route("/variants/<word_name>/0/<end_year>")
 def variants(word_name: str, start_year=None, end_year=None):
-    result = queries.get_wf_variants(session, word_name, start_year=start_year,
-                                     end_year=end_year)
+    paradigms, md = queries.get_wf_variants(session, word_name,
+                                            start_year=start_year,
+                                            end_year=end_year)
     return jsonify({'wordform': word_name,
-                    'paradigms': result})
+                    'paradigms': paradigms,
+                    'metadata': md})
 
 
 @app.route("/lexica/<word_name>")
