@@ -120,6 +120,8 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
         max_freq = 0.0
 
     md = {
+        'overall_min_year': start_year,
+        'overall_max_year': end_year,
         'min_year': int(min_year),
         'max_year': int(max_year),
         'min_freq': float(min_freq),
@@ -317,6 +319,8 @@ def get_wf_variants(session, wf, start_year=None, end_year=None):
         paradigms.append(p)
 
         metadata = {
+            'overall_min_year': start_year,
+            'overall_max_year': end_year,
             # to prevent min_year from being 0, we compare to the database
             # start_year
             'min_year': max(min(min_years), start_year),
