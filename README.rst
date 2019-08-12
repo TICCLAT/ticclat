@@ -161,6 +161,8 @@ The following sources can be ingested (and added to the ``include`` and ``exclud
 * ``edbo``: Early Dutch Books Online, corpus
 * ``dbnl``: Digitale Bibliotheek voor de Nederlandse letteren
 * ``morph_par``: Morphological Paradigms
+* ``wf_freqs``: Generate materialized view (table) containing wordforms and their
+  total frequencies in the corpora
 
 Flask web app
 *************
