@@ -25,7 +25,7 @@ ORDER BY sum_word_count DESC
         sizing_mode='stretch_both',
         y_range=df['name'],
         active_scroll='wheel_zoom',
-        tools = ['hover', 'pan', 'wheel_zoom', 'save', 'reset']
+        tools=['hover', 'pan', 'wheel_zoom', 'save', 'reset']
     )
 
     df['color'] = palettes.Category10[len(df)]

@@ -29,7 +29,7 @@ ORDER BY year
         y_axis_type="log",
         y_range=[1e3, 1e8],
         tools=['hover', 'pan', 'wheel_zoom', 'save', 'reset'],
-        active_scroll = 'wheel_zoom',
+        active_scroll='wheel_zoom',
     )
 
     corpus_names = df['name'].unique()
