@@ -429,3 +429,10 @@ def set_year_range(session, start_year, end_year):
         if end_year is None:
             end_year = e
     return start_year, end_year
+
+
+def distinct_word_type_codes(session):
+    q = select([distinct(MorphologicalParadigm.word_type_code).label('code')])
+    r = session.execute(q)
+    return r.fetchall()
+

@@ -184,3 +184,12 @@ def regexp_search(regexp: str):
         'total': int(df['rows'][0]),
         'words': words
     })
+
+
+@app.route("/word_type_codes")
+def word_type_codes():
+    codes = queries.distinct_word_type_codes(session)
+
+    codes = [c.code for c in codes]
+
+    return jsonify(codes)
