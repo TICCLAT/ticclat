@@ -1,5 +1,5 @@
 import pandas
-from bokeh.models import ColumnDataSource
+from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, show
 from bokeh import palettes
 
@@ -8,7 +8,7 @@ from ticclat import db
 
 def lexicon_size():
     query = """
-SELECT SUBSTR(lexica.lexicon_name, 1, 20) AS name, COUNT(wordform_id) AS word_count
+SELECT SUBSTR(lexica.lexicon_name, 1, 20) AS name, COUNT(wordform_id) / 1e5 AS word_count
 FROM lexical_source_wordform
 LEFT JOIN lexica on lexical_source_wordform.lexicon_id = lexica.lexicon_id
 GROUP BY lexical_source_wordform.lexicon_id
@@ -21,6 +21,8 @@ ORDER BY word_count DESC
         title="Lexicon size",
         sizing_mode='stretch_both',
         y_range=df['name'],
+        active_scroll='wheel_zoom',
+        tools=['hover', 'pan', 'wheel_zoom', 'save', 'reset']
     )
 
     df['color'] = palettes.Category10[len(df)]
@@ -36,6 +38,14 @@ ORDER BY word_count DESC
         muted_alpha=0,
     )
 
+    p.xaxis.axis_label = 'Number of words [× 10^5]'
+    p.yaxis.axis_label = 'Lexicon'
+    hover = p.select(dict(type=HoverTool))
+    hover.tooltips = [
+        ("Lexicon", "@name"),
+        ("Number of words [× 10^5]", "@word_count"),
+    ]
+    hover.mode = 'mouse'
     return p
 
 
