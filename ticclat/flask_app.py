@@ -193,3 +193,21 @@ def word_type_codes():
     codes = [c.code for c in codes]
 
     return jsonify(codes)
+
+
+@app.route('/paradigm_count')
+def _paradigm_count():
+    connection = db.engine.connect()
+    X = request.args.get('X', None)
+    Y = request.args.get('Y', None)
+    Z = request.args.get('Z', None)
+    query = f"""
+SELECT X,Y,Z, COUNT(W) AS num_paradigms FROM morphological_paradigms WHERE 1
+{'AND X = %(X)s' if X else ''}
+{'AND Y = %(Y)s' if Y else ''}
+{'AND Z = %(Z)s' if Z else ''}
+GROUP BY X,Y,Z
+ORDER BY num_paradigms DESC
+"""
+    df = pandas.read_sql(query, connection, params={'X': X, 'Y': Y, 'Z': Z})
+    return jsonify(df.to_dict(orient='record'))

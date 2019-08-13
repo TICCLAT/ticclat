@@ -1,5 +1,5 @@
 import pandas
-from bokeh.models import ColumnDataSource
+from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, show
 from bokeh import palettes
 
@@ -24,10 +24,12 @@ ORDER BY year
     df = pandas.read_sql(query, connection)
 
     p = figure(
-        title="Word count per year",
+        title="Word (token) count per year",
         sizing_mode='stretch_both',
         y_axis_type="log",
         y_range=[1e3, 1e8],
+        tools=['hover', 'pan', 'wheel_zoom', 'save', 'reset'],
+        active_scroll='wheel_zoom',
     )
 
     corpus_names = df['name'].unique()
@@ -35,22 +37,35 @@ ORDER BY year
     palette = palettes.Category10[10]
 
     for i, corpus_name in enumerate(corpus_names):
+        corpus_data = df[df['name'] == corpus_name]
+        corpus_data['color'] = palette[i]
         p.vbar(
             x='year',
             top='sum_word_count',
             bottom=1e3,
-            source=ColumnDataSource(df[df['name'] == corpus_name]),
-            color=palette[i],
+            source=ColumnDataSource(corpus_data),
+            color='color',
             width=1,
             fill_alpha=0.9,
             line_width=0,
             muted_alpha=0,
-            legend=corpus_name
+            legend='name'
         )
+
+    p.xaxis.axis_label = 'Year'
+    p.yaxis.axis_label = 'Number of words (tokens)'
 
     p.legend.location = 'top_left'
     p.legend.click_policy = "mute"
 
+    hover = p.select(dict(type=HoverTool))
+    hover.tooltips = [
+        ("Corpus", "@name"),
+        ("Color", "$color[swatch]:color"),
+        ("Year", "@year"),
+        ("Number of words (tokens)", "@sum_word_count"),
+    ]
+    hover.mode = 'mouse'
     return p
 
 

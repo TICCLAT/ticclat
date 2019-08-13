@@ -1,5 +1,6 @@
 import pandas
-from bokeh.models import ColumnDataSource
+from bokeh import models
+from bokeh.models import HoverTool
 from bokeh.plotting import figure, show
 from bokeh import palettes
 
@@ -8,7 +9,7 @@ from ticclat import db
 
 def corpus_size():
     query = """
-SELECT SUM(word_count) AS sum_word_count,
+SELECT SUM(word_count) / 1e8 AS sum_word_count,
        c.name AS name
 FROM documents
          LEFT JOIN corpusId_x_documentId cIxdI on documents.document_id = cIxdI.document_id
@@ -23,6 +24,8 @@ ORDER BY sum_word_count DESC
         title="Corpus size",
         sizing_mode='stretch_both',
         y_range=df['name'],
+        active_scroll='wheel_zoom',
+        tools=['hover', 'pan', 'wheel_zoom', 'save', 'reset']
     )
 
     df['color'] = palettes.Category10[len(df)]
@@ -30,13 +33,23 @@ ORDER BY sum_word_count DESC
     p.hbar(
         y='name',
         right='sum_word_count',
-        source=ColumnDataSource(df),
+        source=models.ColumnDataSource(df),
         color='color',
         height=1,
         fill_alpha=0.9,
         line_width=0,
         muted_alpha=0,
     )
+
+    p.xaxis.axis_label = 'Number of words (tokens) [× 10^8]'
+    p.yaxis.axis_label = 'Corpus'
+
+    hover = p.select(dict(type=HoverTool))
+    hover.tooltips = [
+        ("Corpus", "@name"),
+        ("Number of words;", "@word_count × 10^8")
+    ]
+    hover.mode = 'mouse'
 
     return p
 

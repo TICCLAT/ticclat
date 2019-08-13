@@ -122,6 +122,7 @@ FROM (SELECT mp2.V,
 GROUP BY V, word_type_code, wordform, wordform_id
 """
 
+
 def fill_wordform_frequency_table():
     return """
 INSERT INTO wordform_frequency(wordform_id, wordform, frequency)
