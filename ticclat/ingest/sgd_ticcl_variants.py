@@ -17,7 +17,7 @@ def ingest(session, base_dir='/data/SGD_ticcl_variants', **kwargs):
     dfs = []
 
     for in_file in in_files:
-        df = pd.read_csv(in_file, sep='#', header=None)
+        df = pd.read_csv(in_file, sep='#', header=None, engine='python')
         df.columns = ['ocr_variant', 'corpus_frequency',
                       'correction_candidate', '?1', 'ld', '?2', 'anahash']
         dfs.append(df)
