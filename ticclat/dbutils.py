@@ -105,14 +105,15 @@ def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=No
     return wf
 
 
-def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
+def bulk_add_wordforms(session, wfs, preprocess_wfs=True, disable_pbar=False, batch_size=10000):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
     """
     logger.info('Bulk adding wordforms.')
 
-    wfs = preprocess_wordforms(wfs)
+    if preprocess_wfs:
+        wfs = preprocess_wordforms(wfs)
 
     # remove empty entries
     wfs['wordform'].replace('', np.nan, inplace=True)
