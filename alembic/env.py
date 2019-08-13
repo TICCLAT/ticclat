@@ -1,3 +1,4 @@
+import os
 
 from logging.config import fileConfig
 
@@ -5,6 +6,8 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+
+from ticclat.dbutils import load_envvars_file
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -38,7 +41,8 @@ def run_migrations_offline():
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    load_envvars_file(config.get_main_option("envars.file"))
+    url = os.environ['DATABASE_URL']
     context.configure(
         url=url, target_metadata=target_metadata, literal_binds=True
     )
