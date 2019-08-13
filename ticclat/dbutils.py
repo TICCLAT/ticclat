@@ -408,7 +408,7 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
 
 def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
                            to_column, from_correct, to_correct,
-                           batch_size=50000):
+                           batch_size=50000, preprocess_wfs=True):
     logger.info('Adding lexicon with links between wordforms.')
 
     # Make a dataframe containing all wordforms in the lexicon
@@ -423,7 +423,8 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
 
     wf_mapping = get_wf_mapping(session, lexicon_id=lexicon.lexicon_id)
 
-    wfs = preprocess_wordforms(wfs, columns=[from_column, to_column])
+    if preprocess_wfs:
+        wfs = preprocess_wordforms(wfs, columns=[from_column, to_column])
 
     with get_temp_file() as wfl_file:
         logger.debug('Writing wordform links to add to (possibly unnamed) temporary file.')
