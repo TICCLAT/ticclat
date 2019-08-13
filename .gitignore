@@ -110,3 +110,5 @@ ENVVARS.txt
 
 .idea/
 mysql_data/
+
+.DS_Store
