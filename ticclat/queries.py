@@ -428,7 +428,7 @@ def set_year_range(session, start_year, end_year):
             start_year = s
         if end_year is None:
             end_year = e
-    return start_year, end_year
+    return int(start_year), int(end_year)
 
 
 def distinct_word_type_codes(session):
