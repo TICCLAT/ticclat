@@ -163,6 +163,8 @@ The following sources can be ingested (and added to the ``include`` and ``exclud
 * ``morph_par``: Morphological Paradigms
 * ``wf_freqs``: Generate materialized view (table) containing wordforms and their
   total frequencies in the corpora
+* ``sgd_ticcl``: ingest ticcl corrections based on the SDG data (we currently have
+  data for two wordforms: *Amsterdam* and *Binnenlandsche*)
 
 Flask web app
 *************
