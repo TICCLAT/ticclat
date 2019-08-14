@@ -202,3 +202,33 @@ ORDER BY num_paradigms DESC
 """
     df = pandas.read_sql(query, connection, params={'X': X, 'Y': Y, 'Z': Z})
     return jsonify(df.to_dict(orient='record'))
+
+
+@app.route('/network/<wordform>')
+def _network(wordform: str):
+    connection = db.engine.connect()
+    xyz_df = pandas.read_sql(raw_queries.get_xyz(), connection, params={'wordform': wordform})
+    # select first result (first paradigm for wordform)
+    xyz = xyz_df.iloc[0].to_dict()
+
+    # select the top frequent X values for same Z,Y
+    df = pandas.read_sql(raw_queries.get_frequent_x_for_zy(), connection, params={'Z': xyz['Z'], 'Y': xyz['Y']})
+    x_values = df['X'].tolist()
+
+    # append itself to the list of X values to query next
+    if xyz['X'] not in x_values:
+        x_values.append(xyz['X'])
+
+    return jsonify({
+        'self': xyz,
+        'X_list': [
+            {
+                'X': x,
+                'W_list': pandas.read_sql(
+                    raw_queries.get_most_frequent_lemmas_for_xyz(),
+                    connection,
+                    params={'Z': xyz['Z'], 'Y': xyz['Y'], 'X': x}
+                ).reset_index(drop=True).to_dict(orient='records')
+            } for x in x_values
+        ],
+    })
