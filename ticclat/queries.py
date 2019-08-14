@@ -282,6 +282,15 @@ def count_unique_wfs_in_corpus(session, corpus_name):
 def get_wf_variants(session, wf, start_year=None, end_year=None):
     start_year, end_year = set_year_range(session, start_year, end_year)
 
+    metadata = {
+        'overall_min_year': start_year,
+        'overall_max_year': end_year,
+        'min_year': 0,
+        'max_year': 0,
+        'min_freq': 0.0,
+        'max_freq': 0.0
+    }
+
     paradigms = []
     for paradigm in get_wf_paradigms(session, wf).fetchall():
         c = f'Z{paradigm.Z:04}Y{paradigm.Y:04}X{paradigm.X:04}W{paradigm.W:08}'
@@ -318,16 +327,12 @@ def get_wf_variants(session, wf, start_year=None, end_year=None):
             max_freqs.append(md['max_freq'])
         paradigms.append(p)
 
-        metadata = {
-            'overall_min_year': start_year,
-            'overall_max_year': end_year,
-            # to prevent min_year from being 0, we compare to the database
-            # start_year
-            'min_year': max(min(min_years), start_year),
-            'max_year': max(max_years),
-            'min_freq': min(min_freqs),
-            'max_freq': max(max_freqs)
-        }
+        # to prevent min_year from being 0, we compare to the database
+        # start_year
+        metadata['min_year'] = max(min(min_years), start_year)
+        metadata['max_year'] = max(max_years),
+        metadata['min_freq'] = min(min_freqs),
+        metadata['max_freq'] = max(max_freqs)
 
     return paradigms, metadata
 
