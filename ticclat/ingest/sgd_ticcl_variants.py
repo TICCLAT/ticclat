@@ -3,16 +3,23 @@ import glob
 
 import pandas as pd
 
+from pathlib import Path
+
 from ticclat.dbutils import add_lexicon_with_links, session_scope
 
 logger = logging.getLogger(__name__)
 
 
-def ingest(session, base_dir='/data/SGD_ticcl_variants', **kwargs):
+def ingest(session, base_dir='/', data_dir='SGD_ticcl_variants', **kwargs):
     # TODO: now all correction data is read into memory before ingestion. For
     # the total amount of data this probably is not feasible, so this needs
     # to be fixed later.
-    in_files = glob.glob('{}/*'.format(base_dir))
+    in_dir = Path(base_dir) / data_dir
+    expr = Path(in_dir) / '*'
+    in_files = glob.glob(str(expr))
+
+    logger.debug('Reading data from: {}'.format(in_dir))
+    logger.debug('Ingesting files: {}'.format(' - '.join(in_files)))
 
     dfs = []
 
