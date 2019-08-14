@@ -443,29 +443,37 @@ def distinct_word_type_codes(session):
     return r.fetchall()
 
 
-def get_ticcl_variants(session, wordform, lexicon_id):
+def get_ticcl_variants(session, wordform, lexicon_id, corpus_id):
     wf_to = alias(Wordform)
     q = select([Wordform.wordform.label('wordform_from'),
                 WordformLinkSource.wordform_from_correct,
                 wf_to.c.wordform.label('wordform_to'),
                 WordformLinkSource.wordform_to_correct,
-                WordformLinkSource.ld]) \
+                WordformLinkSource.ld,
+                func.sum(TextAttestation.frequency).label('freq_in_corpus')]) \
         .select_from(WordformLink.__table__.join(WordformLinkSource)
         .join(Wordform,
               onclause=WordformLink.wordform_from==Wordform.wordform_id) \
-        .join(wf_to, onclause=WordformLink.wordform_to==wf_to.c.wordform_id)) \
+        .join(wf_to, onclause=WordformLink.wordform_to==wf_to.c.wordform_id) \
+        .join(TextAttestation,
+              onclause=wf_to.c.wordform_id == TextAttestation.wordform_id) \
+        .join(Document).join(corpusId_x_documentId).join(Corpus)) \
         .where(and_(Wordform.wordform==wordform,
-                    WordformLinkSource.lexicon_id == lexicon_id)) \
-        .order_by(WordformLinkSource.ld, 'wordform_to')
-
+                    WordformLinkSource.lexicon_id == lexicon_id,
+                    Corpus.corpus_id == corpus_id)) \
+        .group_by('wordform_to',
+                  WordformLinkSource.wordform_from_correct,
+                  WordformLinkSource.wordform_to_correct,
+                  WordformLinkSource.ld) \
+        .order_by(desc('freq_in_corpus'), WordformLinkSource.ld, 'wordform_to')
     df = pd.read_sql(q, session.get_bind())
 
     correct = None
     if df.shape[0] > 0:
         correct = df.loc[0, 'wordform_from_correct']
 
-    df = df[['wordform_to', 'wordform_to_correct', 'ld']]
-    df.columns = ['wordform', 'correct', 'ld']
+    df = df[['wordform_to', 'wordform_to_correct', 'ld', 'freq_in_corpus']]
+    df.columns = ['wordform', 'correct', 'ld', 'freq_in_corpus']
 
     return {'wordform': wordform,
             'correct': bool(correct),

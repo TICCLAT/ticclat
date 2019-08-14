@@ -217,5 +217,7 @@ ORDER BY num_paradigms DESC
 def ticcl_variants(word_form: str):
     # TODO: get lexicon_id from the frontend (it is now fixed to 7)
     lexicon_id = request.args.get('lexicon_id', 7)
+    # TODO: get corpus_id from the frontend (it is now fixed to 2)
+    corpus_id = request.args.get('corpus_id', 2)
 
-    return jsonify(queries.get_ticcl_variants(session, word_form, lexicon_id))
+    return jsonify(queries.get_ticcl_variants(session, word_form, lexicon_id, corpus_id))
