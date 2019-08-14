@@ -211,3 +211,11 @@ ORDER BY num_paradigms DESC
 """
     df = pandas.read_sql(query, connection, params={'X': X, 'Y': Y, 'Z': Z})
     return jsonify(df.to_dict(orient='record'))
+
+
+@app.route("/ticcl_variants/<word_form>")
+def ticcl_variants(word_form: str):
+    # TODO: get lexicon_id from the frontend (it is now fixed to 7)
+    lexicon_id = request.args.get('lexicon_id', 7)
+
+    return jsonify(queries.get_ticcl_variants(session, word_form, lexicon_id))

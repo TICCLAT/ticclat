@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from sqlalchemy import select, text
-from sqlalchemy.sql import func, distinct, and_, desc
+from sqlalchemy.sql import func, distinct, and_, desc, alias
 
 from ticclat.ticclat_schema import Lexicon, Wordform, Anahash, Document, \
     Corpus, lexical_source_wordform, corpusId_x_documentId, TextAttestation, \
@@ -442,3 +442,31 @@ def distinct_word_type_codes(session):
     r = session.execute(q)
     return r.fetchall()
 
+
+def get_ticcl_variants(session, wordform, lexicon_id):
+    wf_to = alias(Wordform)
+    q = select([Wordform.wordform.label('wordform_from'),
+                WordformLinkSource.wordform_from_correct,
+                wf_to.c.wordform.label('wordform_to'),
+                WordformLinkSource.wordform_to_correct,
+                WordformLinkSource.ld]) \
+        .select_from(WordformLink.__table__.join(WordformLinkSource)
+        .join(Wordform,
+              onclause=WordformLink.wordform_from==Wordform.wordform_id) \
+        .join(wf_to, onclause=WordformLink.wordform_to==wf_to.c.wordform_id)) \
+        .where(and_(Wordform.wordform==wordform,
+                    WordformLinkSource.lexicon_id == lexicon_id)) \
+        .order_by(WordformLinkSource.ld, 'wordform_to')
+
+    df = pd.read_sql(q, session.get_bind())
+
+    correct = None
+    if df.shape[0] > 0:
+        correct = df.loc[0, 'wordform_from_correct']
+
+    df = df[['wordform_to', 'wordform_to_correct', 'ld']]
+    df.columns = ['wordform', 'correct', 'ld']
+
+    return {'wordform': wordform,
+            'correct': bool(correct),
+            'links': df.to_dict(orient='record')}
