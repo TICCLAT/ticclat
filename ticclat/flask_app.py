@@ -348,3 +348,27 @@ def suffixes(suffix_1: str, suffix_2: str = ""):
         },
         'pairs': pairs
     })
+
+
+@app.route("/variants_by_wxyz")
+def _variants_by_wxyz():
+    W = request.args.get('w')
+    X = request.args.get('x')
+    Y = request.args.get('y')
+    Z = request.args.get('z')
+    connection = db.engine.connect()
+
+    query = """
+SELECT frequency, w.wordform FROM morphological_paradigms
+LEFT JOIN wordforms w on morphological_paradigms.wordform_id = w.wordform_id
+LEFT JOIN wordform_frequency ON w.wordform_id = wordform_frequency.wordform_id
+WHERE morphological_paradigms.W = %(W)s
+AND morphological_paradigms.X = %(X)s
+AND morphological_paradigms.Y = %(Y)s
+AND morphological_paradigms.Z = %(Z)s
+AND word_type_code IN ('HCL', 'HCM')
+    """
+
+    df = pandas.read_sql(query, connection, params={'W': W, 'X': X, 'Y': Y, 'Z': Z })
+
+    return jsonify(df.to_dict(orient="record"))
