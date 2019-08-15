@@ -227,13 +227,18 @@ def ticcl_variants(word_form: str):
 @app.route("/suffixes/<suffix_1>")
 @app.route("/suffixes/<suffix_1>/<suffix_2>")
 def suffixes(suffix_1: str, suffix_2: str = ""):
+    min_freq = request.args.get('min_freq', 10)
     start = timer()
     # TODO: refactor regexp_search to not return limited view and use that here
     connection = db.engine.connect()
 
     # search first suffix
     search_1 = "%" + suffix_1
-    query = f"""SELECT wordform FROM wordforms WHERE wordform LIKE %(search_1)s"""
+    query = f"""
+SELECT wordform
+FROM wordform_frequency
+WHERE frequency > {min_freq} AND wordform LIKE %(search_1)s
+"""
     df = pandas.read_sql(query, connection, params={'search_1': search_1})
     words = df['wordform'].to_list()
 
@@ -244,7 +249,11 @@ def suffixes(suffix_1: str, suffix_2: str = ""):
     # match with second suffix
     for word in words:
         word_2 = word[:-len(suffix_1)] + suffix_2
-        query = f"""SELECT wordform FROM wordforms WHERE wordform = %(word_2)s"""
+        query = f"""
+SELECT wordform
+FROM wordform_frequency
+WHERE frequency > {min_freq} AND wordform = %(word_2)s
+"""
         df = pandas.read_sql(query, connection, params={'word_2': word_2})
         if len(df['wordform']) == 1:
             pairs.append((word, word_2))
