@@ -235,28 +235,32 @@ def suffixes(suffix_1: str, suffix_2: str = ""):
     # search first suffix
     search_1 = "%" + suffix_1
     query = f"""
-SELECT wordform
+SELECT wordform, frequency
 FROM wordform_frequency
 WHERE frequency > {min_freq} AND wordform LIKE %(search_1)s
 """
     df = pandas.read_sql(query, connection, params={'search_1': search_1})
     words = df['wordform'].to_list()
+    freqs = df['frequency'].to_list()
 
     half_way = timer()
 
     pairs = []
 
     # match with second suffix
-    for word in words:
+    for word, freq in zip(words, freqs):
         word_2 = word[:-len(suffix_1)] + suffix_2
         query = f"""
-SELECT wordform
+SELECT wordform, frequency
 FROM wordform_frequency
 WHERE frequency > {min_freq} AND wordform = %(word_2)s
 """
         df = pandas.read_sql(query, connection, params={'word_2': word_2})
         if len(df['wordform']) == 1:
-            pairs.append((word, word_2))
+            pairs.append({'word1': word,
+                          'word1_freq': int(freq),
+                          'word2': word_2,
+                          'word2_freq': int(df['frequency'][0])})
 
     end = timer()
 
