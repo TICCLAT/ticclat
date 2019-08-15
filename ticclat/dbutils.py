@@ -76,11 +76,11 @@ def load_envvars_file(env_path):
 
     db_url = os.environ.get('DATABASE_URL', None)
     if db_url:
-        regex = r'//(?P<user>.+):(?P<password>.+)@(?P<host>.+)/(?P<dbname>.+)'
+        regex = r'//(?P<user>.+):(?P<passwd>.+)@(?P<host>.+)/(?P<dbname>.+)'
         m = re.search(regex, db_url)
         if m:
             os.environ['user'] = m.group('user').strip()
-            os.environ['password'] = m.group('password').strip()
+            os.environ['password'] = m.group('passwd').strip()
             os.environ['host'] = m.group('host').strip()
             os.environ['dbname'] = m.group('dbname').strip()
 
@@ -105,14 +105,15 @@ def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=No
     return wf
 
 
-def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
+def bulk_add_wordforms(session, wfs, preprocess_wfs=True, disable_pbar=False, batch_size=10000):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
     """
     logger.info('Bulk adding wordforms.')
 
-    wfs = preprocess_wordforms(wfs)
+    if preprocess_wfs:
+        wfs = preprocess_wordforms(wfs)
 
     # remove empty entries
     wfs['wordform'].replace('', np.nan, inplace=True)
@@ -156,14 +157,16 @@ def bulk_add_wordforms(session, wfs, disable_pbar=False, batch_size=10000):
     return total
 
 
-def add_lexicon(session, lexicon_name, vocabulary, wfs, batch_size=10000):
+def add_lexicon(session, lexicon_name, vocabulary, wfs, batch_size=10000,
+                preprocess_wfs=True):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
     """
     logger.info('Adding lexicon.')
 
-    bulk_add_wordforms(session, wfs, batch_size=batch_size)
+    bulk_add_wordforms(session, wfs, batch_size=batch_size,
+                       preprocess_wfs=preprocess_wfs)
 
     lexicon = Lexicon(lexicon_name=lexicon_name, vocabulary=vocabulary)
     session.add(lexicon)
@@ -360,7 +363,7 @@ def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
 
 def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
                         wf_to_name, lexicon_id, wf_from_correct, wf_to_correct,
-                        links_file, sources_file):
+                        links_file, sources_file, add_columns=[]):
     num_wf_links = 0
     num_wf_link_sources = 0
     wf_links = defaultdict(bool)
@@ -385,17 +388,23 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
                 num_wf_links += 2
             # The wordform link sources (in both directions) need to be
             # written regardless of the existence of the wordform links.
-            line = json_line({'wordform_from': wf_from,
-                              'wordform_to': wf_to,
-                              'lexicon_id': lexicon_id,
-                              'wordform_from_correct': wf_from_correct,
-                              'wordform_to_correct': wf_to_correct})
+            s = {'wordform_from': wf_from,
+                 'wordform_to': wf_to,
+                 'lexicon_id': lexicon_id,
+                 'wordform_from_correct': wf_from_correct,
+                 'wordform_to_correct': wf_to_correct}
+            for c in add_columns:
+                s[c] = row[c]
+            line = json_line(s)
             sources_file.write(line)
-            line = json_line({'wordform_from': wf_to,
-                              'wordform_to': wf_from,
-                              'lexicon_id': lexicon_id,
-                              'wordform_from_correct': wf_to_correct,
-                              'wordform_to_correct': wf_from_correct})
+            s = {'wordform_from': wf_to,
+                 'wordform_to': wf_from,
+                 'lexicon_id': lexicon_id,
+                 'wordform_from_correct': wf_to_correct,
+                 'wordform_to_correct': wf_from_correct}
+            for c in add_columns:
+                s[c] = row[c]
+            line = json_line(s)
             sources_file.write(line)
             num_wf_link_sources += 2
 
@@ -407,7 +416,7 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
 
 def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
                            to_column, from_correct, to_correct,
-                           batch_size=50000):
+                           batch_size=50000, preprocess_wfs=True, to_add=[]):
     logger.info('Adding lexicon with links between wordforms.')
 
     # Make a dataframe containing all wordforms in the lexicon
@@ -418,11 +427,12 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
 
     # Create the lexicon (with all the wordforms)
     lexicon = add_lexicon(session, lexicon_name, vocabulary, wordforms,
-                          batch_size=batch_size)
+                          batch_size=batch_size, preprocess_wfs=preprocess_wfs)
 
     wf_mapping = get_wf_mapping(session, lexicon_id=lexicon.lexicon_id)
 
-    wfs = preprocess_wordforms(wfs, columns=[from_column, to_column])
+    if preprocess_wfs:
+        wfs = preprocess_wordforms(wfs, columns=[from_column, to_column])
 
     with get_temp_file() as wfl_file:
         logger.debug('Writing wordform links to add to (possibly unnamed) temporary file.')
@@ -434,7 +444,8 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
                                                from_column, to_column,
                                                lexicon.lexicon_id,
                                                from_correct, to_correct,
-                                               wfl_file, wfls_file)
+                                               wfl_file, wfls_file,
+                                               add_columns=to_add)
 
             logger.info('Inserting {} wordform links.'.format(num_l))
             sql_insert_batches(session, WordformLink, read_json_lines(wfl_file),

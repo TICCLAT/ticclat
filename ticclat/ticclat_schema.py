@@ -245,6 +245,9 @@ class WordformLinkSource(Base):
     wordform_from_correct = Column(Boolean)
     wordform_to_correct = Column(Boolean)
 
+    ld = Column(Integer())
+    anahash_difference = Column(BigInteger())
+
     wfls_wflink = relationship('WordformLink', backref='wf_links')
     wfls_lexicon = relationship('Lexicon', backref='wfl_lexica')
 

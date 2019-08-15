@@ -4,6 +4,7 @@ import os
 import pandas
 import sqlalchemy
 from flask import Flask, jsonify, request
+from timeit import default_timer as timer
 
 from flask_sqlalchemy_session import flask_scoped_session
 
@@ -186,6 +187,15 @@ def regexp_search(regexp: str):
     })
 
 
+@app.route("/word_type_codes")
+def word_type_codes():
+    codes = queries.distinct_word_type_codes(session)
+
+    codes = [c.code for c in codes]
+
+    return jsonify(codes)
+
+
 @app.route('/paradigm_count')
 def _paradigm_count():
     connection = db.engine.connect()
@@ -219,16 +229,112 @@ def _network(wordform: str):
     if xyz['X'] not in x_values:
         x_values.append(xyz['X'])
 
+
+    nodes = []
+    links = []
+
+    flatten = lambda l: [item for sublist in l for item in sublist]
+
+    W_list = flatten([
+        pandas.read_sql(
+            raw_queries.get_most_frequent_lemmas_for_xyz(),
+            connection,
+            params={'Z': xyz['Z'], 'Y': xyz['Y'], 'X': x, 'limit': 50}
+        ).reset_index(drop=True).to_dict(orient='records') for x in x_values
+    ])
+
+    for w in W_list:
+        nodes.append({
+            'id': str(w['wordform_id']),
+            # 'tc_z': xyz['Z'],
+            # 'tc_y': xyz['Y'],
+            'tc_x': w['X'],
+            'type': 'w',
+            'frequency': w['frequency'],
+            'wordform': w['wordform']
+        })
+
+    for x in x_values:
+        w_nodes_for_x = [node for node in nodes if node['tc_x'] == x]
+        x_node = {
+            'id': f'Z{xyz["Z"]}Y{xyz["Y"]}X{x}',
+            # 'tc_z': xyz['Z'],
+            # 'tc_y': xyz['Y'],
+            'tc_x': x,
+            'type': 'x',
+            'frequency': sum([node['frequency'] for node in w_nodes_for_x]),
+            'wordform': w_nodes_for_x[0]['wordform']
+        }
+        nodes.append(x_node)
+
+        for node in w_nodes_for_x:
+            links.append({
+                'source': node['id'],
+                'target': x_node['id'],
+                'id': node['id'] + x_node['id'],
+                'type': 'XW'
+            })
+
+    root_node = list(filter(lambda node: node['tc_x'] == xyz['X'] and node['type'] == 'x', nodes))[0]
+
+    other_x_nodes = filter(lambda node: node['type'] == 'x' and node['tc_x'] != xyz['X'], nodes)
+
+    for node in other_x_nodes:
+        links.append({
+            'source': node['id'],
+            'target': root_node['id'],
+            'id': node['id'] + root_node['id'],
+            'type': 'XX'
+        })
+
     return jsonify({
-        'self': xyz,
-        'X_list': [
-            {
-                'X': x,
-                'W_list': pandas.read_sql(
-                    raw_queries.get_most_frequent_lemmas_for_xyz(),
-                    connection,
-                    params={'Z': xyz['Z'], 'Y': xyz['Y'], 'X': x}
-                ).reset_index(drop=True).to_dict(orient='records')
-            } for x in x_values
-        ],
+        'nodes': nodes,
+        'links': links,
+    })
+
+
+@app.route("/ticcl_variants/<word_form>")
+def ticcl_variants(word_form: str):
+    # TODO: get lexicon_id from the frontend (it is now fixed to 7)
+    lexicon_id = request.args.get('lexicon_id', 7)
+    # TODO: get corpus_id from the frontend (it is now fixed to 2)
+    corpus_id = request.args.get('corpus_id', 2)
+
+    return jsonify(queries.get_ticcl_variants(session, word_form, lexicon_id, corpus_id))
+
+
+@app.route("/suffixes/<suffix_1>")
+@app.route("/suffixes/<suffix_1>/<suffix_2>")
+def suffixes(suffix_1: str, suffix_2: str = ""):
+    start = timer()
+    # TODO: refactor regexp_search to not return limited view and use that here
+    connection = db.engine.connect()
+
+    # search first suffix
+    search_1 = "%" + suffix_1
+    query = f"""SELECT wordform FROM wordforms WHERE wordform LIKE %(search_1)s"""
+    df = pandas.read_sql(query, connection, params={'search_1': search_1})
+    words = df['wordform'].to_list()
+
+    half_way = timer()
+
+    pairs = []
+
+    # match with second suffix
+    for word in words:
+        word_2 = word[:-len(suffix_1)] + suffix_2
+        query = f"""SELECT wordform FROM wordforms WHERE wordform = %(word_2)s"""
+        df = pandas.read_sql(query, connection, params={'word_2': word_2})
+        if len(df['wordform']) == 1:
+            pairs.append((word, word_2))
+
+    end = timer()
+
+    return jsonify({
+        'runtime_seconds': {
+            'total': end - start,
+            'first_search': half_way - start,
+            'second_search': end - half_way
+        },
+        'pairs': pairs
     })

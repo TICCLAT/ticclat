@@ -198,6 +198,7 @@ def set_logger(level='INFO'):
 
 
 def preprocess_wordforms(wfs, columns=['wordform']):
+    logger.info("Preprocessing the wordforms...")
     for col in columns:
         # remove whitespace from wordforms
         wfs[col] = wfs[col].str.strip()

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from sqlalchemy import select, text
-from sqlalchemy.sql import func, distinct, and_, desc
+from sqlalchemy.sql import func, distinct, and_, desc, alias
 
 from ticclat.ticclat_schema import Lexicon, Wordform, Anahash, Document, \
     Corpus, lexical_source_wordform, corpusId_x_documentId, TextAttestation, \
@@ -282,6 +282,15 @@ def count_unique_wfs_in_corpus(session, corpus_name):
 def get_wf_variants(session, wf, start_year=None, end_year=None):
     start_year, end_year = set_year_range(session, start_year, end_year)
 
+    metadata = {
+        'overall_min_year': start_year,
+        'overall_max_year': end_year,
+        'min_year': 0,
+        'max_year': 0,
+        'min_freq': 0.0,
+        'max_freq': 0.0
+    }
+
     paradigms = []
     for paradigm in get_wf_paradigms(session, wf).fetchall():
         c = f'Z{paradigm.Z:04}Y{paradigm.Y:04}X{paradigm.X:04}W{paradigm.W:08}'
@@ -318,16 +327,12 @@ def get_wf_variants(session, wf, start_year=None, end_year=None):
             max_freqs.append(md['max_freq'])
         paradigms.append(p)
 
-        metadata = {
-            'overall_min_year': start_year,
-            'overall_max_year': end_year,
-            # to prevent min_year from being 0, we compare to the database
-            # start_year
-            'min_year': max(min(min_years), start_year),
-            'max_year': max(max_years),
-            'min_freq': min(min_freqs),
-            'max_freq': max(max_freqs)
-        }
+        # to prevent min_year from being 0, we compare to the database
+        # start_year
+        metadata['min_year'] = max(min(min_years), start_year)
+        metadata['max_year'] = max(max_years),
+        metadata['min_freq'] = min(min_freqs),
+        metadata['max_freq'] = max(max_freqs)
 
     return paradigms, metadata
 
@@ -429,4 +434,48 @@ def set_year_range(session, start_year, end_year):
             start_year = s
         if end_year is None:
             end_year = e
-    return start_year, end_year
+    return int(start_year), int(end_year)
+
+
+def distinct_word_type_codes(session):
+    q = select([distinct(MorphologicalParadigm.word_type_code).label('code')])
+    r = session.execute(q)
+    return r.fetchall()
+
+
+def get_ticcl_variants(session, wordform, lexicon_id, corpus_id):
+    wf_to = alias(Wordform)
+    q = select([Wordform.wordform.label('wordform_from'),
+                WordformLinkSource.wordform_from_correct,
+                wf_to.c.wordform.label('wordform_to'),
+                WordformLinkSource.wordform_to_correct,
+                WordformLinkSource.ld,
+                func.sum(TextAttestation.frequency).label('freq_in_corpus')]) \
+        .select_from(WordformLink.__table__
+                     .join(WordformLinkSource)
+                     .join(Wordform,
+                           onclause=WordformLink.wordform_from == Wordform.wordform_id)
+                     .join(wf_to, onclause=WordformLink.wordform_to == wf_to.c.wordform_id)
+                     .join(TextAttestation,
+                           onclause=wf_to.c.wordform_id == TextAttestation.wordform_id)
+                     .join(Document).join(corpusId_x_documentId).join(Corpus)) \
+        .where(and_(Wordform.wordform == wordform,
+                    WordformLinkSource.lexicon_id == lexicon_id,
+                    Corpus.corpus_id == corpus_id)) \
+        .group_by('wordform_to',
+                  WordformLinkSource.wordform_from_correct,
+                  WordformLinkSource.wordform_to_correct,
+                  WordformLinkSource.ld) \
+        .order_by(desc('freq_in_corpus'), WordformLinkSource.ld, 'wordform_to')
+    df = pd.read_sql(q, session.get_bind())
+
+    correct = None
+    if df.shape[0] > 0:
+        correct = df.loc[0, 'wordform_from_correct']
+
+    df = df[['wordform_to', 'wordform_to_correct', 'ld', 'freq_in_corpus']]
+    df.columns = ['wordform', 'correct', 'ld', 'freq_in_corpus']
+
+    return {'wordform': wordform,
+            'correct': bool(correct),
+            'links': df.to_dict(orient='record')}

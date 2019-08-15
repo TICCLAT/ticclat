@@ -159,29 +159,29 @@ WHERE w.wordform LIKE %(wordform)s
     """
 
 
-def get_most_frequent_lemmas_for_xlist():
-    return """
-SELECT mp.X, mp.wordform_id, wordform, frequency FROM morphological_paradigms mp
-
-LEFT JOIN wordform_frequency ON mp.wordform_id = wordform_frequency.wordform_id
-RIGHT JOIN
-  (
-      SELECT X, MAX(frequency) AS max_freq
-      FROM morphological_paradigms
-               LEFT JOIN wordform_frequency
-                         ON morphological_paradigms.wordform_id = wordform_frequency.wordform_id
-      WHERE Z = %(Z)s
-        AND Y = %(Y)s
-        AND X IN %(x_list)s
-        AND word_type_code = 'HCL'
-      GROUP BY X
-  ) t1 ON t1.X = mp.X AND t1.max_freq = frequency
-"""
+# def get_most_frequent_lemmas_for_xlist():
+#     return """
+# SELECT mp.X, mp.wordform_id, wordform, frequency FROM morphological_paradigms mp
+#
+# LEFT JOIN wordform_frequency ON mp.wordform_id = wordform_frequency.wordform_id
+# RIGHT JOIN
+#   (
+#       SELECT X, MAX(frequency) AS max_freq
+#       FROM morphological_paradigms
+#                LEFT JOIN wordform_frequency
+#                          ON morphological_paradigms.wordform_id = wordform_frequency.wordform_id
+#       WHERE Z = %(Z)s
+#         AND Y = %(Y)s
+#         AND X IN %(x_list)s
+#         AND word_type_code = 'HCL'
+#       GROUP BY X
+#   ) t1 ON t1.X = mp.X AND t1.max_freq = frequency
+# """
 
 
 def get_most_frequent_lemmas_for_xyz():
     return """
-SELECT W, morphological_paradigms.wordform_id, frequency, wordform FROM morphological_paradigms
+SELECT X, W, morphological_paradigms.wordform_id, frequency, wordform FROM morphological_paradigms
 LEFT JOIN wordform_frequency
 ON morphological_paradigms.wordform_id = wordform_frequency.wordform_id
 WHERE Z = %(Z)s
@@ -189,5 +189,7 @@ AND Y = %(Y)s
 AND X = %(X)s
 AND word_type_code = 'HCL'
 ORDER BY frequency DESC
-LIMIT 50
+LIMIT %(limit)s
 """
+
+
