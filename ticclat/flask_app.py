@@ -4,6 +4,7 @@ import os
 import pandas
 import sqlalchemy
 from flask import Flask, jsonify, request
+from timeit import default_timer as timer
 
 from flask_sqlalchemy_session import flask_scoped_session
 
@@ -221,3 +222,40 @@ def ticcl_variants(word_form: str):
     corpus_id = request.args.get('corpus_id', 2)
 
     return jsonify(queries.get_ticcl_variants(session, word_form, lexicon_id, corpus_id))
+
+
+@app.route("/suffixes/<suffix_1>")
+@app.route("/suffixes/<suffix_1>/<suffix_2>")
+def suffixes(suffix_1: str, suffix_2: str = ""):
+    start = timer()
+    # TODO: refactor regexp_search to not return limited view and use that here
+    connection = db.engine.connect()
+
+    # search first suffix
+    search_1 = "%" + suffix_1
+    query = f"""SELECT wordform FROM wordforms WHERE wordform LIKE %(search_1)s"""
+    df = pandas.read_sql(query, connection, params={'search_1': search_1})
+    words = df['wordform'].to_list()
+
+    half_way = timer()
+
+    pairs = []
+
+    # match with second suffix
+    for word in words:
+        word_2 = word[:-len(suffix_1)] + suffix_2
+        query = f"""SELECT wordform FROM wordforms WHERE wordform = %(word_2)s"""
+        df = pandas.read_sql(query, connection, params={'word_2': word_2})
+        if len(df['wordform']) == 1:
+            pairs.append((word, word_2))
+
+    end = timer()
+
+    return jsonify({
+        'runtime_seconds': {
+            'total': end - start,
+            'first_search': half_way - start,
+            'second_search': end - half_way
+        },    
+        'pairs': pairs
+    })
