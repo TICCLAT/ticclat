@@ -256,6 +256,6 @@ def suffixes(suffix_1: str, suffix_2: str = ""):
             'total': end - start,
             'first_search': half_way - start,
             'second_search': end - half_way
-        },    
+        },
         'pairs': pairs
     })
