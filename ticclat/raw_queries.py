@@ -150,9 +150,26 @@ LIMIT 50
     """
 
 
-def get_xyz():
+def get_min_dist_x_xyz():
     return """
-SELECT X,Y,Z
+SELECT X, SUM(frequency) AS sum_freq
+FROM morphological_paradigms
+         LEFT JOIN wordforms w2 ON morphological_paradigms.wordform_id = w2.wordform_id
+         LEFT JOIN wordform_frequency ON w2.wordform_id = wordform_frequency.wordform_id
+WHERE Y = %(Y)s
+AND Z = %(Z)s
+AND word_type_code = 'HCL'
+GROUP BY X
+ORDER BY ABS(X - %(X)s) ASC
+LIMIT 50
+    """
+
+
+
+
+def get_wxyz():
+    return """
+SELECT W,X,Y,Z
 FROM morphological_paradigms mp1
          LEFT JOIN wordforms w on mp1.wordform_id = w.wordform_id
 WHERE w.wordform LIKE %(wordform)s
