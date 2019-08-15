@@ -451,14 +451,15 @@ def get_ticcl_variants(session, wordform, lexicon_id, corpus_id):
                 WordformLinkSource.wordform_to_correct,
                 WordformLinkSource.ld,
                 func.sum(TextAttestation.frequency).label('freq_in_corpus')]) \
-        .select_from(WordformLink.__table__.join(WordformLinkSource)
-        .join(Wordform,
-              onclause=WordformLink.wordform_from==Wordform.wordform_id) \
-        .join(wf_to, onclause=WordformLink.wordform_to==wf_to.c.wordform_id) \
-        .join(TextAttestation,
-              onclause=wf_to.c.wordform_id == TextAttestation.wordform_id) \
-        .join(Document).join(corpusId_x_documentId).join(Corpus)) \
-        .where(and_(Wordform.wordform==wordform,
+        .select_from(WordformLink.__table__
+                     .join(WordformLinkSource)
+                     .join(Wordform,
+                           onclause=WordformLink.wordform_from == Wordform.wordform_id)
+                     .join(wf_to, onclause=WordformLink.wordform_to == wf_to.c.wordform_id)
+                     .join(TextAttestation,
+                           onclause=wf_to.c.wordform_id == TextAttestation.wordform_id)
+                     .join(Document).join(corpusId_x_documentId).join(Corpus)) \
+        .where(and_(Wordform.wordform == wordform,
                     WordformLinkSource.lexicon_id == lexicon_id,
                     Corpus.corpus_id == corpus_id)) \
         .group_by('wordform_to',
