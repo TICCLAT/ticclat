@@ -1,6 +1,7 @@
 import pytest
 import os
 import sqlite3
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -238,7 +239,7 @@ def test_connect_anahashes_to_wordforms_empty(dbsession):
     assert [wf.anahash.anahash for wf in wrdfrms] == list(a['anahash'])
 
 
-@pytest.mark.skip(reason='Install TICCL before testing this.')
+@pytest.mark.skipif(shutil.which('TICCL_anahash') is not None, reason='Install TICCL before testing this.')
 @pytest.mark.datafiles(os.path.join(data_dir(), 'alphabet'))
 def test_update_anahashes(dbsession, datafiles):
     wfs = pd.DataFrame()
@@ -272,7 +273,7 @@ def test_update_anahashes(dbsession, datafiles):
         assert wf.anahash_id == a
 
 
-@pytest.mark.skip(reason='Install TICCL before testing this.')
+@pytest.mark.skipif(shutil.which('TICCL_anahash') is not None, reason='Install TICCL before testing this.')
 @pytest.mark.datafiles(os.path.join(data_dir(), 'alphabet'))
 def test_update_anahashes_empty_wf(dbsession, datafiles):
     wfs = pd.DataFrame()
