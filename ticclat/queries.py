@@ -8,7 +8,7 @@ from sqlalchemy.sql import func, distinct, and_, desc, alias
 
 from ticclat.ticclat_schema import Lexicon, Wordform, Anahash, Document, \
     Corpus, lexical_source_wordform, corpusId_x_documentId, TextAttestation, \
-    MorphologicalParadigm, WordformLinkSource, WordformLink
+    MorphologicalParadigm, WordformLinkSource, WordformLink, WordformFrequencies
 
 logger = logging.getLogger(__name__)
 
@@ -311,6 +311,7 @@ def get_wf_variants(session, wf, start_year=None, end_year=None):
             vd['V'] = variant.V
             vd['word_type_number'] = variant.word_type_number
             vd['anahash'] = variant.anahash
+            vd['frequency'] = variant.frequency
             p['variants'].append(vd)
 
             if variant.word_type_code == 'HCL':
@@ -353,8 +354,12 @@ def get_wf_paradigms(session, wf):
 def get_paradigm_variants(session, paradigm):
     q = select([Wordform.wordform,
                 MorphologicalParadigm,
-                Anahash.anahash]) \
-        .select_from(Wordform.__table__.join(MorphologicalParadigm).join(Anahash)) \
+                Anahash.anahash,
+                WordformFrequencies.frequency]) \
+        .select_from(Wordform.__table__\
+                     .join(MorphologicalParadigm).join(Anahash) \
+                     .join(WordformFrequencies,
+                           onclause=WordformFrequencies.wordform_id == Wordform.wordform_id)) \
         .where(and_(MorphologicalParadigm.Z == paradigm.Z,
                     MorphologicalParadigm.Y == paradigm.Y,
                     MorphologicalParadigm.X == paradigm.X,
