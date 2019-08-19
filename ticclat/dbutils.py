@@ -527,7 +527,7 @@ def add_morphological_paradigms(session, in_file):
     data = data.drop([0])
 
     # store wordforms for in database
-    wfs = data[['wordform']]
+    wfs = data[['wordform']].copy()
     bulk_add_wordforms(session, wfs)
 
     # get the morphological variants from the pandas dataframe
