@@ -165,8 +165,6 @@ LIMIT 50
     """
 
 
-
-
 def get_wxyz():
     return """
 SELECT W,X,Y,Z
@@ -208,5 +206,3 @@ AND word_type_code = 'HCL'
 ORDER BY frequency DESC
 LIMIT %(limit)s
 """
-
-

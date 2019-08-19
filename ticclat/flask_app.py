@@ -230,11 +230,11 @@ def _network(wordform: str):
     if wxyz['X'] not in x_values:
         x_values.append(wxyz['X'])
 
-
     nodes = []
     links = []
 
-    flatten = lambda l: [item for sublist in l for item in sublist]
+    def flatten(nested_list):
+        return [item for sublist in nested_list for item in sublist]
 
     nested_w = [
         pandas.read_sql(
@@ -382,6 +382,6 @@ AND morphological_paradigms.Z = %(Z)s
 AND word_type_code IN ('HCL', 'HCM')
     """
 
-    df = pandas.read_sql(query, connection, params={'W': W, 'X': X, 'Y': Y, 'Z': Z })
+    df = pandas.read_sql(query, connection, params={'W': W, 'X': X, 'Y': Y, 'Z': Z})
 
     return jsonify(df.to_dict(orient="record"))

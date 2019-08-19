@@ -1,5 +1,5 @@
 import pandas
-from bokeh.models import ColumnDataSource, HoverTool, CustomJS, TapTool
+from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, show
 
 from ticclat import db
@@ -29,9 +29,9 @@ ORDER BY num_paradigms DESC, {var} ASC
 
     source = ColumnDataSource(df)
 
-    callback=CustomJS(args=dict(source=source), code="""console.log(cb_data.source.selected)""")
+    # callback=CustomJS(args=dict(source=source), code="""console.log(cb_data.source.selected)""")
 
-    p.add_tools(TapTool(callback=callback))
+    # p.add_tools(TapTool(callback=callback))
 
     vbar = p.vbar(
         x=var,
@@ -43,7 +43,6 @@ ORDER BY num_paradigms DESC, {var} ASC
         line_width=0,
         muted_alpha=0,
     )
-
 
     p.xaxis.major_tick_line_color = None
     p.xaxis.minor_tick_line_color = None

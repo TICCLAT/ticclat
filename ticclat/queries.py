@@ -356,8 +356,8 @@ def get_paradigm_variants(session, paradigm):
                 MorphologicalParadigm,
                 Anahash.anahash,
                 WordformFrequencies.frequency]) \
-        .select_from(Wordform.__table__\
-                     .join(MorphologicalParadigm).join(Anahash) \
+        .select_from(Wordform.__table__
+                     .join(MorphologicalParadigm).join(Anahash)
                      .join(WordformFrequencies,
                            onclause=WordformFrequencies.wordform_id == Wordform.wordform_id)) \
         .where(and_(MorphologicalParadigm.Z == paradigm.Z,
