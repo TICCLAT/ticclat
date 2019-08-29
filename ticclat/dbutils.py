@@ -606,3 +606,17 @@ def create_wf_frequencies_table(session):
 
     logger.info('Inserting wordform frequencies into the database.')
     sql_insert(session, WordformFrequencies, iterate_results(r))
+
+
+def add_ticcl_variants(session, name, df):
+    lexicon = add_lexicon_with_links(session,
+                                     lexicon_name=name,
+                                     vocabulary=False,
+                                     wfs=df,
+                                     from_column='ocr_variant',
+                                     to_column='correction_candidate',
+                                     from_correct=True,
+                                     to_correct=False,
+                                     preprocess_wfs=False,
+                                     to_add=['ld'])
+    return lexicon

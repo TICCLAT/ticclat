@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 
 from ticclat.utils import read_ticcl_variants_file
-from ticclat.dbutils import add_lexicon_with_links, session_scope
+from ticclat.dbutils import add_ticcl_variants, session_scope
 
 logger = logging.getLogger(__name__)
 
@@ -31,21 +31,4 @@ def ingest(session, base_dir='/', data_dir='SGD_ticcl_variants', **kwargs):
 
     with session_scope(session) as s:
         name = 'SDG ticcl correction candidates'
-        vocabulary = False
-        from_column = 'ocr_variant'
-        from_correct = False
-        to_column = 'correction_candidate'
-        to_correct = True
-        preprocess_wfs = False
-        to_add = ['ld']
-
-        add_lexicon_with_links(s,
-                               name,
-                               vocabulary,
-                               data,
-                               from_column,
-                               to_column,
-                               from_correct,
-                               to_correct,
-                               preprocess_wfs=preprocess_wfs,
-                               to_add=to_add)
+        add_ticcl_variants(s, name, data)
