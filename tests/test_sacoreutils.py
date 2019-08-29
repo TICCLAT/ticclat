@@ -13,7 +13,7 @@ from . import data_dir
 
 @pytest.mark.datafiles(os.path.join(data_dir(), 'test_corpus.txt'))
 def test_add_corpus_core_nltk(dbsession, datafiles):
-    texts_file = datafiles.listdir()[0]
+    texts_file = os.path.join(str(datafiles), 'test_corpus.txt')
 
     expected_wordforms = ['wf1', 'wf2', 'wf3', 'wf4', 'wf5']
     texts_iterator = nltk_tokenize(texts_file)

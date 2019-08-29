@@ -234,3 +234,10 @@ def timeit(method):
         return result
 
     return timed
+
+
+def read_ticcl_variants_file(fname):
+    df = pd.read_csv(fname, sep='#', header=None, engine='python')
+    df.columns = ['ocr_variant', 'corpus_frequency', 'correction_candidate',
+                  '?1', 'ld', '?2', 'anahash']
+    return df
