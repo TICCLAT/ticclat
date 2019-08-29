@@ -331,8 +331,8 @@ def get_wf_variants(session, wf, start_year=None, end_year=None):
         # to prevent min_year from being 0, we compare to the database
         # start_year
         metadata['min_year'] = max(min(min_years), start_year)
-        metadata['max_year'] = max(max_years),
-        metadata['min_freq'] = min(min_freqs),
+        metadata['max_year'] = max(max_years)
+        metadata['min_freq'] = min(min_freqs)
         metadata['max_freq'] = max(max_freqs)
 
     return paradigms, metadata
