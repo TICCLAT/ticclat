@@ -354,6 +354,10 @@ WHERE frequency > {min_freq} AND wordform LIKE %(search_1)s
             'first_search': half_way - start,
             'second_search': end - half_way
         },
+        'num_results': {
+            'first_search': df.shape[0],
+            'second_search': len(pairs)
+        },
         'pairs': pairs
     })
 
