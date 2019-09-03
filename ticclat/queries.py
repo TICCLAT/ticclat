@@ -484,3 +484,15 @@ def get_ticcl_variants(session, wordform, lexicon_id, corpus_id):
     return {'wordform': wordform,
             'correct': bool(correct),
             'links': df.to_dict(orient='record')}
+
+
+def get_wordform_matches(session, df, min_freq):
+    wfs = df['wordform2'].to_list()
+    q = select([WordformFrequencies.wordform.label('wordform2'),
+                WordformFrequencies.frequency]) \
+        .select_from(WordformFrequencies) \
+        .where(and_(WordformFrequencies.frequency > min_freq,
+                    WordformFrequencies.wordform.in_(wfs)))
+    logger.debug(f'Executing query:\n{q}')
+    result = pd.read_sql(q, session.connection())
+    return result

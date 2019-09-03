@@ -9,6 +9,7 @@ from timeit import default_timer as timer
 from flask_sqlalchemy_session import flask_scoped_session
 
 from ticclat import raw_queries, queries, db
+from ticclat.utils import chunk_df
 from ticclat.plots.blueprint import plots as plots_blueprint
 from ticclat.ticclat_schema import Corpus
 
@@ -329,27 +330,21 @@ FROM wordform_frequency
 WHERE frequency > {min_freq} AND wordform LIKE %(search_1)s
 """
     df = pandas.read_sql(query, connection, params={'search_1': search_1})
-    words = df['wordform'].to_list()
-    freqs = df['frequency'].to_list()
+    df['wordform2'] = df.apply(lambda row: row['wordform'][:-len(suffix_1)] + suffix_2, axis=1)
 
     half_way = timer()
 
     pairs = []
 
     # match with second suffix
-    for word, freq in zip(words, freqs):
-        word_2 = word[:-len(suffix_1)] + suffix_2
-        query = f"""
-SELECT wordform, frequency
-FROM wordform_frequency
-WHERE frequency > {min_freq} AND wordform = %(word_2)s
-"""
-        df = pandas.read_sql(query, connection, params={'word_2': word_2})
-        if len(df['wordform']) == 1:
-            pairs.append({'word1': word,
-                          'word1_freq': int(freq),
-                          'word2': word_2,
-                          'word2_freq': int(df['frequency'][0])})
+    for chunk in chunk_df(df, batch_size=500):
+        matches = queries.get_wordform_matches(session, chunk, min_freq)
+
+        result = pandas.merge(chunk, matches, on='wordform2')
+        result.columns = ['word1', 'word1_freq', 'word2', 'word2_freq']
+
+        for pair in result.to_dict(orient='record'):
+            pairs.append(pair)
 
     end = timer()
 
