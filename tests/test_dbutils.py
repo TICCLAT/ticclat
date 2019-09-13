@@ -596,8 +596,8 @@ def test_add_ticcl_variants(dbsession, datafiles):
     # ws1 and wf2 are incorrect
     for link in wflss:
         print(dbsession.query(Wordform).get(link.wordform_from))
-        assert link.wordform_from_correct == True
+        assert link.wordform_from_correct
         print(dbsession.query(Wordform).get(link.wordform_to))
-        assert link.wordform_to_correct == False
+        assert not link.wordform_to_correct
 
         assert link.ld == 1
