@@ -10,12 +10,12 @@ from sqlalchemy import and_
 
 from ticclat.ticclat_schema import Wordform, Lexicon, Anahash, \
     WordformLinkSource, MorphologicalParadigm
-from ticclat.utils import read_json_lines
+from ticclat.utils import read_json_lines, read_ticcl_variants_file
 from ticclat.dbutils import bulk_add_wordforms, add_lexicon, \
     get_word_frequency_df, bulk_add_anahashes, \
     connect_anahashes_to_wordforms, update_anahashes, get_wf_mapping, \
     add_lexicon_with_links, write_wf_links_data, add_morphological_paradigms, \
-    empty_table, load_envvars_file
+    empty_table, load_envvars_file, add_ticcl_variants
 
 from . import data_dir
 
@@ -563,3 +563,41 @@ def test_load_envvars_file_port(datafiles):
     assert os.environ.get('dbname', None) == 'ticclat'
     assert os.environ.get(
         'DATABASE_URL', None) == 'mysql://root:********@127.0.0.1:8008/ticclat'
+
+
+@pytest.mark.datafiles(os.path.join(data_dir(), 'ticcl_variants.txt'))
+def test_add_ticcl_variants(dbsession, datafiles):
+    path = str(datafiles)
+    variants_file = os.path.join(path, 'ticcl_variants.txt')
+
+    name = 'ticcl variants test corpus'
+    df = read_ticcl_variants_file(variants_file)
+
+    add_ticcl_variants(dbsession, name, df)
+
+    lexicon = dbsession.query(Lexicon).first()
+
+    print(lexicon)
+    print(lexicon.lexicon_wordforms)
+    print(lexicon.lexicon_wordform_links)
+
+    # the lexicon contains 3 wordforms
+    assert len(lexicon.lexicon_wordforms) == 3
+
+    # the database contains 3 wordforms
+    assert dbsession.query(Wordform).count() == 3
+
+    wf1 = dbsession.query(Wordform).filter(Wordform.wordform == 'wf1').first()
+    wflss = dbsession.query(WordformLinkSource).filter(WordformLinkSource.wordform_from == wf1.wordform_id).all()
+
+    assert len(wflss) == 2
+
+    # wf1 is a correct wordform
+    # ws1 and wf2 are incorrect
+    for link in wflss:
+        print(dbsession.query(Wordform).get(link.wordform_from))
+        assert link.wordform_from_correct == True
+        print(dbsession.query(Wordform).get(link.wordform_to))
+        assert link.wordform_to_correct == False
+
+        assert link.ld == 1
