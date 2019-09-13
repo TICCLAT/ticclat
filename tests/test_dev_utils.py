@@ -88,6 +88,6 @@ def test_delete_lexicon_with_links(dbsession):
         links = [w.linked_to for w in wf2.links]
         assert wf1 in links
 
-        # Wordform link sources should be deleted
-        wfls = dbsession.query(WordformLinkSource).all()
-        assert len(wfls) == 0
+    # Wordform link sources should be deleted
+    wfls = dbsession.query(WordformLinkSource).all()
+    assert len(wfls) == 0
