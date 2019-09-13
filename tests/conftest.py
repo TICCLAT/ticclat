@@ -1,3 +1,4 @@
+from testcontainers.mysql import MySqlContainer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from ticclat.ticclat_schema import Base
@@ -5,11 +6,15 @@ import pytest
 
 
 @pytest.fixture(scope='session')
-def engine(dburl='sqlite:///:memory:'):
-    return create_engine(dburl)
+def engine():
+    mysql = MySqlContainer('mysql:8.0')
+
+    mysql.start()
+    yield create_engine(mysql.get_connection_url())
+    mysql.stop()
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.yield_fixture()
 def tables(engine):
     Base.metadata.create_all(engine)
     yield

@@ -70,6 +70,7 @@ setup(
         'pycodestyle',
         'pyfakefs',
         'pytest-datafiles',
+        'testcontainers[mysql]',
     ],
     extras_require={
         'dev': ['prospector[with_pyroma]', 'yapf', 'isort'],
