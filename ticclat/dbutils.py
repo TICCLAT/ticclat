@@ -615,8 +615,8 @@ def add_ticcl_variants(session, name, df):
                                      wfs=df,
                                      from_column='ocr_variant',
                                      to_column='correction_candidate',
-                                     from_correct=True,
-                                     to_correct=False,
+                                     from_correct=False,
+                                     to_correct=True,
                                      preprocess_wfs=False,
                                      to_add=['ld'])
     return lexicon
