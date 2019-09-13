@@ -1,9 +1,12 @@
+import pytest
 import os
 
 import pandas as pd
 
 from ticclat.utils import chunk_df, read_json_lines, write_json_lines, \
-    json_line, iterate_wf, chunk_json_lines
+    json_line, iterate_wf, chunk_json_lines, read_ticcl_variants_file
+
+from . import data_dir
 
 
 def test_chunk_df_smaller_than_num():
@@ -113,3 +116,14 @@ def test_chunk_json_lines_without_remainder(fs):
             [{'wordform': 'wf3'}, {'wordform': 'wf4'}]]
 
     assert outp == res
+
+
+@pytest.mark.datafiles(os.path.join(data_dir(), 'ticcl_variants.txt'))
+def test_read_ticcl_variants_file(datafiles):
+    variants_file = os.path.join(str(datafiles), 'ticcl_variants.txt')
+
+    df = read_ticcl_variants_file(variants_file)
+
+    print(df)
+
+    assert df.shape == (2, 7)
