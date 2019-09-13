@@ -30,5 +30,5 @@ def ingest(session, base_dir='/', data_dir='SGD_ticcl_variants', **kwargs):
     data = pd.concat(dfs)
 
     with session_scope(session) as s:
-        name = 'SDG ticcl correction candidates'
+        name = 'SGD ticcl correction candidates'
         add_ticcl_variants(s, name, data)
