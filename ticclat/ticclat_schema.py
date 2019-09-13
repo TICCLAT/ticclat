@@ -22,7 +22,7 @@ corpusId_x_documentId = Table('corpusId_x_documentId', Base.metadata,
 class TextAttestation(Base):
     __tablename__ = 'text_attestations'
 
-    attestation_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    attestation_id = Column(BigInteger(), primary_key=True)
     frequency = Column(BigInteger())
     wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
     document_id = Column(BigInteger(), ForeignKey('documents.document_id'))
@@ -39,7 +39,7 @@ class TextAttestation(Base):
 class Corpus(Base):
     __tablename__ = 'corpora'
 
-    corpus_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    corpus_id = Column(BigInteger(), primary_key=True)
     name = Column(String(255))
     corpus_documents = relationship('Document',
                                     secondary=corpusId_x_documentId,
@@ -71,7 +71,7 @@ class Corpus(Base):
 class Document(Base):
     __tablename__ = 'documents'
 
-    document_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    document_id = Column(BigInteger(), primary_key=True)
     persistent_id = Column(String(255), index=True)
     word_count = Column(BigInteger())
     encoding = Column(BigInteger())
@@ -96,7 +96,7 @@ class Document(Base):
 
 
 lexical_source_wordform = Table('lexical_source_wordform', Base.metadata,
-                                Column('wordform_source_id', BigInteger().with_variant(Integer, 'sqlite'), primary_key=True),
+                                Column('wordform_source_id', BigInteger(), primary_key=True),
                                 Column('lexicon_id', BigInteger(), ForeignKey('lexica.lexicon_id')),
                                 Column('wordform_id', BigInteger(), ForeignKey('wordforms.wordform_id'))
                                 )
@@ -109,7 +109,7 @@ class Lexicon(Base):
     """
     __tablename__ = 'lexica'
 
-    lexicon_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    lexicon_id = Column(BigInteger(), primary_key=True)
     lexicon_name = Column(String(255))
     vocabulary = Column(Boolean)
 
@@ -126,7 +126,7 @@ class Lexicon(Base):
 class Anahash(Base):
     __tablename__ = 'anahashes'
 
-    anahash_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    anahash_id = Column(BigInteger(), primary_key=True)
     anahash = Column(BigInteger(), unique=True, index=True)
 
     def __str__(self):
@@ -136,7 +136,7 @@ class Anahash(Base):
 class Wordform(Base):
     __tablename__ = 'wordforms'
 
-    wordform_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    wordform_id = Column(BigInteger(), primary_key=True)
     wordform = Column(Unicode(255, convert_unicode=False), unique=True, index=True)
     anahash_id = Column(BigInteger(), ForeignKey("anahashes.anahash_id", ondelete='SET NULL'))
 
@@ -239,7 +239,7 @@ class WordformLinkSource(Base):
         ForeignKeyConstraint(['wordform_from', 'wordform_to'], ['wordform_links.wordform_from', 'wordform_links.wordform_to']),
     )
 
-    source_x_wordform_link_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    source_x_wordform_link_id = Column(BigInteger(), primary_key=True)
     wordform_from = Column(BigInteger(), nullable=False)
     wordform_to = Column(BigInteger(), nullable=False)
     lexicon_id = Column(BigInteger(), ForeignKey('lexica.lexicon_id'))
@@ -272,9 +272,7 @@ class MorphologicalParadigm(Base):
     """
     __tablename__ = 'morphological_paradigms'
 
-    paradigm_id = Column(
-        BigInteger().with_variant(Integer, "sqlite"), primary_key=True
-    )
+    paradigm_id = Column(BigInteger(), primary_key=True)
 
     Z = Column(BigInteger(), index=True)
     Y = Column(BigInteger(), index=True)
@@ -294,10 +292,7 @@ class ExternalLink(Base):
     """
     __tablename__ = 'external_links'
 
-    external_link_id = Column(
-        BigInteger().with_variant(Integer, 'sqlite'),
-        primary_key=True
-    )
+    external_link_id = Column(BigInteger(), primary_key=True)
     wordform_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'))
     source_name = Column(String(5))
     source_id = Column(String(10))
@@ -312,7 +307,7 @@ class WordformFrequencies(Base):
     """
     __tablename__ = 'wordform_frequency'
 
-    wordform_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True)
+    wordform_id = Column(BigInteger(), primary_key=True)
     wordform = Column(Unicode(255, convert_unicode=False), index=True,
                       unique=True)
     frequency = Column(BigInteger())
