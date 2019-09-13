@@ -20,7 +20,6 @@ def test_delete_lexicon(dbsession):
     print('lexicon id:', lex.lexicon_id)
 
     delete_lexicon(dbsession, lex.lexicon_id)
-    dbsession.commit()
 
     # Wordforms should not be deleted
     wrdfrms = dbsession.query(Wordform).all()
