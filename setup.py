@@ -71,6 +71,7 @@ setup(
         'pyfakefs',
         'pytest-datafiles',
         'testcontainers[mysql]',
+        'cryptography',
     ],
     extras_require={
         'dev': ['prospector[with_pyroma]', 'yapf', 'isort'],
