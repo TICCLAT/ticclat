@@ -112,3 +112,5 @@ ENVVARS.txt
 mysql_data/
 
 .DS_Store
+
+data/

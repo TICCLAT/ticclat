@@ -83,6 +83,19 @@ the following line in `/etc/my.cnf`:
   max_allowed_packet = 42M
 
 
+To allow for loading CSV files (this is the fastest way of inserting big bulks of records), add:
+
+.. code-block:: console
+
+  [mysqld]
+  local_infile=ON
+
+This allows you to run queries like this:
+
+.. code-block:: sql
+
+  LOAD DATA LOCAL INFILE '/file.csv' INTO TABLE test FIELDS TERMINATED BY ',' ENCLOSED BY '"' ESCAPED BY '\\';  
+
 Ubuntu
 ------
 
@@ -102,12 +115,7 @@ to get the newest version of the database.
 To apply changes to the database schema, we use [alembic](https://alembic.sqlalchemy.org/en/latest/index.html).
 
 Alembic is configured to read the information needed to connect to the database
-database from environment variables:
-
-* `DB_NAME`
-* `DB_USER`
-* `DB_PASSWORD`
-* `DB_HOST`, e.g., localhost
+database from environment variable `DATABASE_URL`
 
 To migrate the database to the latest database schema run:
 

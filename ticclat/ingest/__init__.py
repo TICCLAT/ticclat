@@ -41,13 +41,14 @@ def ingest_all(session, base_dir='/data',
         source.ingest(session, base_dir=base_dir, **kwargs)
 
 
-def run(env=".env", reset_db=False,
+def run(reset_db=False,
         alphabet_file="/data/ALPH/nld.aspell.dict.clip20.lc.LD3.charconfus.clip20.lc.chars",
         batch_size=5000, include=[], exclude=[], ingest=True, anahash=True,
         tmpdir="/data/tmp", loglevel="INFO", reset_anahashes=False, **kwargs):
+
     # Read information to connect to the database and put it in environment variables
     import os
-    from ticclat.dbutils import create_ticclat_database, get_session_from_env, update_anahashes, session_scope, load_envvars_file
+    from ticclat.dbutils import create_ticclat_database, get_session_maker, update_anahashes, session_scope
     from ticclat.ticclat_schema import Anahash
 
     from tqdm import tqdm
@@ -57,27 +58,25 @@ def run(env=".env", reset_db=False,
 
     tempfile.tempdir = tmpdir
 
-    load_envvars_file(env)
-
     if reset_db:
         logger.info(f'Reseting database "{os.environ["dbname"]}".')
         create_ticclat_database(delete_existing=True, dbname=os.environ['dbname'],
                                 user=os.environ['user'], passwd=os.environ['password'],
                                 host=os.environ['host'])
 
-    Session = get_session_from_env()
+    session_maker = get_session_maker()
 
     if ingest:
-        ingest_all(Session, batch_size=batch_size, include=include,
+        ingest_all(session_maker, batch_size=batch_size, include=include,
                    exclude=exclude, **kwargs)
 
     if reset_anahashes:
         logger.info("removing all existing anahashes...")
-        with session_scope(Session) as session:
+        with session_scope(session_maker) as session:
             num_rows_deleted = session.query(Anahash).delete()
         logger.info(f"removed {num_rows_deleted} anahashes")
 
     if anahash:
         logger.info("adding anahashes...")
-        with session_scope(Session) as session:
+        with session_scope(session_maker) as session:
             update_anahashes(session, alphabet_file, tqdm, batch_size)

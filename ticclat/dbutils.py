@@ -4,6 +4,8 @@ import json
 import logging
 
 import numpy as np
+import tempfile
+
 import pandas as pd
 
 from contextlib import contextmanager
@@ -34,9 +36,9 @@ logger = logging.getLogger(__name__)
 
 # source: https://docs.sqlalchemy.org/en/latest/orm/session_basics.html
 @contextmanager
-def session_scope(s):
+def session_scope(session_maker):
     """Provide a transactional scope around a series of operations."""
-    session = s()
+    session = session_maker()
     try:
         yield session
         session.commit()
@@ -47,42 +49,21 @@ def session_scope(s):
         session.close()
 
 
-def get_session(user, password, dbname, host='localhost',
-                dburl='mysql://{}:{}@{}/{}?charset=utf8mb4'):
-    engine = create_engine(dburl.format(user, password, host, dbname))
-
-    return sessionmaker(bind=engine)
+def get_engine():
+    return create_engine(os.environ.get('DATABASE_URL'))
 
 
-def get_session_from_env(**kwargs):
-    Session = get_session(
-        os.environ["user"],
-        os.environ["password"],
-        os.environ["dbname"],
-        host=os.environ["host"],
-    )
-    return Session
+def get_session_maker():
+    return sessionmaker(bind=get_engine())
 
 
-def load_envvars_file(env_path):
-    with open(env_path) as f:
-        for line in f:
-            if not line.startswith('#'):
-                parts = line.split("=")
-                if len(parts) == 2:
-                    m = f'Setting environment variable: {parts[0]}={parts[1]}'
-                    logger.debug(m)
-                    os.environ[parts[0]] = parts[1].strip()
+def get_session():
+    return get_session_maker()()
 
-    db_url = os.environ.get('DATABASE_URL', None)
-    if db_url:
-        regex = r'//(?P<user>.+):(?P<passwd>.+)@(?P<host>.+)/(?P<dbname>.+)'
-        m = re.search(regex, db_url)
-        if m:
-            os.environ['user'] = m.group('user').strip()
-            os.environ['password'] = m.group('passwd').strip()
-            os.environ['host'] = m.group('host').strip()
-            os.environ['dbname'] = m.group('dbname').strip()
+
+def get_db_name():
+    database_url = os.environ.get('DATABASE_URL')
+    return re.match(r'.*/(.*)$', database_url).group(1)
 
 
 def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=None):
@@ -124,37 +105,23 @@ def bulk_add_wordforms(session, wfs, preprocess_wfs=True, disable_pbar=False, ba
                     'Removing duplicates.')
         wfs = wfs.drop_duplicates(subset='wordform')
 
-    total = 0
+    wfs['wordform_lowercase'] = wfs['wordform'].apply(lambda x: x.lower())
 
-    with tqdm(total=len(wfs)) as progress_bar:
-        for chunk in chunk_df(wfs, batch_size=batch_size):
-            # Find out which wordwordforms are not yet in the database
-            wordforms = list(chunk['wordform'])
+    file_handler, file_name = tempfile.mkstemp()
+    os.close(file_handler)
 
-            s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
-            result = session.execute(s).fetchall()
+    wfs.to_csv(file_name, header=False, index=False, sep='\t')
 
-            existing_wfs = [wf['wordform'] for wf in result]
+    query = f"""
+    LOAD DATA LOCAL INFILE :file_name INTO TABLE wordforms (wordform, wordform_lowercase);
+    """
+    r = session.execute(query, {'file_name': file_name})
 
-            # Add wordforms that are not in the database
-            if len(existing_wfs) < len(chunk):
-                to_add = []
-                for _, row in chunk.iterrows():
-                    if row['wordform'] not in existing_wfs:
-                        total += 1
-                        to_add.append(
-                            {'wordform': row['wordform'],
-                             'wordform_lowercase': row['wordform'].lower()}
-                        )
+    os.unlink(file_name)
 
-                if to_add != []:
-                    bulk_add_wordforms_core(session, to_add, batch_size=batch_size)
+    logger.info('{} wordforms have been added.'.format(r.rowcount))
 
-            progress_bar.update(n=batch_size)
-
-    logger.info('{} wordforms have been added.'.format(total))
-
-    return total
+    return r.rowcount
 
 
 def add_lexicon(session, lexicon_name, vocabulary, wfs, batch_size=10000,
@@ -531,12 +498,15 @@ def add_morphological_paradigms(session, in_file):
     bulk_add_wordforms(session, wfs)
 
     # get the morphological variants from the pandas dataframe
+    logger.info('extracting morphological variants')
     result = defaultdict(list)
-    for row in data.iterrows():
-        codes = row[1]['component_codes'].split('#')
-        wf = row[1]['wordform']
-        for code in codes:
-            result[wf].append(split_component_code(code, wf))
+    with tqdm(total=data.shape[0]) as pbar:
+        for row in data.iterrows():
+            codes = row[1]['component_codes'].split('#')
+            wf = row[1]['wordform']
+            for code in codes:
+                result[wf].append(split_component_code(code, wf))
+            pbar.update()
 
     logger.info('Looking up wordform ids.')
     s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
@@ -551,20 +521,22 @@ def add_morphological_paradigms(session, in_file):
                            read_json_lines(mp_file), batch_size=50000)
 
 
-def create_ticclat_database(delete_existing=False, dbname="ticclat_test", user="", passwd="", host="localhost"):
-    db = MySQLdb.connect(user=user, passwd=passwd, host=host)
-    engine = create_engine(f"mysql://{user}:{passwd}@{host}/{dbname}?charset=utf8mb4")
-
+def create_ticclat_database(delete_existing=False):
+    # db = MySQLdb.connect(user=user, passwd=passwd, host=host)
+    # engine = create_engine(f"mysql://{user}:{passwd}@{host}/{dbname}?charset=utf8mb4")
+    engine = get_engine()
+    db = engine.connect()
+    db_name = get_db_name()
     with db.cursor() as cursor:
         try:
-            cursor.execute(f"CREATE DATABASE {dbname} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
+            cursor.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
         except MySQLdb.ProgrammingError as e:
             if database_exists(engine.url):
                 if not delete_existing:
-                    raise Exception(f"Database `{dbname}` already exists, delete it first before recreating.")
+                    raise Exception(f"Database `{db_name}` already exists, delete it first before recreating.")
                 else:
                     drop_database(engine.url)
-                    cursor.execute(f"CREATE DATABASE {dbname} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
+                    cursor.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
             else:
                 raise e
 
