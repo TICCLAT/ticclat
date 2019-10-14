@@ -67,7 +67,7 @@ def get_session():
 
 def get_db_name():
     database_url = os.environ.get('DATABASE_URL')
-    return re.match(r'.*/(.*)$', database_url).group(1)
+    return re.match(r'.*/(.*?)($|(\?.*$))', database_url).group(1)
 
 
 def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=None):
