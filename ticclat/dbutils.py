@@ -49,8 +49,12 @@ def session_scope(session_maker):
         session.close()
 
 
+engine = None
 def get_engine():
-    return create_engine(os.environ.get('DATABASE_URL'))
+    global engine
+    if not engine:
+        engine = create_engine(os.environ.get('DATABASE_URL'))
+    return engine
 
 
 def get_session_maker():
@@ -525,20 +529,21 @@ def create_ticclat_database(delete_existing=False):
     # db = MySQLdb.connect(user=user, passwd=passwd, host=host)
     # engine = create_engine(f"mysql://{user}:{passwd}@{host}/{dbname}?charset=utf8mb4")
     engine = get_engine()
-    db = engine.connect()
+    connection = engine.connect()
     db_name = get_db_name()
-    with db.cursor() as cursor:
-        try:
-            cursor.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
-        except MySQLdb.ProgrammingError as e:
-            if database_exists(engine.url):
-                if not delete_existing:
-                    raise Exception(f"Database `{db_name}` already exists, delete it first before recreating.")
-                else:
-                    drop_database(engine.url)
-                    cursor.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
+    try:
+        connection.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
+    except MySQLdb.ProgrammingError as e:
+        if database_exists(engine.url):
+            if not delete_existing:
+                raise Exception(f"Database `{db_name}` already exists, delete it first before recreating.")
             else:
-                raise e
+                drop_database(engine.url)
+                connection.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
+        else:
+            raise e
+
+    connection.close()
 
     # create tables
     Base.metadata.create_all(engine)
