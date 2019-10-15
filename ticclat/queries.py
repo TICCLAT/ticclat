@@ -368,34 +368,44 @@ def get_paradigm_variants(session, paradigm):
 
 
 def get_lexica_data(session, wordform):
+    lexica = session.query(Lexicon).all()
+    orm_wordform = session.query(Wordform).filter(Wordform.wordform==wordform).first()
 
-    # Get vocabularies (=lexica without links) with this word
-    q = select([Wordform, Lexicon]) \
-        .select_from(lexical_source_wordform.join(Wordform).join(Lexicon)) \
-        .where(and_(Wordform.wordform == wordform,
-                    Lexicon.vocabulary == True))  # noqa E712
-    logger.debug(f'Executing query:\n{q}')
-    result = session.execute(q).fetchall()
-    lexicon_entries = [{'lexicon_name': row.lexicon_name,
-                        'correct': True} for row in result]
+    def map_lexicon(lexicon):
+        correct = None
+        has_wordform = None
 
-    # Get lexica with links containing this word
-    q = select([Wordform, Lexicon, WordformLinkSource.wordform_from_correct],
-               distinct=True) \
-        .select_from(Wordform.__table__.join(WordformLink,
-            onclause=Wordform.wordform_id == WordformLink.wordform_from)
-        .join(WordformLinkSource).join(Lexicon)) \
-        .where(and_(Wordform.wordform == wordform,
-                    Lexicon.vocabulary == False))  # noqa E712
-    logger.debug(f'Executing query:\n{q}')
-    result = session.execute(q).fetchall()
+        if lexicon.vocabulary:
+            has_wordform = session.execute(
+                "SELECT 1 FROM lexical_source_wordform WHERE lexicon_id = :lexicon_id AND wordform_id = :wordform_id",
+                {'lexicon_id': lexicon.lexicon_id, 'wordform_id': orm_wordform.wordform_id}
+            ).rowcount > 0
+            if has_wordform:
+                correct = True
 
-    for row in result:
-        lexicon_entries.append({'lexicon_name': row.lexicon_name,
-                                'correct': row.wordform_from_correct})
+        else:
+            row = session.execute(
+                "SELECT wordform_from_correct FROM source_x_wordform_link WHERE lexicon_id = :lexicon_id " +
+                "AND wordform_from = :wordform_id",
+                {'lexicon_id': lexicon.lexicon_id, 'wordform_id': orm_wordform.wordform_id}
+            ).first()
 
-    # sort result alphabetically on lexicon name
-    return sorted(lexicon_entries, key=lambda i: i['lexicon_name'])
+            if row:
+                has_wordform = True
+                correct = row[0] == 1
+            else:
+                has_wordform = False
+                correct = None
+
+        return {
+            'lexicon_name': lexicon.lexicon_name,
+            'correct': correct,
+            'has_wordform': has_wordform
+        }
+
+    result = list(map(map_lexicon, lexica))
+
+    return sorted(result, key=lambda i: i['lexicon_name'])
 
 
 def get_corpora_year_range(session):
