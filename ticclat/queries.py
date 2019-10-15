@@ -375,7 +375,10 @@ def get_lexica_data(session, wordform):
         correct = None
         has_wordform = None
 
-        if lexicon.vocabulary:
+        if not orm_wordform:
+            has_wordform = False
+
+        elif lexicon.vocabulary:
             has_wordform = session.execute(
                 "SELECT 1 FROM lexical_source_wordform WHERE lexicon_id = :lexicon_id AND wordform_id = :wordform_id",
                 {'lexicon_id': lexicon.lexicon_id, 'wordform_id': orm_wordform.wordform_id}
