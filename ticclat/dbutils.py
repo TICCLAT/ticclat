@@ -53,11 +53,16 @@ engine = None
 def get_engine(without_database=False):
     global engine
     if not engine:
-        url = os.environ.get('DATABASE_URL')
-        if without_database:
-            url = url.replace(get_db_name(), "")
-        engine = create_engine(url)
+        reset_engine(without_database)
     return engine
+
+
+def reset_engine(without_database=False):
+    global engine
+    url = os.environ.get('DATABASE_URL')
+    if without_database:
+        url = url.replace(get_db_name(), "")
+    engine = create_engine(url)
 
 
 def get_session_maker():
@@ -547,6 +552,8 @@ def create_ticclat_database(delete_existing=False):
             raise e
 
     connection.close()
+
+    reset_engine()
 
     # create tables
     Base.metadata.create_all(engine)
