@@ -554,6 +554,7 @@ def create_ticclat_database(delete_existing=False):
     connection.close()
 
     reset_engine()
+    engine = get_engine()
 
     # create tables
     Base.metadata.create_all(engine)
