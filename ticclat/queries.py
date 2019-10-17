@@ -102,7 +102,7 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
 
     df = pd.read_sql(q, session.connection())
     df = df.dropna(subset=['pub_year'])
-    df['normalized_tf'] = df['term_frequency'] / df['num_words'] * 100.0
+    df['normalized_tf'] = df['term_frequency'] / df['num_words']
 
     # get domain and range
     min_year = df['pub_year'].min()
@@ -134,8 +134,12 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
         corpus_data = {'name': name, 'frequencies': []}
         for row in data.iterrows():
             corpus_data['frequencies'].append(
-                {'year': row[1]['pub_year'],
-                 'freq': row[1]['normalized_tf']})
+                {
+                    'year': row[1]['pub_year'],
+                    'freq': row[1]['normalized_tf'],
+                    'total': row[1]['num_words'],
+                    'term_frequency': row[1]['term_frequency']
+                })
         result.append(corpus_data)
 
     return result, md
