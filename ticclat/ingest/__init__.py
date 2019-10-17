@@ -2,7 +2,7 @@ from ticclat.utils import set_logger
 from ticclat.ingest import elex, gb, opentaal, sonar, inl, sgd, edbo, \
     twente_spelling_correction_list, dbnl, morph_par, wf_frequencies, \
     sgd_ticcl_variants
-
+from ticclat.dbutils import get_db_name
 import logging
 
 
@@ -59,10 +59,8 @@ def run(reset_db=False,
     tempfile.tempdir = tmpdir
 
     if reset_db:
-        logger.info(f'Reseting database "{os.environ["dbname"]}".')
-        create_ticclat_database(delete_existing=True, dbname=os.environ['dbname'],
-                                user=os.environ['user'], passwd=os.environ['password'],
-                                host=os.environ['host'])
+        logger.info(f'Reseting database "{get_db_name()}".')
+        create_ticclat_database(delete_existing=True)
 
     session_maker = get_session_maker()
 

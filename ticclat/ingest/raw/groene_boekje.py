@@ -192,9 +192,10 @@ if __name__ == '__main__':
                 os.environ[parts[0]] = parts[1].strip()
 
     url = "mysql://{}:{}@localhost/{}?charset=utf8mb4"
-    engine = sqlalchemy.create_engine(url.format(os.environ['user'],
-                                                 os.environ['password'],
-                                                 os.environ['dbname']))
+    engine = ticclat.dbutils.get_engine()
+    # sqlalchemy.create_engine(url.format(os.environ['user'],
+    #                                              os.environ['password'],
+    #                                              os.environ['dbname']))
     if not sqlalchemy_utils.database_exists(engine.url):
         sqlalchemy_utils.create_database(engine.url)
 
