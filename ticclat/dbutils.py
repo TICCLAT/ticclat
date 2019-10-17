@@ -50,10 +50,13 @@ def session_scope(session_maker):
 
 
 engine = None
-def get_engine():
+def get_engine(without_database=False):
     global engine
     if not engine:
-        engine = create_engine(os.environ.get('DATABASE_URL'))
+        url = os.environ.get('DATABASE_URL')
+        if without_database:
+            url = url.replace(get_db_name(), "")
+        engine = create_engine(url)
     return engine
 
 
@@ -528,7 +531,7 @@ def add_morphological_paradigms(session, in_file):
 def create_ticclat_database(delete_existing=False):
     # db = MySQLdb.connect(user=user, passwd=passwd, host=host)
     # engine = create_engine(f"mysql://{user}:{passwd}@{host}/{dbname}?charset=utf8mb4")
-    engine = get_engine()
+    engine = get_engine(without_database=True)
     connection = engine.connect()
     db_name = get_db_name()
     try:
