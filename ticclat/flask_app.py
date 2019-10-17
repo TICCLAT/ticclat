@@ -70,10 +70,15 @@ def table_columns(table_name: str):
 
 @app.route('/corpora')
 def corpora():
-    def corpus_repr(corpus):
-        return {"name": corpus.name, "num_documents": len(corpus.corpus_documents), "id": corpus.corpus_id}
-
-    return jsonify(list(map(corpus_repr, session.query(Corpus).all())))
+    query = """
+SELECT corpora.corpus_id, corpora.name, SUM(word_count) AS word_count, COUNT(d.document_id) AS document_count
+FROM corpora LEFT JOIN corpusId_x_documentId cIxdI on corpora.corpus_id = cIxdI.corpus_id
+LEFT JOIN documents d on cIxdI.document_id = d.document_id
+GROUP BY corpora.corpus_id, corpora.name
+    """
+    connection = db.engine.connect()
+    df = pandas.read_sql(query, connection)
+    return jsonify(df.to_dict(orient='record'))
 
 
 @app.route("/word_frequency_per_year/<word_name>")
