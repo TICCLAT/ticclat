@@ -580,20 +580,31 @@ def create_wf_frequencies_table(session):
 
     empty_table(session, WordformFrequencies)
 
-    logger.info('Calculating wordform frequencies.')
-    q = select([Wordform, func.sum(TextAttestation.frequency).label('freq')]) \
-        .select_from(Wordform.__table__.join(TextAttestation)) \
-        .group_by(Wordform.wordform_id)
-    r = session.execute(q)
+    session.execute("""
+INSERT INTO wordform_frequency
+SELECT
+       wordforms.wordform_id,
+       wordforms.wordform,
+       SUM(frequency) AS frequency
+FROM
+     wordforms LEFT JOIN text_attestations ta ON wordforms.wordform_id = ta.wordform_id
+GROUP BY wordforms.wordform, wordforms.wordform_id    
+    """)
 
-    def iterate_results(result):
-        for row in tqdm(result.fetchall()):
-            yield {'wordform': row.wordform,
-                   'wordform_id': row.wordform_id,
-                   'frequency': row.freq}
-
-    logger.info('Inserting wordform frequencies into the database.')
-    sql_insert(session, WordformFrequencies, iterate_results(r))
+    # logger.info('Calculating wordform frequencies.')
+    # q = select([Wordform, func.sum(TextAttestation.frequency).label('freq')]) \
+    #     .select_from(Wordform.__table__.join(TextAttestation)) \
+    #     .group_by(Wordform.wordform_id)
+    # r = session.execute(q)
+    #
+    # def iterate_results(result):
+    #     for row in tqdm(result.fetchall()):
+    #         yield {'wordform': row.wordform,
+    #                'wordform_id': row.wordform_id,
+    #                'frequency': row.freq}
+    #
+    # logger.info('Inserting wordform frequencies into the database.')
+    # sql_insert(session, WordformFrequencies, iterate_results(r))
 
 
 def add_ticcl_variants(session, name, df):
