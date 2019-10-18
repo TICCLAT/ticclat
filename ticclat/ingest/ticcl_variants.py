@@ -39,7 +39,8 @@ FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
         s.execute(query, {'file_name': str(csv_file_path)})
         logger.info("Running ticcl_variants set wordform_id query")
         s.execute("""
-UPDATE ticcl_variants LEFT JOIN wordforms w ON ticcl_variants.wordform = w.wordform
+UPDATE ticcl_variants
+LEFT JOIN wordforms w ON ticcl_variants.wordform_source = w.wordform
 SET ticcl_variants.wordform_source_id = w.wordform_id WHERE 1   
         """)
         s.commit()
