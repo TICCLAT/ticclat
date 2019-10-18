@@ -342,7 +342,7 @@ def update_anahashes_new(session, alphabet_file):
     session.execute("""
 CREATE TEMPORARY TABLE ticcl_import (
     anahash_id BIGINT auto_increment PRIMARY KEY,
-	wordform VARCHAR(255) PRIMARY KEY,
+	wordform VARCHAR(255),
 	anahash BIGINT
 );
     """)
