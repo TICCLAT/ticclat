@@ -11,6 +11,7 @@ import pandas as pd
 from contextlib import contextmanager
 from collections import defaultdict
 
+import sh
 from tqdm import tqdm
 
 from sqlalchemy import create_engine, select, bindparam, and_, func
@@ -313,6 +314,55 @@ def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
     logger.info('Added the anahash of {} wordforms.'.format(t))
 
     return t
+
+
+def save_wordform_ticcl_file(session, file_path):
+    query = f"SELECT wordform, 1 FROM wordforms WHERE anahash_id IS NULL"
+
+    # uses a lot of RAM...
+    df = pd.read_sql(query, session.bind)
+    df.to_csv(file_path, header=False, index=False, sep='\t')
+
+
+def update_anahashes_new(session, alphabet_file):
+    file_handler, tmp_file_path = tempfile.mkstemp()
+    os.close(file_handler)
+    logger.info("Exporting wordforms to file")
+    save_wordform_ticcl_file(session, tmp_file_path)
+
+    logger.info("Generating anahashes")
+    try:
+        sh.TICCL_anahash(['--list', '--alph', alphabet_file, tmp_file_path])
+    except sh.ErrorReturnCode as e:
+        raise(ValueError('Running TICCL-anahash failed: {}'.format(e.stdout)))
+
+    ticcled_file_path = tmp_file_path + '.list'
+
+    # create temp table
+    session.execute("""
+CREATE TEMPORARY TABLE ticcl_import (
+    anahash_id BIGINT auto_increment PRIMARY KEY,
+	wordform VARCHAR(255) PRIMARY KEY,
+	anahash BIGINT
+);
+    """)
+
+    logger.info("Loading ticcled file into temp table")
+    session.execute("""
+LOAD DATA LOCAL INFILE :file_path INTO TABLE ticcl_import
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
+(wordform, anahash)
+    """, {'file_path': ticcled_file_path})
+
+    logger.info("Storing anahashes")
+    session.execute("""INSERT INTO anahashes SELECT anahash_id, anahash FROM ticcl_import""")
+
+    logger.info("Setting wordform anahash_ids")
+    session.execute("""
+UPDATE ticcl_import
+LEFT JOIN wordforms w ON ticcl_import.wordform= w.wordform
+SET w.anahash_id = ticcl_import.anahash_id WHERE 1      
+    """)
 
 
 def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):

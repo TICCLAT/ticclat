@@ -390,6 +390,9 @@ AND word_type_code IN ('HCL', 'HCM')
 
     return jsonify(df.to_dict(orient="record"))
 
-@app.route('/word_type_codes')
-def _word_type_codes():
-    return session.execute("SELECT DISTINCT word_type_code FROM morphological_paradigms")
+# @app.route('/word_type_codes')
+# def _word_type_codes():
+#     return session.execute("SELECT DISTINCT word_type_code FROM morphological_paradigms")
+#
+#
+#
