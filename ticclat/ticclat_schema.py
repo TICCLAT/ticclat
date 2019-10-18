@@ -320,7 +320,7 @@ class TicclatVariant(Base):
 
     ticclat_variant_id = Column(BigInteger(), primary_key=True)
     wordform = Column(Unicode(255, convert_unicode=False), index=True, unique=True)
-    wordform_source = Column(Unicode(255, convert_unicode=False), index=False)
+    wordform_source = Column(Unicode(255, convert_unicode=False), index=True)
     wordform_source_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'), index=True)
     levenshtein_distance = Column(BigInteger(), index=True)
     frequency = Column(BigInteger(), index=True)
