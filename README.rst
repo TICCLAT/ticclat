@@ -43,7 +43,6 @@ Run `sudo mysql_secure_installation` with the following choices:
 To allow login as any user with the root password set above,
 you have to switch the authentication plugin for root to
 `mysql_native_password`.
-You can check with
 
 .. code-block:: mysql
 
@@ -96,6 +95,10 @@ This allows you to run queries like this:
 
   LOAD DATA LOCAL INFILE '/file.csv' INTO TABLE test FIELDS TERMINATED BY ',' ENCLOSED BY '"' ESCAPED BY '\\';  
 
+This loads the file `/file.csv` **from the client**, sends it to the server which inserts it into table `test`.
+See [MySQL Load Data Documentation](https://dev.mysql.com/doc/refman/8.0/en/load-data.html).
+
+
 Ubuntu
 ------
 
@@ -131,7 +134,7 @@ Data ingestion
 **************
 
 The ticclat package contains scripts for ingesting data into the database.
-To run the scripts, create an ``.env`` file as debscribed under
+To run the scripts, create an ``.env`` file as described under
 `Setup virtual environment`_. In the directory where the `.env` file is located,
 type `python` and then:
 
@@ -201,7 +204,7 @@ Create a `.env` file with the following:
 
 .. code-block:: console
 
-  DATABASE_URL=mysql://[user]:[pass]@[host]:[port]/[db_name]
+  DATABASE_URL=mysql://[user]:[pass]@[host]:[port]/[db_name]?charset=utf8mb4&local_infile=1
 
   FLASK_APP=ticclat.flask_app.py
   FLASK_ENV=production
