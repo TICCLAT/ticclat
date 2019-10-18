@@ -1,7 +1,7 @@
 from ticclat.utils import set_logger
 from ticclat.ingest import elex, gb, opentaal, sonar, inl, sgd, edbo, \
     twente_spelling_correction_list, dbnl, morph_par, wf_frequencies, \
-    sgd_ticcl_variants
+    sgd_ticcl_variants, ticcl_variants
 from ticclat.dbutils import get_db_name
 import logging
 
@@ -21,7 +21,8 @@ all_sources = {
     'dbnl': dbnl,
     'morph_par': morph_par,
     'wf_freqs': wf_frequencies,
-    'sgd_ticcl': sgd_ticcl_variants
+    # 'sgd_ticcl': sgd_ticcl_variants
+    'ticcl_variants': ticcl_variants
 }
 
 
