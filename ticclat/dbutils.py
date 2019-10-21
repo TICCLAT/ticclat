@@ -316,19 +316,29 @@ def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
     return t
 
 
-def save_wordform_ticcl_file(session, file_path):
-    query = f"SELECT wordform, 1 FROM wordforms WHERE anahash_id IS NULL"
-
-    # uses a lot of RAM...
-    df = pd.read_sql(query, session.bind)
-    df.to_csv(file_path, header=False, index=False, sep='\t')
+# def save_wordform_ticcl_file(session, file_path):
+#     query = f"SELECT wordform, 1 FROM wordforms WHERE anahash_id IS NULL"
+#
+#     # uses a lot of RAM...
+#     df = pd.read_sql(query, session.bind)
+#     df.to_csv(file_path, header=False, index=False, sep='\t')
 
 
 def update_anahashes_new(session, alphabet_file):
-    file_handler, tmp_file_path = tempfile.mkstemp()
-    os.close(file_handler)
+    # file_handler, tmp_file_path = tempfile.mkstemp()
+    tmp_file_path = '/data/tmp/mysql/wordforms.csv'
+    # os.close(file_handler)
+
+
+
     logger.info("Exporting wordforms to file")
-    save_wordform_ticcl_file(session, tmp_file_path)
+    # save_wordform_ticcl_file(session, tmp_file_path)
+    sh.rm([tmp_file_path])
+    session.execute(f"""
+SELECT wordform, 1 INTO OUTFILE {tmp_file_path}
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
+FROM wordforms LIMIT 10;
+    """)
 
     logger.info("Generating anahashes")
     try:
@@ -355,6 +365,8 @@ LOAD DATA LOCAL INFILE :file_path INTO TABLE ticcl_import
 FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
 (wordform, anahash)
     """, {'file_path': ticcled_file_path})
+
+    os.unlink(tmp_file_path)
 
     logger.info("Storing new anahashes")
     session.execute("""INSERT IGNORE INTO anahashes(anahash) SELECT anahash FROM ticcl_import""")
