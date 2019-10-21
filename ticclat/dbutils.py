@@ -329,15 +329,13 @@ def update_anahashes_new(session, alphabet_file):
     tmp_file_path = '/data/tmp/mysql/wordforms.csv'
     # os.close(file_handler)
 
-
-
     logger.info("Exporting wordforms to file")
     # save_wordform_ticcl_file(session, tmp_file_path)
     if os.path.exists(tmp_file_path):
         os.remove(tmp_file_path)
 
     session.execute(f"""
-SELECT wordform, 1 INTO OUTFILE {tmp_file_path}
+SELECT wordform, 1 INTO OUTFILE '{tmp_file_path}'
 FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
 FROM wordforms LIMIT 10;
     """)
