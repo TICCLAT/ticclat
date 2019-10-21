@@ -15,7 +15,7 @@ from ticclat.dbutils import bulk_add_wordforms, add_lexicon, \
     get_word_frequency_df, bulk_add_anahashes, \
     connect_anahashes_to_wordforms, update_anahashes, get_wf_mapping, \
     add_lexicon_with_links, write_wf_links_data, add_morphological_paradigms, \
-    empty_table, load_envvars_file, add_ticcl_variants
+    empty_table, add_ticcl_variants
 
 from . import data_dir
 
@@ -541,28 +541,28 @@ def test_ingest_add_morp_pars_with_empty_table(dbsession, datafiles):
     assert n == 3
 
 
-@pytest.mark.datafiles(os.path.join(data_dir(), 'env_no_port'))
-def test_load_envvars_file_no_port(datafiles):
-    load_envvars_file(datafiles.listdir()[0])
+# @pytest.mark.datafiles(os.path.join(data_dir(), 'env_no_port'))
+# def test_load_envvars_file_no_port(datafiles):
+#     load_envvars_file(datafiles.listdir()[0])
+#
+#     assert os.environ.get('user', None) == 'root'
+#     assert os.environ.get('password', None) == '********'
+#     assert os.environ.get('host', None) == 'localhost'
+#     assert os.environ.get('dbname', None) == 'ticclat'
+#     assert os.environ.get('DATABASE_URL',
+#                           None) == 'mysql://root:********@localhost/ticclat'
 
-    assert os.environ.get('user', None) == 'root'
-    assert os.environ.get('password', None) == '********'
-    assert os.environ.get('host', None) == 'localhost'
-    assert os.environ.get('dbname', None) == 'ticclat'
-    assert os.environ.get('DATABASE_URL',
-                          None) == 'mysql://root:********@localhost/ticclat'
 
-
-@pytest.mark.datafiles(os.path.join(data_dir(), 'env_port'))
-def test_load_envvars_file_port(datafiles):
-    load_envvars_file(datafiles.listdir()[0])
-
-    assert os.environ.get('user', None) == 'root'
-    assert os.environ.get('password', None) == '********'
-    assert os.environ.get('host', None) == '127.0.0.1:8008'
-    assert os.environ.get('dbname', None) == 'ticclat'
-    assert os.environ.get(
-        'DATABASE_URL', None) == 'mysql://root:********@127.0.0.1:8008/ticclat'
+# @pytest.mark.datafiles(os.path.join(data_dir(), 'env_port'))
+# def test_load_envvars_file_port(datafiles):
+#     load_envvars_file(datafiles.listdir()[0])
+#
+#     assert os.environ.get('user', None) == 'root'
+#     assert os.environ.get('password', None) == '********'
+#     assert os.environ.get('host', None) == '127.0.0.1:8008'
+#     assert os.environ.get('dbname', None) == 'ticclat'
+#     assert os.environ.get(
+#         'DATABASE_URL', None) == 'mysql://root:********@127.0.0.1:8008/ticclat'
 
 
 @pytest.mark.datafiles(os.path.join(data_dir(), 'ticcl_variants.txt'))

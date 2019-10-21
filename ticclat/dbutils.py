@@ -2,6 +2,7 @@ import os
 import re
 import json
 import logging
+from pathlib import Path
 
 import numpy as np
 import tempfile
@@ -316,21 +317,10 @@ def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
     return t
 
 
-# def save_wordform_ticcl_file(session, file_path):
-#     query = f"SELECT wordform, 1 FROM wordforms WHERE anahash_id IS NULL"
-#
-#     # uses a lot of RAM...
-#     df = pd.read_sql(query, session.bind)
-#     df.to_csv(file_path, header=False, index=False, sep='\t')
-
-
 def update_anahashes_new(session, alphabet_file):
-    # file_handler, tmp_file_path = tempfile.mkstemp()
-    tmp_file_path = '/data/tmp/mysql/wordforms.csv'
-    # os.close(file_handler)
+    tmp_file_path = str(Path(tempfile.tempdir)/'mysql/wordforms.csv')
 
     logger.info("Exporting wordforms to file")
-    # save_wordform_ticcl_file(session, tmp_file_path)
     if os.path.exists(tmp_file_path):
         os.remove(tmp_file_path)
 

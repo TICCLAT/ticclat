@@ -7,10 +7,11 @@ import pytest
 
 @pytest.fixture(scope='session')
 def engine():
-    mysql = MySqlContainer('mysql:8.0')
+    mysql = MySqlContainer('mysql:5.7')
 
     mysql.start()
-    yield create_engine(mysql.get_connection_url())
+    connection_url = mysql.get_connection_url() + '?charset=utf8mb4&local_infile=1'
+    yield create_engine(connection_url)
     mysql.stop()
 
 
