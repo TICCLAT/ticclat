@@ -1,11 +1,5 @@
 source_x_wordform_link_id	wordform_from	wordform_to	lexicon_id	wordform_from_correct	wordform_to_correct	ld	anahash_difference
-1	1	12168	1	0	1
-2	12168	1	1	1	0
-3	2	12169	1	0	1
-4	12169	2	1	1	0
-5	3	12170	1	0	1
-6	12170	3	1	1	0
-7	4	12171	1	0	1
-8	12171	4	1	1	0
-9	5	12172	1	0	1
-10	12172	5	1	1	0
+1	3	4	1	1	0		
+2	9	10	2	1	0		
+3	4	3	1	0	1		
+4	10	9	2	0	1		
