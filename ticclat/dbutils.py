@@ -344,7 +344,6 @@ def update_anahashes_new(session, alphabet_file):
     # create temp table
     session.execute("""
 CREATE TEMPORARY TABLE ticcl_import (
-    anahash_id BIGINT auto_increment PRIMARY KEY,
 	wordform VARCHAR(255),
 	anahash BIGINT
 );
@@ -357,14 +356,15 @@ FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
 (wordform, anahash)
     """, {'file_path': ticcled_file_path})
 
-    logger.info("Storing anahashes")
-    session.execute("""INSERT INTO anahashes SELECT anahash_id, anahash FROM ticcl_import""")
+    logger.info("Storing new anahashes")
+    session.execute("""INSERT IGNORE INTO anahashes SELECT anahash FROM ticcl_import""")
 
     logger.info("Setting wordform anahash_ids")
     session.execute("""
 UPDATE ticcl_import
-LEFT JOIN wordforms w ON ticcl_import.wordform= w.wordform
-SET w.anahash_id = ticcl_import.anahash_id WHERE 1      
+LEFT JOIN wordforms ON ticcl_import.wordform = wordforms.wordform
+LEFT JOIN anahashes ON ticcl_import.anahash = anahashes.anahash
+SET wordforms.anahash_id = anahashes.anahash_id WHERE 1
     """)
 
 
