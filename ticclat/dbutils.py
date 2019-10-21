@@ -2,6 +2,7 @@ import os
 import re
 import json
 import logging
+from pathlib import Path
 
 import numpy as np
 import tempfile
@@ -11,6 +12,7 @@ import pandas as pd
 from contextlib import contextmanager
 from collections import defaultdict
 
+import sh
 from tqdm import tqdm
 
 from sqlalchemy import create_engine, select, bindparam, and_
@@ -312,7 +314,62 @@ def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
     return t
 
 
-def update_anahashes(session, alphabet_file, tqdm_factory=None, batch_size=50000):
+def update_anahashes_new(session, alphabet_file):
+    tmp_file_path = str(Path(tempfile.tempdir)/'mysql/wordforms.csv')
+
+    logger.info("Exporting wordforms to file")
+    if os.path.exists(tmp_file_path):
+        os.remove(tmp_file_path)
+
+    session.execute(f"""
+SELECT wordform, 1 INTO OUTFILE '{tmp_file_path}'
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
+FROM wordforms
+WHERE anahash_id IS NULL;
+    """)
+
+    logger.info("Generating anahashes")
+    try:
+        sh.TICCL_anahash(['--list', '--alph', alphabet_file, tmp_file_path])
+    except sh.ErrorReturnCode as e:
+        raise(ValueError('Running TICCL-anahash failed: {}'.format(e.stdout)))
+
+    ticcled_file_path = tmp_file_path + '.list'
+
+    # drop old table if it's there
+    session.execute("DROP TABLE IF EXISTS ticcl_import")
+
+    # create temp table
+    session.execute("""
+CREATE TEMPORARY TABLE ticcl_import (
+	wordform VARCHAR(255),
+	anahash BIGINT
+);
+    """)
+
+    logger.info("Loading ticcled file into temp table")
+    session.execute("""
+LOAD DATA LOCAL INFILE :file_path INTO TABLE ticcl_import
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
+(wordform, anahash)
+    """, {'file_path': ticcled_file_path})
+
+    if os.path.exists(tmp_file_path):
+        os.remove(tmp_file_path)
+
+    logger.info("Storing new anahashes")
+    session.execute("""INSERT IGNORE INTO anahashes(anahash) SELECT anahash FROM ticcl_import""")
+
+    logger.info("Setting wordform anahash_ids")
+    session.execute("""
+UPDATE ticcl_import
+LEFT JOIN wordforms ON ticcl_import.wordform = wordforms.wordform
+LEFT JOIN anahashes ON ticcl_import.anahash = anahashes.anahash
+SET wordforms.anahash_id = anahashes.anahash_id WHERE 1
+    """)
+
+
+def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
     """Add anahashes for all wordforms that do not have an anahash value yet.
 
     Requires ticcl to be installed!

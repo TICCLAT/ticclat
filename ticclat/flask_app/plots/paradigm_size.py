@@ -2,7 +2,7 @@ import pandas
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, show
 
-from ticclat import db
+from ticclat.flask_app import db
 
 
 def paradigm_size(var='X'):

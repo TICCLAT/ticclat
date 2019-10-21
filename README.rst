@@ -98,6 +98,23 @@ This allows you to run queries like this:
 This loads the file `/file.csv` **from the client**, sends it to the server which inserts it into table `test`.
 See [MySQL Load Data Documentation](https://dev.mysql.com/doc/refman/8.0/en/load-data.html).
 
+To allow for saving CSV files, add:
+
+.. code-block:: console
+
+  [mysqld]
+  secure_file_priv=/data/tmp/mysql
+
+Also, add this to `/etc/apparmor.d/usr.sbin.mysqld` (restart afterwards: `sudo systemctl reload apparmor`)
+
+.. code-block:: console
+
+  # Allow /data/tmp/mysql access
+  /data/tmp/mysql/ rw,
+  /data/tmp/mysql/** rw,
+
+Make sure the directory /data/tmp/mysql exists and is writable by the `mysql` user.
+
 
 Ubuntu
 ------

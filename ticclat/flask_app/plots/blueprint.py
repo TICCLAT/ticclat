@@ -1,10 +1,10 @@
 from flask import Blueprint, jsonify, request
 from bokeh.embed import json_item
 
-from ticclat.plots.corpus_size import corpus_size
-from ticclat.plots.lexicon_size import lexicon_size
-from ticclat.plots.paradigm_size import paradigm_size
-from ticclat.plots.word_count_per_year import word_count_per_year
+from ticclat.flask_app.plots.corpus_size import corpus_size
+from ticclat.flask_app.plots.lexicon_size import lexicon_size
+from ticclat.flask_app.plots.paradigm_size import paradigm_size
+from ticclat.flask_app.plots.word_count_per_year import word_count_per_year
 
 plots = Blueprint('plots', __name__)
 

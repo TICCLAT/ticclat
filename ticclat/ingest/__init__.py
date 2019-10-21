@@ -2,7 +2,7 @@ from ticclat.utils import set_logger
 from ticclat.ingest import elex, gb, opentaal, sonar, inl, sgd, edbo, \
     twente_spelling_correction_list, dbnl, morph_par, wf_frequencies, \
     sgd_ticcl_variants, ticcl_variants
-from ticclat.dbutils import get_db_name
+from ticclat.dbutils import get_db_name, update_anahashes_new
 import logging
 
 
@@ -78,4 +78,4 @@ def run(reset_db=False,
     if anahash:
         logger.info("adding anahashes...")
         with session_scope(session_maker) as session:
-            update_anahashes(session, alphabet_file, tqdm, batch_size)
+            update_anahashes_new(session, alphabet_file)

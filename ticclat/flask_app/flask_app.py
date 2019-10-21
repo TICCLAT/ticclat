@@ -8,10 +8,9 @@ from timeit import default_timer as timer
 
 from flask_sqlalchemy_session import flask_scoped_session
 
-from ticclat import raw_queries, queries, db
+from ticclat.flask_app import queries, raw_queries, db
 from ticclat.utils import chunk_df
-from ticclat.plots.blueprint import plots as plots_blueprint
-from ticclat.ticclat_schema import Corpus
+from ticclat.flask_app.plots.blueprint import plots as plots_blueprint
 
 app = Flask(__name__)
 app.config.update()
@@ -390,6 +389,9 @@ AND word_type_code IN ('HCL', 'HCM')
 
     return jsonify(df.to_dict(orient="record"))
 
-@app.route('/word_type_codes')
-def _word_type_codes():
-    return session.execute("SELECT DISTINCT word_type_code FROM morphological_paradigms")
+# @app.route('/word_type_codes')
+# def _word_type_codes():
+#     return session.execute("SELECT DISTINCT word_type_code FROM morphological_paradigms")
+#
+#
+#
