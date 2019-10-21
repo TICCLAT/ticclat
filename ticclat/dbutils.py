@@ -333,7 +333,9 @@ def update_anahashes_new(session, alphabet_file):
 
     logger.info("Exporting wordforms to file")
     # save_wordform_ticcl_file(session, tmp_file_path)
-    sh.rm([tmp_file_path])
+    if os.path.exists(tmp_file_path):
+        os.remove(tmp_file_path)
+
     session.execute(f"""
 SELECT wordform, 1 INTO OUTFILE {tmp_file_path}
 FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
@@ -366,7 +368,8 @@ FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
 (wordform, anahash)
     """, {'file_path': ticcled_file_path})
 
-    os.unlink(tmp_file_path)
+    if os.path.exists(tmp_file_path):
+        os.remove(tmp_file_path)
 
     logger.info("Storing new anahashes")
     session.execute("""INSERT IGNORE INTO anahashes(anahash) SELECT anahash FROM ticcl_import""")
