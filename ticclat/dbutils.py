@@ -15,7 +15,7 @@ from collections import defaultdict
 import sh
 from tqdm import tqdm
 
-from sqlalchemy import create_engine, select, bindparam, and_, func
+from sqlalchemy import create_engine, select, bindparam, and_
 from sqlalchemy.orm import sessionmaker
 
 # for create_database:
@@ -25,12 +25,11 @@ from sqlalchemy_utils.functions import drop_database
 
 from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, \
     lexical_source_wordform, WordformLink, WordformLinkSource, \
-    MorphologicalParadigm, WordformFrequencies, TextAttestation
+    MorphologicalParadigm, WordformFrequencies
 from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
     read_json_lines, get_temp_file, json_line, split_component_code, \
     morph_iterator, preprocess_wordforms
-from ticclat.sacoreutils import bulk_add_wordforms_core, \
-    bulk_add_anahashes_core, sql_query_batches, sql_insert_batches, sql_insert
+from ticclat.sacoreutils import bulk_add_anahashes_core, sql_query_batches, sql_insert_batches
 from ticclat.tokenize import nltk_tokenize
 
 logger = logging.getLogger(__name__)
@@ -100,7 +99,7 @@ def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=No
     return wf
 
 
-def bulk_add_wordforms(session, wfs, preprocess_wfs=True, disable_pbar=False, batch_size=10000):
+def bulk_add_wordforms(session, wfs, preprocess_wfs=True):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
@@ -133,35 +132,33 @@ def bulk_add_wordforms(session, wfs, preprocess_wfs=True, disable_pbar=False, ba
 
     os.unlink(file_name)
 
-    logger.info('{} wordforms have been added.'.format(r.rowcount))
+    logger.info('%s wordforms have been added.', r.rowcount)
 
     return r.rowcount
 
 
-def add_lexicon(session, lexicon_name, vocabulary, wfs, batch_size=10000,
-                preprocess_wfs=True):
+def add_lexicon(session, lexicon_name, vocabulary, wfs, preprocess_wfs=True):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
     """
     logger.info('Adding lexicon.')
 
-    bulk_add_wordforms(session, wfs, batch_size=batch_size,
-                       preprocess_wfs=preprocess_wfs)
+    bulk_add_wordforms(session, wfs, preprocess_wfs=preprocess_wfs)
 
     lexicon = Lexicon(lexicon_name=lexicon_name, vocabulary=vocabulary)
     session.add(lexicon)
     session.flush()
     lexicon_id = lexicon.lexicon_id
 
-    logger.debug('Lexicon id: {}'.format(lexicon.lexicon_id))
+    logger.debug('Lexicon id: %s', lexicon.lexicon_id)
 
     wordforms = list(wfs['wordform'])
 
     s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
     result = session.execute(s).fetchall()
 
-    logger.info('Adding {} wordforms to the lexicon.'.format(len(result)))
+    logger.info('Adding %s wordforms to the lexicon.', len(result))
     session.execute(
         lexical_source_wordform.insert(),
         [{'lexicon_id': lexicon_id,
@@ -232,20 +229,20 @@ def get_wf_mapping(session, lexicon=None, lexicon_id=None):
     return wf_mapping
 
 
-def bulk_add_anahashes(session, anahashes, tqdm=None, batch_size=10000):
+def bulk_add_anahashes(session, anahashes, tqdm_factory=None, batch_size=10000):
     """anahashes is pandas dataframe with the column wordform (index), anahash
     """
     logger.info('Adding anahashes.')
     # Remove duplicate anahashes
     unique_hashes = anahashes.copy().drop_duplicates(subset='anahash')
-    logger.debug(f'The input data contains {anahashes.shape[0]} wordform/anahash pairs.')
-    logger.debug(f'There are {unique_hashes.shape[0]} unique anahash values.')
+    logger.debug('The input data contains %s wordform/anahash pairs.', anahashes.shape[0])
+    logger.debug('There are %s unique anahash values.', unique_hashes.shape[0])
 
     total = 0
 
     with get_temp_file() as anahashes_to_add_file:
-        if tqdm is not None:
-            pbar = tqdm(total=unique_hashes.shape[0])
+        if tqdm_factory is not None:
+            pbar = tqdm_factory(total=unique_hashes.shape[0])
         for chunk in chunk_df(unique_hashes, batch_size=batch_size):
             # Find out which anahashes are not yet in the database.
             ahs = set(list(chunk['anahash']))
@@ -259,14 +256,14 @@ def bulk_add_anahashes(session, anahashes, tqdm=None, batch_size=10000):
                 anahashes_to_add_file.write(json.dumps({'anahash': ah}))
                 anahashes_to_add_file.write('\n')
                 total += 1
-            if tqdm is not None:
+            if tqdm_factory is not None:
                 pbar.update(chunk.shape[0])
-        if tqdm is not None:
+        if tqdm_factory is not None:
             pbar.close()
 
         bulk_add_anahashes_core(session, read_json_lines(anahashes_to_add_file))
 
-    logger.info('Added {} anahashes.'.format(total))
+    logger.info('Added %s anahashes.', total)
 
     return total
 
@@ -312,7 +309,7 @@ def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
         sql_query_batches(session, u, read_json_lines(anahash_to_wf_file), t,
                           batch_size)
 
-    logger.info('Added the anahash of {} wordforms.'.format(t))
+    logger.info('Added the anahash of %s wordforms.', t)
 
     return t
 
@@ -392,14 +389,16 @@ def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
 
     anahashes = anahash_df(df[['frequency']], alphabet_file)
 
-    bulk_add_anahashes(session, anahashes, tqdm=tqdm, batch_size=batch_size)
+    bulk_add_anahashes(session, anahashes, tqdm_factory=tqdm_factory, batch_size=batch_size)
 
     connect_anahashes_to_wordforms(session, anahashes, wf_mapping, batch_size)
 
 
 def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
                         wf_to_name, lexicon_id, wf_from_correct, wf_to_correct,
-                        links_file, sources_file, add_columns=[]):
+                        links_file, sources_file, add_columns=None):
+    if add_columns is None:
+        add_columns = []
     num_wf_links = 0
     num_wf_link_sources = 0
     wf_links = defaultdict(bool)
@@ -452,8 +451,11 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
 
 def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
                            to_column, from_correct, to_correct,
-                           batch_size=50000, preprocess_wfs=True, to_add=[]):
+                           batch_size=50000, preprocess_wfs=True, to_add=None):
     logger.info('Adding lexicon with links between wordforms.')
+
+    if to_add is None:
+        to_add = []
 
     # Make a dataframe containing all wordforms in the lexicon
     wordforms = pd.DataFrame()
@@ -463,7 +465,7 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
 
     # Create the lexicon (with all the wordforms)
     lexicon = add_lexicon(session, lexicon_name, vocabulary, wordforms,
-                          batch_size=batch_size, preprocess_wfs=preprocess_wfs)
+                          preprocess_wfs=preprocess_wfs)
 
     wf_mapping = get_wf_mapping(session, lexicon_id=lexicon.lexicon_id)
 
@@ -483,18 +485,18 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
                                                wfl_file, wfls_file,
                                                add_columns=to_add)
 
-            logger.info('Inserting {} wordform links.'.format(num_l))
+            logger.info('Inserting %s wordform links.', num_l)
             sql_insert_batches(session, WordformLink, read_json_lines(wfl_file),
                                batch_size=batch_size)
 
-            logger.info('Inserting {} wordform link sources.'.format(num_s))
+            logger.info('Inserting %s wordform link sources.', num_s)
             sql_insert_batches(session, WordformLinkSource,
                                read_json_lines(wfls_file), batch_size=batch_size)
 
     return lexicon
 
 
-def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
+def add_corpus(session, name, texts_file, n_documents=1000):
     """Add a corpus to the database.
 
     Take care: this is a very slow method for adding a big corpus like the
@@ -522,7 +524,7 @@ def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
         if i % n_documents == 0:
             r = pd.concat(dfs)
             r = r.drop_duplicates(subset='wordform')
-            n = bulk_add_wordforms(session, r, disable_pbar=True)
+            n = bulk_add_wordforms(session, r)
             print('Added {} wordforms'.format(n))
 
             dfs = []
@@ -531,7 +533,7 @@ def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
     if len(dfs) > 0:
         r = pd.concat(dfs)
         r = r.drop_duplicates(subset='wordform')
-        n = bulk_add_wordforms(session, r, disable_pbar=True, batch_size=n_wfs)
+        n = bulk_add_wordforms(session, r)
         print('Added {} wordforms'.format(n))
 
     # create corpus
@@ -543,7 +545,7 @@ def add_corpus(session, name, texts_file, n_documents=1000, n_wfs=1000):
         q = session.query(Wordform)
         wfs = q.filter(Wordform.wordform.in_(terms_vector.keys())).all()
 
-        # FIXME: add proper metatadata for a document
+        # FIXME: add proper metadata for a document
         corpus.add_document(terms_vector, wfs)
 
     return corpus
@@ -584,7 +586,7 @@ def add_morphological_paradigms(session, in_file):
     logger.info('Writing morphological variants to file.')
     with get_temp_file() as mp_file:
         t = write_json_lines(mp_file, morph_iterator(result, mapping))
-        logger.info(f'Wrote {t} morphological variants.')
+        logger.info('Wrote %s morphological variants.', t)
         logger.info('Inserting morphological variants to the database.')
         sql_insert_batches(session, MorphologicalParadigm,
                            read_json_lines(mp_file), batch_size=50000)
