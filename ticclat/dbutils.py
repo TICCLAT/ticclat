@@ -338,6 +338,9 @@ def update_anahashes_new(session, alphabet_file):
 
     ticcled_file_path = tmp_file_path + '.list'
 
+    # drop old table if it's there
+    session.execute("DROP TABLE IF EXISTS ticcl_import")
+
     # create temp table
     session.execute("""
 CREATE TEMPORARY TABLE ticcl_import (
