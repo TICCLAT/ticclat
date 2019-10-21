@@ -357,7 +357,7 @@ FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
     """, {'file_path': ticcled_file_path})
 
     logger.info("Storing new anahashes")
-    session.execute("""INSERT IGNORE INTO anahashes SELECT anahash FROM ticcl_import""")
+    session.execute("""INSERT IGNORE INTO anahashes(anahash) SELECT anahash FROM ticcl_import""")
 
     logger.info("Setting wordform anahash_ids")
     session.execute("""
