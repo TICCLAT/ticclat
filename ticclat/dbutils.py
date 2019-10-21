@@ -337,7 +337,8 @@ def update_anahashes_new(session, alphabet_file):
     session.execute(f"""
 SELECT wordform, 1 INTO OUTFILE '{tmp_file_path}'
 FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
-FROM wordforms LIMIT 10;
+FROM wordforms
+WHERE anahash_id IS NULL;
     """)
 
     logger.info("Generating anahashes")
