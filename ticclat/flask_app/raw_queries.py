@@ -90,7 +90,8 @@ SELECT V,
        COUNT(DISTINCT lexicon_id) AS num_lexica,
        MIN(year) AS min_year,
        MAX(year) AS max_year,
-       COUNT(DISTINCT code) AS num_paradigms
+       COUNT(DISTINCT code) AS num_paradigms,
+       SUM(frequency) AS frequency
 FROM (SELECT mp2.V,
              mp2.word_type_code,
              wordform,
@@ -98,6 +99,7 @@ FROM (SELECT mp2.V,
              d.document_id,
              c.corpus_id,
              lsw.lexicon_id,
+             ta.frequency,
              (mp3.W + mp3.X + mp3.Y + mp3.Z) AS code,
              CASE
                  WHEN d.pub_year IS NOT NULL THEN d.pub_year
