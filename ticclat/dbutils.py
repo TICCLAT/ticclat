@@ -1,16 +1,18 @@
+"""
+Collection of database access functions.
+"""
+
 import os
 import re
 import json
 import logging
 from pathlib import Path
-
-import numpy as np
 import tempfile
-
-import pandas as pd
-
 from contextlib import contextmanager
 from collections import defaultdict
+
+import numpy as np
+import pandas as pd
 
 import sh
 from tqdm import tqdm
@@ -32,7 +34,7 @@ from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
 from ticclat.sacoreutils import bulk_add_anahashes_core, sql_query_batches, sql_insert_batches
 from ticclat.tokenize import nltk_tokenize
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 # source: https://docs.sqlalchemy.org/en/latest/orm/session_basics.html
@@ -50,53 +52,63 @@ def session_scope(session_maker):
         session.close()
 
 
-engine = None
 def get_engine(without_database=False):
-    global engine
-    if not engine:
-        reset_engine(without_database)
-    return engine
-
-
-def reset_engine(without_database=False):
-    global engine
+    """
+    Create an sqlalchemy engine using the DATABASE_URL environment variable.
+    """
     url = os.environ.get('DATABASE_URL')
     if without_database:
         url = url.replace(get_db_name(), "")
     engine = create_engine(url)
+    return engine
 
 
 def get_session_maker():
+    """
+    Return an sqlalchemy sessionmaker object using an engine from get_engine().
+    """
     return sessionmaker(bind=get_engine())
 
 
 def get_session():
+    """
+    Return an sqlalchemy session object using a sessionmaker from get_session_maker().
+    """
     return get_session_maker()()
 
 
 def get_db_name():
+    """
+    Get the database name from the DATABASE_URL environment variable.
+    """
     database_url = os.environ.get('DATABASE_URL')
     return re.match(r'.*/(.*?)($|(\?.*$))', database_url).group(1)
 
 
 def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=None):
-    wf = None
+    """
+    Get a Wordform object of wordform.
 
+    The Wordform object is an sqlalchemy field defined in the ticclat schema.
+    It is coupled to the entry of the given wordform in the wordforms database
+    table.
+    """
     # does the wordform already exist?
     if wordform_id is not None:
-        pass
+        wordform_object = None
     else:
-        q = session.query(Wordform)
-        wf = q.filter(Wordform.wordform == wordform).first()
+        query = session.query(Wordform)
+        wordform_object = query.filter(Wordform.wordform == wordform).first()
 
-    if wf is None:
-        wf = Wordform(wordform_id=wordform_id,
-                      wordform=wordform,
-                      has_analysis=has_analysis,
-                      wordform_lowercase=wordform.lower())
-        session.add(wf)
+    # first() can also return None, so still need to check
+    if wordform_object is None:
+        wordform_object = Wordform(wordform_id=wordform_id,
+                                   wordform=wordform,
+                                   has_analysis=has_analysis,
+                                   wordform_lowercase=wordform.lower())
+        session.add(wordform_object)
 
-    return wf
+    return wordform_object
 
 
 def bulk_add_wordforms(session, wfs, preprocess_wfs=True):
@@ -104,7 +116,7 @@ def bulk_add_wordforms(session, wfs, preprocess_wfs=True):
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
     """
-    logger.info('Bulk adding wordforms.')
+    LOGGER.info('Bulk adding wordforms.')
 
     if preprocess_wfs:
         wfs = preprocess_wordforms(wfs)
@@ -114,7 +126,7 @@ def bulk_add_wordforms(session, wfs, preprocess_wfs=True):
     wfs.dropna(subset=['wordform'], inplace=True)
 
     if not wfs['wordform'].is_unique:
-        logger.info('The wordform-column contains duplicate entries. '
+        LOGGER.info('The wordform-column contains duplicate entries. '
                     'Removing duplicates.')
         wfs = wfs.drop_duplicates(subset='wordform')
 
@@ -128,13 +140,13 @@ def bulk_add_wordforms(session, wfs, preprocess_wfs=True):
     query = f"""
     LOAD DATA LOCAL INFILE :file_name INTO TABLE wordforms (wordform, wordform_lowercase);
     """
-    r = session.execute(query, {'file_name': file_name})
+    result = session.execute(query, {'file_name': file_name})
 
     os.unlink(file_name)
 
-    logger.info('%s wordforms have been added.', r.rowcount)
+    LOGGER.info('%s wordforms have been added.', result.rowcount)
 
-    return r.rowcount
+    return result.rowcount
 
 
 def add_lexicon(session, lexicon_name, vocabulary, wfs, preprocess_wfs=True):
@@ -142,7 +154,7 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, preprocess_wfs=True):
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
     """
-    logger.info('Adding lexicon.')
+    LOGGER.info('Adding lexicon.')
 
     bulk_add_wordforms(session, wfs, preprocess_wfs=preprocess_wfs)
 
@@ -151,21 +163,21 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, preprocess_wfs=True):
     session.flush()
     lexicon_id = lexicon.lexicon_id
 
-    logger.debug('Lexicon id: %s', lexicon.lexicon_id)
+    LOGGER.debug('Lexicon id: %s', lexicon.lexicon_id)
 
     wordforms = list(wfs['wordform'])
 
-    s = select([Wordform]).where(Wordform.wordform.in_(wordforms))
-    result = session.execute(s).fetchall()
+    select_statement = select([Wordform]).where(Wordform.wordform.in_(wordforms))
+    result = session.execute(select_statement).fetchall()
 
-    logger.info('Adding %s wordforms to the lexicon.', len(result))
+    LOGGER.info('Adding %s wordforms to the lexicon.', len(result))
     session.execute(
         lexical_source_wordform.insert(),
         [{'lexicon_id': lexicon_id,
           'wordform_id': wf['wordform_id']} for wf in result]
     )
 
-    logger.info('Lexicon was added.')
+    LOGGER.info('Lexicon was added.')
 
     return lexicon
 
@@ -178,14 +190,14 @@ def get_word_frequency_df(session, add_ids=False):
             column, or None if all wordforms in the database already are
             connected to an anahash value
     """
-    logger.info('Selecting wordforms without anahash value.')
-    q = session.query(Wordform).filter(Wordform.anahash == None)  # noqa: E711
+    LOGGER.info('Selecting wordforms without anahash value.')
+    query = session.query(Wordform).filter(Wordform.anahash is None)
     if add_ids:
-        q = q.with_entities(Wordform.wordform, Wordform.wordform_id)
+        query = query.with_entities(Wordform.wordform, Wordform.wordform_id)
     else:
-        q = q.with_entities(Wordform.wordform)
+        query = query.with_entities(Wordform.wordform)
 
-    df = pd.read_sql(q.statement, q.session.bind)
+    df = pd.read_sql(query.statement, query.session.bind)
     if df.empty:
         df = None
     else:
@@ -211,16 +223,16 @@ def get_wf_mapping(session, lexicon=None, lexicon_id=None):
     else:
         raise ValueError('Please specify the lexicon.')
 
-    logger.info(msg)
+    LOGGER.info(msg)
 
-    s = select([lexical_source_wordform.join(Lexicon).join(Wordform)]) \
-        .where(Lexicon.lexicon_id == lexicon_id)
-    logger.debug(s)
-    result = session.execute(s).fetchall()
+    select_statement = select([lexical_source_wordform.join(Lexicon).join(Wordform)]) \
+                       .where(Lexicon.lexicon_id == lexicon_id)
+    LOGGER.debug(select_statement)
+    result = session.execute(select_statement).fetchall()
 
     wf_mapping = defaultdict(int)
-    for r in result:
-        wf_mapping[r['wordform']] = r[lexical_source_wordform.c.wordform_id]
+    for row in result:
+        wf_mapping[row['wordform']] = row[lexical_source_wordform.c.wordform_id]
 
     # Make sure a KeyError is raised, if we try to look up a word that is not
     # in the database (because we preprocessed it)
@@ -232,13 +244,13 @@ def get_wf_mapping(session, lexicon=None, lexicon_id=None):
 def bulk_add_anahashes(session, anahashes, tqdm_factory=None, batch_size=10000):
     """anahashes is pandas dataframe with the column wordform (index), anahash
     """
-    logger.info('Adding anahashes.')
+    LOGGER.info('Adding anahashes.')
     # Remove duplicate anahashes
     unique_hashes = anahashes.copy().drop_duplicates(subset='anahash')
-    logger.debug('The input data contains %s wordform/anahash pairs.', anahashes.shape[0])
-    logger.debug('There are %s unique anahash values.', unique_hashes.shape[0])
+    LOGGER.debug('The input data contains %s wordform/anahash pairs.', anahashes.shape[0])
+    LOGGER.debug('There are %s unique anahash values.', unique_hashes.shape[0])
 
-    total = 0
+    count_added = 0
 
     with get_temp_file() as anahashes_to_add_file:
         if tqdm_factory is not None:
@@ -247,15 +259,15 @@ def bulk_add_anahashes(session, anahashes, tqdm_factory=None, batch_size=10000):
             # Find out which anahashes are not yet in the database.
             ahs = set(list(chunk['anahash']))
 
-            s = select([Anahash]).where(Anahash.anahash.in_(ahs))
-            result = session.execute(s).fetchall()
+            select_statement = select([Anahash]).where(Anahash.anahash.in_(ahs))
+            result = session.execute(select_statement).fetchall()
 
-            existing_ahs = set([ah[1] for ah in result])
+            existing_ahs = {row[1] for row in result}
 
-            for ah in ahs.difference(existing_ahs):
-                anahashes_to_add_file.write(json.dumps({'anahash': ah}))
+            for non_existing_ah in ahs.difference(existing_ahs):
+                anahashes_to_add_file.write(json.dumps({'anahash': non_existing_ah}))
                 anahashes_to_add_file.write('\n')
-                total += 1
+                count_added += 1
             if tqdm_factory is not None:
                 pbar.update(chunk.shape[0])
         if tqdm_factory is not None:
@@ -263,9 +275,9 @@ def bulk_add_anahashes(session, anahashes, tqdm_factory=None, batch_size=10000):
 
         bulk_add_anahashes_core(session, read_json_lines(anahashes_to_add_file))
 
-    logger.info('Added %s anahashes.', total)
+    LOGGER.info('Added %s anahashes.', count_added)
 
-    return total
+    return count_added
 
 
 def get_anahashes(session, anahashes, wf_mapping, batch_size=50000):
@@ -278,46 +290,46 @@ def get_anahashes(session, anahashes, wf_mapping, batch_size=50000):
             # Find out which anahashes are not yet in the database.
             ahs = set(list(chunk['anahash']))
 
-            s = select([Anahash]).where(Anahash.anahash.in_(ahs))
-            result = session.execute(s).fetchall()
+            select_statement = select([Anahash]).where(Anahash.anahash.in_(ahs))
+            result = session.execute(select_statement).fetchall()
 
-            for ah in result:
-                ah_mapping[ah[1]] = ah[0]
+            for row in result:
+                ah_mapping[row[1]] = row[0]
             pbar.update(chunk.shape[0])
 
     with tqdm(total=anahashes.shape[0], mininterval=2.0) as pbar:
-        for wf, row in anahashes.iterrows():
+        for wordform, row in anahashes.iterrows():
             # SQLAlchemy doesn't allow the use of column names in update
             # statements, so we use something else.
-            yield {'a_id': ah_mapping[row['anahash']], 'wf_id': wf_mapping[wf]}
+            yield {'a_id': ah_mapping[row['anahash']], 'wf_id': wf_mapping[wordform]}
             pbar.update(1)
 
 
 def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
-    logger.info('Connecting anahashes to wordforms.')
+    LOGGER.info('Connecting anahashes to wordforms.')
 
-    logger.debug('Getting wordform/anahash_id pairs.')
+    LOGGER.debug('Getting wordform/anahash_id pairs.')
     with get_temp_file() as anahash_to_wf_file:
-        t = write_json_lines(anahash_to_wf_file,
-                             get_anahashes(session, anahashes, df))
+        total_lines_written = write_json_lines(anahash_to_wf_file,
+                                               get_anahashes(session, anahashes, df))
 
-        u = Wordform.__table__.update(). \
-            where(Wordform.wordform_id == bindparam('wf_id')). \
-            values(anahash_id=bindparam('a_id'))
+        update_statement = Wordform.__table__.update(). \
+                           where(Wordform.wordform_id == bindparam('wf_id')). \
+                           values(anahash_id=bindparam('a_id'))
 
-        logger.debug('Adding the connections wordform -> anahash_id.')
-        sql_query_batches(session, u, read_json_lines(anahash_to_wf_file), t,
-                          batch_size)
+        LOGGER.debug('Adding the connections wordform -> anahash_id.')
+        sql_query_batches(session, update_statement, read_json_lines(anahash_to_wf_file),
+                          total_lines_written, batch_size)
 
-    logger.info('Added the anahash of %s wordforms.', t)
+    LOGGER.info('Added the anahash of %s wordforms.', total_lines_written)
 
-    return t
+    return total_lines_written
 
 
 def update_anahashes_new(session, alphabet_file):
     tmp_file_path = str(Path(tempfile.tempdir)/'mysql/wordforms.csv')
 
-    logger.info("Exporting wordforms to file")
+    LOGGER.info("Exporting wordforms to file")
     if os.path.exists(tmp_file_path):
         os.remove(tmp_file_path)
 
@@ -328,7 +340,7 @@ FROM wordforms
 WHERE anahash_id IS NULL;
     """)
 
-    logger.info("Generating anahashes")
+    LOGGER.info("Generating anahashes")
     try:
         sh.TICCL_anahash(['--list', '--alph', alphabet_file, tmp_file_path])
     except sh.ErrorReturnCode as e:
@@ -347,7 +359,7 @@ CREATE TEMPORARY TABLE ticcl_import (
 );
     """)
 
-    logger.info("Loading ticcled file into temp table")
+    LOGGER.info("Loading ticcled file into temp table")
     session.execute("""
 LOAD DATA LOCAL INFILE :file_path INTO TABLE ticcl_import
 FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
@@ -357,10 +369,10 @@ FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
     if os.path.exists(tmp_file_path):
         os.remove(tmp_file_path)
 
-    logger.info("Storing new anahashes")
+    LOGGER.info("Storing new anahashes")
     session.execute("""INSERT IGNORE INTO anahashes(anahash) SELECT anahash FROM ticcl_import""")
 
-    logger.info("Setting wordform anahash_ids")
+    LOGGER.info("Setting wordform anahash_ids")
     session.execute("""
 UPDATE ticcl_import
 LEFT JOIN wordforms ON ticcl_import.wordform = wordforms.wordform
@@ -369,7 +381,7 @@ SET wordforms.anahash_id = anahashes.anahash_id WHERE 1
     """)
 
 
-def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
+def update_anahashes(session, alphabet_file, tqdm_factory=None, batch_size=50000):
     """Add anahashes for all wordforms that do not have an anahash value yet.
 
     Requires ticcl to be installed!
@@ -378,11 +390,11 @@ def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
         session: SQLAlchemy session object.
         alphabet_file (str): the path to the alphabet file for ticcl.
     """
-    logger.info('Adding anahash values to wordforms without anahash.')
+    LOGGER.info('Adding anahash values to wordforms without anahash.')
     df = get_word_frequency_df(session, add_ids=True)
 
     if df is None:
-        logger.info('All wordforms have an anahash value.')
+        LOGGER.info('All wordforms have an anahash value.')
         return
 
     wf_mapping = df['wordform_id'].to_dict(defaultdict(int))
@@ -452,7 +464,7 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
 def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
                            to_column, from_correct, to_correct,
                            batch_size=50000, preprocess_wfs=True, to_add=None):
-    logger.info('Adding lexicon with links between wordforms.')
+    LOGGER.info('Adding lexicon with links between wordforms.')
 
     if to_add is None:
         to_add = []
@@ -473,10 +485,10 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
         wfs = preprocess_wordforms(wfs, columns=[from_column, to_column])
 
     with get_temp_file() as wfl_file:
-        logger.debug('Writing wordform links to add to (possibly unnamed) temporary file.')
+        LOGGER.debug('Writing wordform links to add to (possibly unnamed) temporary file.')
 
         with get_temp_file() as wfls_file:
-            logger.debug('Writing wordform link sources to add to (possibly unnamed) temporary file.')
+            LOGGER.debug('Writing wordform link sources to add to (possibly unnamed) temporary file.')
 
             num_l, num_s = write_wf_links_data(session, wf_mapping, wfs,
                                                from_column, to_column,
@@ -485,11 +497,11 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
                                                wfl_file, wfls_file,
                                                add_columns=to_add)
 
-            logger.info('Inserting %s wordform links.', num_l)
+            LOGGER.info('Inserting %s wordform links.', num_l)
             sql_insert_batches(session, WordformLink, read_json_lines(wfl_file),
                                batch_size=batch_size)
 
-            logger.info('Inserting %s wordform link sources.', num_s)
+            LOGGER.info('Inserting %s wordform link sources.', num_s)
             sql_insert_batches(session, WordformLinkSource,
                                read_json_lines(wfls_file), batch_size=batch_size)
 
@@ -569,7 +581,7 @@ def add_morphological_paradigms(session, in_file):
     bulk_add_wordforms(session, wfs)
 
     # get the morphological variants from the pandas dataframe
-    logger.info('extracting morphological variants')
+    LOGGER.info('extracting morphological variants')
     result = defaultdict(list)
     with tqdm(total=data.shape[0]) as pbar:
         for row in data.iterrows():
@@ -579,15 +591,15 @@ def add_morphological_paradigms(session, in_file):
                 result[wf].append(split_component_code(code, wf))
             pbar.update()
 
-    logger.info('Looking up wordform ids.')
+    LOGGER.info('Looking up wordform ids.')
     s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
     mapping = session.execute(s).fetchall()
 
-    logger.info('Writing morphological variants to file.')
+    LOGGER.info('Writing morphological variants to file.')
     with get_temp_file() as mp_file:
         t = write_json_lines(mp_file, morph_iterator(result, mapping))
-        logger.info('Wrote %s morphological variants.', t)
-        logger.info('Inserting morphological variants to the database.')
+        LOGGER.info('Wrote %s morphological variants.', t)
+        LOGGER.info('Inserting morphological variants to the database.')
         sql_insert_batches(session, MorphologicalParadigm,
                            read_json_lines(mp_file), batch_size=50000)
 
@@ -612,7 +624,6 @@ def create_ticclat_database(delete_existing=False):
 
     connection.close()
 
-    reset_engine()
     engine = get_engine()
 
     # create tables
@@ -623,8 +634,8 @@ def empty_table(session, table_class):
     n = session.query(table_class).first()
 
     if n:
-        logger.info(f'Table "{table_class.__table__.name}" is not empty.')
-        logger.info('Deleting rows...')
+        LOGGER.info('Table "%s" is not empty.', table_class.__table__.name)
+        LOGGER.info('Deleting rows...')
         Base.metadata.drop_all(bind=session.get_bind(),
                                tables=[table_class.__table__])
         Base.metadata.create_all(session.get_bind(),
@@ -632,7 +643,7 @@ def empty_table(session, table_class):
 
 
 def create_wf_frequencies_table(session):
-    logger.info('Creating wordform_frequencies table.')
+    LOGGER.info('Creating wordform_frequencies table.')
     # Make sure the wordform_frequency table exists (create it if it doesn't)
     Base.metadata.create_all(session.get_bind(),
                              tables=[WordformFrequencies.__table__])
@@ -650,7 +661,7 @@ FROM
 GROUP BY wordforms.wordform, wordforms.wordform_id    
     """)
 
-    # logger.info('Calculating wordform frequencies.')
+    # LOGGER.info('Calculating wordform frequencies.')
     # q = select([Wordform, func.sum(TextAttestation.frequency).label('freq')]) \
     #     .select_from(Wordform.__table__.join(TextAttestation)) \
     #     .group_by(Wordform.wordform_id)
@@ -662,7 +673,7 @@ GROUP BY wordforms.wordform, wordforms.wordform_id
     #                'wordform_id': row.wordform_id,
     #                'frequency': row.freq}
     #
-    # logger.info('Inserting wordform frequencies into the database.')
+    # LOGGER.info('Inserting wordform frequencies into the database.')
     # sql_insert(session, WordformFrequencies, iterate_results(r))
 
 
