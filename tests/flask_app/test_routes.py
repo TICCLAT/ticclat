@@ -19,8 +19,23 @@ def test_tables(flask_test_client):
     }
 
 
+def test_table_wordforms(flask_test_client):
+    response = flask_test_client.get('/tables/wordforms')
+    assert response.status_code == 200
+    response_dict = json.loads(response.data)
+    expected_dict = {
+        'anahash_id': 'BIGINT(20)', 'wordform': 'VARCHAR(255)', 'wordform_id': 'BIGINT(20)',
+        'wordform_lowercase': 'VARCHAR(255)'
+    }
+    assert response_dict == expected_dict
+
+
 def test_corpora(flask_test_client):
     response = flask_test_client.get('/corpora')
     assert response.status_code == 200
     response_list = json.loads(response.data)
-    assert set(response_list) == {'Dummy corpus 1', 'Dummy corpus 2'}
+    assert len(response_list) == 2
+    first_corpus = response_list[0]
+    assert first_corpus['name'] == 'Dummy corpus 1'
+    assert first_corpus['document_count'] > 0
+    assert first_corpus['word_count'] > 0
