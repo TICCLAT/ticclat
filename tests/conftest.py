@@ -2,7 +2,8 @@ from testcontainers.mysql import MySqlContainer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from ticclat.flask_app.flask_app import app
+from tests.helpers import load_test_db_data
+from ticclat.flask_app.flask_app import create_app
 from ticclat.ticclat_schema import Base
 import pytest
 
@@ -44,9 +45,25 @@ def dbsession(engine, tables):
     connection.close()
 
 
-@pytest.fixture(scope='module')
-def flask_test_client():
-    flask_app = app
+@pytest.yield_fixture
+def test_data(dbsession):
+    # load test data
+    load_test_db_data(dbsession)
+
+    # run tests with loaded data
+    yield
+
+    # cleanup test data
+    dbsession.execute('SET FOREIGN_KEY_CHECKS = 0;')
+    for table in Base.metadata.sorted_tables:
+        # deletes all rows
+        dbsession.execute(table.delete())
+    dbsession.execute('SET FOREIGN_KEY_CHECKS = 1;')
+
+
+@pytest.yield_fixture()
+def flask_test_client(dbsession, test_data):
+    flask_app = create_app(dbsession=dbsession)
 
     # Flask provides a way to test your application by exposing the Werkzeug test Client
     # and handling the context locals for you.

@@ -1,17 +1,16 @@
 import sqlalchemy
-from sqlalchemy.orm import sessionmaker
 
 from ticclat.flask_app import settings
 
-engine = None
-session_factory = None
-md = None
+
+class Database:
+    engine = None
+    session_factory = None
+    md = None
+
+    def setup(self, engine=None):
+        self.engine = engine if engine else sqlalchemy.create_engine(settings.DATABASE_URL)
+        self.md = sqlalchemy.MetaData()
 
 
-def create_db():
-    global engine
-    global session_factory
-    global md
-    engine = sqlalchemy.create_engine(settings.DATABASE_URL)
-    session_factory = sqlalchemy.orm.sessionmaker(bind=engine)
-    md = sqlalchemy.MetaData()
+database = Database()

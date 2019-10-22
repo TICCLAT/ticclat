@@ -8,17 +8,25 @@ from timeit import default_timer as timer
 
 from flask_sqlalchemy_session import flask_scoped_session
 
-from ticclat.flask_app import queries, raw_queries, db
+from ticclat.flask_app import queries, raw_queries
+from ticclat.flask_app.db import database
 from ticclat.utils import chunk_df
 from ticclat.flask_app.plots.blueprint import plots as plots_blueprint
 
 
-def create_app(database=None):
+def create_app(dbsession=None):
     app = Flask(__name__)
     app.config.update()
-    # DB session
-    db.create_db()
-    session = flask_scoped_session(db.session_factory, app)
+    if not dbsession:
+        # no session given, will setup an engine using DATABASE_URL env var, and create a session_factory from it
+        database.setup()
+        session_factory = sqlalchemy.orm.sessionmaker(bind=database.engine)
+        session = flask_scoped_session(session_factory, app)
+    else:
+        # session given, this is for tests - session is setup in tests/conftest.py.
+        database.setup(dbsession.bind.engine)
+        session = dbsession
+
     init_app(app, session)
     return app
 
@@ -63,12 +71,12 @@ def init_app(app, session):
 
     @app.route('/tables')
     def tables():
-        return jsonify(db.engine.table_names())
+        return jsonify(database.engine.table_names())
 
 
     @app.route('/tables/<table_name>')
     def table_columns(table_name: str):
-        table = sqlalchemy.Table(table_name, db.md, autoload=True, autoload_with=db.engine)
+        table = sqlalchemy.Table(table_name, database.md, autoload=True, autoload_with=database.engine)
         return jsonify({i[0]: str(i[1].type) for i in table.c.items()})
 
 
@@ -80,7 +88,7 @@ def init_app(app, session):
     LEFT JOIN documents d on cIxdI.document_id = d.document_id
     GROUP BY corpora.corpus_id, corpora.name
         """
-        connection = db.engine.connect()
+        connection = database.engine.connect()
         df = pandas.read_sql(query, connection)
         return jsonify(df.to_dict(orient='record'))
 
@@ -90,7 +98,7 @@ def init_app(app, session):
         corpus_id = request.args.get('corpus_id')
         if corpus_id:
             corpus_id = int(corpus_id)
-        connection = db.engine.connect()
+        connection = database.engine.connect()
         query = raw_queries.query_word_frequency_per_year(corpus_id)
         df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
         resp = jsonify(df.to_dict(orient='record'))
@@ -100,7 +108,7 @@ def init_app(app, session):
 
     @app.route("/word_frequency_per_corpus/<word_name>")
     def word_frequency_per_corpus(word_name: str):
-        connection = db.engine.connect()
+        connection = database.engine.connect()
         query = raw_queries.query_word_frequency_per_corpus()
         df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
         return jsonify(df.to_dict(orient='record'))
@@ -120,7 +128,7 @@ def init_app(app, session):
 
     @app.route("/word/<word_name>")
     def word(word_name: str):
-        connection = db.engine.connect()
+        connection = database.engine.connect()
         query = raw_queries.query_word_links()
         df = pandas.read_sql(query, connection, params={'lookup_word': word_name})
         lexicon_variants = df.to_dict(orient='records')
@@ -161,7 +169,7 @@ def init_app(app, session):
 
     @app.route("/lemmas_for_wordform/<word_form>")
     def lemmas_for_wordform(word_form: str):
-        connection = db.engine.connect()
+        connection = database.engine.connect()
         query = raw_queries.find_lemmas_for_wordform()
         df = pandas.read_sql(query, connection, params={'lookup_word': word_form})
         df = df.fillna(0)
@@ -170,7 +178,7 @@ def init_app(app, session):
 
     @app.route("/morphological_variants_for_lemma/<paradigm_id>")
     def morphological_variants_for_lemma(paradigm_id: int):
-        connection = db.engine.connect()
+        connection = database.engine.connect()
         query = raw_queries.find_morphological_variants_for_lemma()
         df = pandas.read_sql(query, connection, params={'paradigm_id': paradigm_id})
         df = df.fillna(0)
@@ -186,7 +194,7 @@ def init_app(app, session):
 
     @app.route("/regexp_search/<regexp>")
     def regexp_search(regexp: str):
-        connection = db.engine.connect()
+        connection = database.engine.connect()
         query = """SELECT SQL_CALC_FOUND_ROWS wordform FROM wordforms wf1 WHERE wf1.wordform REGEXP %(regexp)s LIMIT 500"""
         df = pandas.read_sql(query, connection, params={'regexp': regexp})
         words = df['wordform'].to_list()
@@ -208,7 +216,7 @@ def init_app(app, session):
 
     @app.route('/paradigm_count')
     def _paradigm_count():
-        connection = db.engine.connect()
+        connection = database.engine.connect()
         X = request.args.get('X', None)
         Y = request.args.get('Y', None)
         Z = request.args.get('Z', None)
@@ -226,7 +234,7 @@ def init_app(app, session):
 
     @app.route('/network/<wordform>')
     def _network(wordform: str):
-        connection = db.engine.connect()
+        connection = database.engine.connect()
         xyz_df = pandas.read_sql(raw_queries.get_wxyz(), connection, params={'wordform': wordform})
         # select first result (first paradigm for wordform)
         wxyz = xyz_df.iloc[0].to_dict()
@@ -329,7 +337,7 @@ def init_app(app, session):
         min_freq = request.args.get('min_freq', 10)
         start = timer()
         # TODO: refactor regexp_search to not return limited view and use that here
-        connection = db.engine.connect()
+        connection = database.engine.connect()
 
         # search first suffix
         search_1 = "%" + suffix_1
@@ -377,7 +385,7 @@ def init_app(app, session):
         X = request.args.get('x')
         Y = request.args.get('y')
         Z = request.args.get('z')
-        connection = db.engine.connect()
+        connection = database.engine.connect()
 
         query = """
     SELECT frequency, w.wordform FROM morphological_paradigms
