@@ -52,9 +52,6 @@ def session_scope(session_maker):
         session.close()
 
 
-engine = None
-
-
 def get_engine(without_database=False):
     """
     Create an sqlalchemy engine using the DATABASE_URL environment variable.
@@ -114,7 +111,7 @@ def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=No
     return wordform_object
 
 
-def bulk_add_wordforms(session, wfs, preprocess_wfs=True, disable_pbar=False):
+def bulk_add_wordforms(session, wfs, preprocess_wfs=True):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
@@ -211,6 +208,12 @@ def get_word_frequency_df(session, add_ids=False):
 
 
 def get_wf_mapping(session, lexicon=None, lexicon_id=None):
+    """
+    Create a dictionary with a mapping of wordforms to wordform_id.
+
+    The keys of the dictionary are wordforms, the values are the IDs
+    of those wordforms in the database wordforms table.
+    """
     msg = 'Getting the wordform mapping of lexicon "{}"'
 
     if lexicon is not None:
@@ -284,6 +287,14 @@ def bulk_add_anahashes(session, anahashes, tqdm_factory=None, batch_size=10000):
 
 
 def get_anahashes(session, anahashes, wf_mapping, batch_size=50000):
+    """
+    Generator of dictionaries with anahash ID and wordform ID pairs.
+
+    Given `anahashes`, a dataframe with wordforms and corresponding anahashes,
+    yield dictionaries containing two entries each: key 'a_id' has the value
+    of the anahash ID in the database, key 'wf_id' has the value of the
+    wordform ID in the database.
+    """
     unique_hashes = anahashes.copy().drop_duplicates(subset='anahash')
 
     with tqdm(total=unique_hashes.shape[0], mininterval=2.0) as pbar:
@@ -309,6 +320,13 @@ def get_anahashes(session, anahashes, wf_mapping, batch_size=50000):
 
 
 def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
+    """
+    Create the relation between wordforms and anahashes in the database.
+
+    Given `anahashes`, a dataframe with wordforms and corresponding anahashes,
+    create the relations between the two in the wordforms and anahashes tables
+    by setting the anahash_id foreign key in the wordforms table.
+    """
     LOGGER.info('Connecting anahashes to wordforms.')
 
     LOGGER.debug('Getting wordform/anahash_id pairs.')
@@ -330,6 +348,15 @@ def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
 
 
 def update_anahashes_new(session, alphabet_file):
+    """
+    Add anahashes for all wordforms that do not have an anahash value yet.
+
+    Requires ticcl to be installed!
+
+    Inputs:
+        session: SQLAlchemy session object.
+        alphabet_file (str): the path to the alphabet file for ticcl.
+    """
     tmp_file_path = str(Path(tempfile.tempdir) / 'mysql/wordforms.csv')
 
     LOGGER.info("Exporting wordforms to file")
@@ -347,7 +374,7 @@ WHERE anahash_id IS NULL;
     try:
         sh.TICCL_anahash(['--list', '--alph', alphabet_file, tmp_file_path])
     except sh.ErrorReturnCode as e:
-        raise(ValueError('Running TICCL-anahash failed: {}'.format(e.stdout)))
+        raise ValueError('Running TICCL-anahash failed: {}'.format(e.stdout))
 
     ticcled_file_path = tmp_file_path + '.list'
 
@@ -404,7 +431,7 @@ def update_anahashes(session, alphabet_file, tqdm_factory=None, batch_size=50000
 
     anahashes = anahash_df(df[['frequency']], alphabet_file)
 
-    bulk_add_anahashes(session, anahashes, tqdm_factory=None, batch_size=batch_size)
+    bulk_add_anahashes(session, anahashes, tqdm_factory=tqdm_factory, batch_size=batch_size)
 
     connect_anahashes_to_wordforms(session, anahashes, wf_mapping, batch_size)
 

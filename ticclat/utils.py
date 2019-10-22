@@ -12,7 +12,7 @@ import pandas as pd
 
 import sh
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def anahash_df(wfreq, alphabet_file):
@@ -32,7 +32,7 @@ def anahash_df(wfreq, alphabet_file):
         pandas DataFrame containing the word forms as index and anahash values
         as column.
     """
-    logger.info('Running TICCL-anahash.')
+    LOGGER.info('Running TICCL-anahash.')
 
     if wfreq.empty or wfreq is None:
         msg = 'Input "wfreq" is empty or None. Please input non-empty word ' \
@@ -49,7 +49,7 @@ def anahash_df(wfreq, alphabet_file):
     try:
         sh.TICCL_anahash(['--list', '--alph', alphabet_file, tmpfile])
     except sh.ErrorReturnCode as e:
-        raise(ValueError('Running TICCL-anahash failed: {}'.format(e.stdout)))
+        raise ValueError('Running TICCL-anahash failed: {}'.format(e.stdout))
 
     # read anahashes and return dataframe
     anahashes = pd.read_csv('{}.list'.format(tmpfile), sep='\t', header=None,
@@ -188,7 +188,7 @@ def morph_iterator(result, mapping):
 
                 # we don't need the wordform
                 del c['wordform']
-                yield (c)
+                yield c
 
 
 def set_logger(level='INFO'):
@@ -198,7 +198,7 @@ def set_logger(level='INFO'):
 
 
 def preprocess_wordforms(wfs, columns=['wordform']):
-    logger.info("Preprocessing the wordforms...")
+    LOGGER.info("Preprocessing the wordforms...")
     for col in columns:
         # remove whitespace from wordforms
         wfs[col] = wfs[col].str.strip()
@@ -229,7 +229,7 @@ def timeit(method):
             name = kw.get('log_name', method.__name__.upper())
             kw['log_time'][name] = int((te - ts) * 1000)
         else:
-            logger.info('{} took {:.2f} ms'.format(method.__name__,
+            LOGGER.info('{} took {:.2f} ms'.format(method.__name__,
                                                    (te - ts) * 1000))
         return result
 

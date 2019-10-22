@@ -63,7 +63,7 @@ def ingest_all(session, base_dir='/data',
         sources = ALL_SOURCES
 
     for name, source in sources.items():
-        LOGGER.info('ingesting %s...',  name)
+        LOGGER.info('ingesting %s...', name)
         source.ingest(session, base_dir=base_dir, **kwargs)
 
 

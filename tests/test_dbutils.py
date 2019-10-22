@@ -32,7 +32,7 @@ def test_bulk_add_wordforms_all_new(dbsession):
 
     print(dbsession)
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     wordforms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
@@ -46,12 +46,12 @@ def test_bulk_add_wordforms_some_new(dbsession):
 
     print(dbsession)
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     wfs['wordform'] = ['wf3', 'wf4', 'wf5']
     wfs['wordform_lowercase'] = ['wf3', 'wf4', 'wf4']
 
-    n = bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    n = bulk_add_wordforms(dbsession, wfs)
 
     assert n == 2
 
@@ -67,7 +67,7 @@ def test_bulk_add_wordforms_not_unique(dbsession):
 
     print(dbsession)
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
@@ -80,7 +80,7 @@ def test_bulk_add_wordforms_whitespace(dbsession):
 
     print(dbsession)
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
@@ -95,7 +95,7 @@ def test_bulk_add_wordforms_drop_empty_and_nan(dbsession):
 
     print(dbsession)
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
@@ -110,7 +110,7 @@ def test_bulk_add_wordforms_replace_spaces(dbsession):
 
     print(dbsession)
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
@@ -125,7 +125,7 @@ def test_bulk_add_wordforms_replace_underscores(dbsession):
 
     print(dbsession)
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     wrdfrms = dbsession.query(Wordform).order_by(Wordform.wordform_id).all()
 
@@ -162,7 +162,7 @@ def test_get_word_frequency_df(dbsession):
     wfs = pd.DataFrame()
     wfs['wordform'] = ['wf1', 'wf2', 'wf3']
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     freq_df = get_word_frequency_df(dbsession)
 
@@ -182,7 +182,7 @@ def test_bulk_add_anahashes(dbsession):
     wfs = pd.DataFrame()
     wfs['wordform'] = ['wf1', 'wf2', 'wf3']
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     a = pd.DataFrame({'wordform': ['wf1', 'wf2', 'wf3'],
                       'anahash': [1, 2, 3]}).set_index('wordform')
@@ -200,7 +200,7 @@ def test_connect_anahashes_to_wordforms(dbsession):
     wfs = pd.DataFrame()
     wfs['wordform'] = ['wf1', 'wf2', 'wf3']
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     wfs = get_word_frequency_df(dbsession, add_ids=True)
     wf_mapping = wfs['wordform_id'].to_dict()
@@ -221,7 +221,7 @@ def test_connect_anahashes_to_wordforms_empty(dbsession):
     wfs = pd.DataFrame()
     wfs['wordform'] = ['wf1', 'wf2', 'wf3']
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     a = pd.DataFrame({'wordform': ['wf1', 'wf2', 'wf3'],
                       'anahash': [1, 2, 3]}).set_index('wordform')
@@ -247,7 +247,7 @@ def test_update_anahashes(dbsession, datafiles):
 
     alphabet_file = datafiles.listdir()[0]
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     anahashes = dbsession.query(Anahash).order_by(Anahash.anahash_id).all()
     assert len(anahashes) == 0
@@ -281,7 +281,7 @@ def test_update_anahashes_empty_wf(dbsession, datafiles):
 
     alphabet_file = datafiles.listdir()[0]
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     # make sure ticcl doesn't choke on the empty wordform (it must not be added
     # to the database)
@@ -293,7 +293,7 @@ def test_update_anahashes_nothing_to_update(dbsession, datafiles):
     wfs = pd.DataFrame()
     wfs['wordform'] = ['wf1', 'wf2', 'wf3']
 
-    bulk_add_wordforms(dbsession, wfs, disable_pbar=True)
+    bulk_add_wordforms(dbsession, wfs)
 
     a = pd.DataFrame({'wordform': ['wf1', 'wf2', 'wf3'],
                       'anahash': [1, 2, 3]}).set_index('wordform')
