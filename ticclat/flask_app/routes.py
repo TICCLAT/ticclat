@@ -291,10 +291,3 @@ def init_app(app, session):
         df = pandas.read_sql(query, session.connection(), params={'W': W, 'X': X, 'Y': Y, 'Z': Z})
 
         return jsonify(df.to_dict(orient="record"))
-
-    # @app.route('/word_type_codes')
-    # def _word_type_codes():
-    #     return session.execute("SELECT DISTINCT word_type_code FROM morphological_paradigms")
-    #
-    #
-    #

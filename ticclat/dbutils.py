@@ -99,7 +99,7 @@ def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=No
     return wf
 
 
-def bulk_add_wordforms(session, wfs, preprocess_wfs=True):
+def bulk_add_wordforms(session, wfs, preprocess_wfs=True, disable_pbar=False):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
@@ -389,7 +389,7 @@ def update_anahashes(session, alphabet_file, tqdm=None, batch_size=50000):
 
     anahashes = anahash_df(df[['frequency']], alphabet_file)
 
-    bulk_add_anahashes(session, anahashes, tqdm_factory=tqdm_factory, batch_size=batch_size)
+    bulk_add_anahashes(session, anahashes, tqdm_factory=None, batch_size=batch_size)
 
     connect_anahashes_to_wordforms(session, anahashes, wf_mapping, batch_size)
 
