@@ -1,10 +1,11 @@
+import numpy
 import pandas
 from bokeh import models
 from bokeh.models import HoverTool
 from bokeh.plotting import figure, show
 from bokeh import palettes
 
-from ticclat.flask_app import db
+from ticclat.flask_app.db import database
 
 
 def corpus_size():
@@ -17,7 +18,7 @@ FROM documents
 GROUP BY c.corpus_id, c.name
 ORDER BY sum_word_count DESC
 """
-    connection = db.engine.connect()
+    connection = database.session.connection()
     df = pandas.read_sql(query, connection)
 
     p = figure(
@@ -28,7 +29,9 @@ ORDER BY sum_word_count DESC
         tools=['hover', 'pan', 'wheel_zoom', 'save', 'reset']
     )
 
-    df['color'] = palettes.Category10[len(df)]
+    clipped_df_len = numpy.clip(len(df), 3, 10)
+
+    df['color'] = palettes.Category10[clipped_df_len][0:len(df)]
 
     p.hbar(
         y='name',

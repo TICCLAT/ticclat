@@ -64,7 +64,8 @@ def test_data(dbsession):
 @pytest.yield_fixture()
 def flask_test_client(dbsession, test_data):
     flask_app = create_app(dbsession=dbsession)
-
+    flask_app.config['DEBUG'] = True
+    flask_app.config['TESTING'] = True
     # Flask provides a way to test your application by exposing the Werkzeug test Client
     # and handling the context locals for you.
     test_client = flask_app.test_client()
