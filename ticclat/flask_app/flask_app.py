@@ -20,8 +20,5 @@ def create_app(dbsession=None):
         database.setup(dbsession.bind.engine)
         database.session = dbsession
 
-
-
     init_app(app, database.session)
     return app
-

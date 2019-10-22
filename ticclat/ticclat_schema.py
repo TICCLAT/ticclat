@@ -324,5 +324,3 @@ class TicclatVariant(Base):
     wordform_source_id = Column(BigInteger(), ForeignKey('wordforms.wordform_id'), index=True)
     levenshtein_distance = Column(BigInteger(), index=True)
     frequency = Column(BigInteger(), index=True)
-
-

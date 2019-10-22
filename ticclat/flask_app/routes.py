@@ -43,24 +43,20 @@ def init_app(app, session):
                 'message': str(e),
             }), code
 
-
     @app.route('/')
     def home():
         route_iterator = app.url_map.iter_rules()
         routes = [str(rule) for rule in route_iterator]
         return jsonify(sorted(routes))
 
-
     @app.route('/tables')
     def tables():
         return jsonify(database.engine.table_names())
-
 
     @app.route('/tables/<table_name>')
     def table_columns(table_name: str):
         table = sqlalchemy.Table(table_name, database.md, autoload=True, autoload_with=database.engine)
         return jsonify({i[0]: str(i[1].type) for i in table.c.items()})
-
 
     @app.route('/corpora')
     def corpora():
@@ -73,7 +69,6 @@ def init_app(app, session):
         df = pandas.read_sql(query, session.connection())
         return jsonify(df.to_dict(orient='record'))
 
-
     @app.route("/word_frequency_per_year/<word_name>")
     def word_frequency_per_year(word_name: str):
         corpus_id = request.args.get('corpus_id')
@@ -85,13 +80,11 @@ def init_app(app, session):
         resp.headers['X-QUERY'] = json.dumps(query)
         return resp
 
-
     @app.route("/word_frequency_per_corpus/<word_name>")
     def word_frequency_per_corpus(word_name: str):
         query = raw_queries.query_word_frequency_per_corpus()
         df = pandas.read_sql(query, session.connection(), params={'lookup_word': word_name})
         return jsonify(df.to_dict(orient='record'))
-
 
     @app.route("/word_frequency_per_corpus_per_year/<word_name>")
     @app.route("/word_frequency_per_corpus_per_year/<word_name>/<start_year>")
@@ -103,7 +96,6 @@ def init_app(app, session):
                                                       end_year=end_year)
 
         return jsonify({'wordform': word_name, 'metadata': md, 'corpora': r})
-
 
     @app.route("/word/<word_name>")
     def word(word_name: str):
@@ -126,7 +118,6 @@ def init_app(app, session):
             'morph_variants': morph_variants,
         })
 
-
     @app.route("/variants/<word_name>")
     @app.route("/variants/<word_name>/<start_year>")
     @app.route("/variants/<word_name>/<start_year>/<end_year>")
@@ -139,12 +130,10 @@ def init_app(app, session):
                         'paradigms': paradigms,
                         'metadata': md})
 
-
     @app.route("/lexica/<word_name>")
     def lexica(word_name: str):
         result = queries.get_lexica_data(session, word_name)
         return jsonify(result)
-
 
     @app.route("/lemmas_for_wordform/<word_form>")
     def lemmas_for_wordform(word_form: str):
@@ -153,7 +142,6 @@ def init_app(app, session):
         df = df.fillna(0)
         return jsonify(df.to_dict(orient='record'))
 
-
     @app.route("/morphological_variants_for_lemma/<paradigm_id>")
     def morphological_variants_for_lemma(paradigm_id: int):
         query = raw_queries.find_morphological_variants_for_lemma()
@@ -161,13 +149,11 @@ def init_app(app, session):
         df = df.fillna(0)
         return jsonify(df.to_dict(orient='record'))
 
-
     @app.route("/year_range")
     def year_range():
         start, end = queries.get_corpora_year_range(session)
 
         return jsonify({'start': start, 'end': end})
-
 
     @app.route("/regexp_search/<regexp>")
     def regexp_search(regexp: str):
@@ -181,7 +167,6 @@ def init_app(app, session):
             'words': words
         })
 
-
     @app.route("/word_type_codes")
     def word_type_codes():
         codes = queries.distinct_word_type_codes(session)
@@ -189,7 +174,6 @@ def init_app(app, session):
         codes = [c.code for c in codes]
 
         return jsonify(codes)
-
 
     @app.route('/paradigm_count')
     def _paradigm_count():
@@ -220,7 +204,6 @@ def init_app(app, session):
         corpus_id = request.args.get('corpus_id', 2)
 
         return jsonify(queries.get_ticcl_variants(session, word_form, lexicon_id, corpus_id))
-
 
     @app.route("/suffixes/<suffix_1>")
     @app.route("/suffixes/<suffix_1>/<suffix_2>")
@@ -268,7 +251,6 @@ def init_app(app, session):
             },
             'pairs': pairs
         })
-
 
     @app.route("/variants_by_wxyz")
     def _variants_by_wxyz():
