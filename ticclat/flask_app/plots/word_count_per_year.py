@@ -3,7 +3,7 @@ from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, show
 from bokeh import palettes
 
-from ticclat.flask_app import db
+from ticclat.flask_app.db import database
 
 
 def word_count_per_year():
@@ -20,7 +20,7 @@ FROM documents
 GROUP BY year, c.corpus_id, c.name
 ORDER BY year
 """
-    connection = db.engine.connect()
+    connection = database.session.connection()
     df = pandas.read_sql(query, connection)
 
     p = figure(

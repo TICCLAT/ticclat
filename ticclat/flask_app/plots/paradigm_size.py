@@ -2,7 +2,7 @@ import pandas
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, show
 
-from ticclat.flask_app import db
+from ticclat.flask_app.db import database
 
 
 def paradigm_size(var='X'):
@@ -14,7 +14,7 @@ SELECT {var}, COUNT(W) AS num_paradigms FROM morphological_paradigms
 GROUP BY {var}
 ORDER BY num_paradigms DESC, {var} ASC
 """
-    connection = db.engine.connect()
+    connection = database.session.connection()
     df = pandas.read_sql(query, connection)
     df[var] = [str(x) for x in df[var]]
     p = figure(

@@ -19,16 +19,18 @@ def run(cmd):
 
 
 def ingest(session, base_dir='/', data_dir='ticcl_variants', **kwargs):
-    ingest_file_name = 'TICCLATEDBO.INDEXERUnigramsOnly.clean.confuslist.indexNT.ldcalc.RANK.ranked.NEWCHAIN.manualfiltering.chained.gz'
-    ingest_file_path = Path(base_dir)/data_dir/ingest_file_name
+    ingest_file_name = 'TICCLATEDBO.INDEXERUnigramsOnly.clean.confuslist.' +\
+                       'indexNT.ldcalc.RANK.ranked.NEWCHAIN.manualfiltering.chained.gz'
+    ingest_file_path = Path(base_dir) / data_dir / ingest_file_name
     tmp_path = Path(tempfile.mkdtemp())
-    csv_file_path = tmp_path/'to_load.csv'
+    csv_file_path = tmp_path / 'to_load.csv'
 
     s = session()
 
     try:
-        # exit_code, stdout, stderr = run(f'gunzip -c "{ingest_file_path}" | head | cut -d# -f1,2,3,6 | tr \\# \\\t > "{csv_file_path}"')
-        exit_code, stdout, stderr = run(f'gunzip -c "{ingest_file_path}" | cut -d# -f1,2,3,6 | tr \\# \\\t > "{csv_file_path}"')
+        exit_code, stdout, stderr = run(
+            f'gunzip -c "{ingest_file_path}" | cut -d# -f1,2,3,6 | tr \\# \\\t > "{csv_file_path}"'
+        )
         assert exit_code == 0, 'Error running unix toolchain'
         query = f"""
 LOAD DATA LOCAL INFILE :file_name INTO TABLE ticcl_variants
@@ -41,7 +43,7 @@ FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'
         s.execute("""
 UPDATE ticcl_variants
 LEFT JOIN wordforms w ON ticcl_variants.wordform_source = w.wordform
-SET ticcl_variants.wordform_source_id = w.wordform_id WHERE 1   
+SET ticcl_variants.wordform_source_id = w.wordform_id WHERE 1
         """)
         s.commit()
 
@@ -50,4 +52,3 @@ SET ticcl_variants.wordform_source_id = w.wordform_id WHERE 1
     finally:
         shutil.rmtree(tmp_path)
         s.close()
-

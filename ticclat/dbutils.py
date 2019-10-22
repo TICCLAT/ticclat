@@ -52,6 +52,9 @@ def session_scope(session_maker):
         session.close()
 
 
+engine = None
+
+
 def get_engine(without_database=False):
     """
     Create an sqlalchemy engine using the DATABASE_URL environment variable.
@@ -111,7 +114,7 @@ def get_or_create_wordform(session, wordform, has_analysis=False, wordform_id=No
     return wordform_object
 
 
-def bulk_add_wordforms(session, wfs, preprocess_wfs=True):
+def bulk_add_wordforms(session, wfs, preprocess_wfs=True, disable_pbar=False):
     """
     wfs is pandas DataFrame with the same column names as the database table,
     in this case just "wordform"
@@ -327,7 +330,7 @@ def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
 
 
 def update_anahashes_new(session, alphabet_file):
-    tmp_file_path = str(Path(tempfile.tempdir)/'mysql/wordforms.csv')
+    tmp_file_path = str(Path(tempfile.tempdir) / 'mysql/wordforms.csv')
 
     LOGGER.info("Exporting wordforms to file")
     if os.path.exists(tmp_file_path):
@@ -354,8 +357,8 @@ WHERE anahash_id IS NULL;
     # create temp table
     session.execute("""
 CREATE TEMPORARY TABLE ticcl_import (
-	wordform VARCHAR(255),
-	anahash BIGINT
+    wordform VARCHAR(255),
+    anahash BIGINT
 );
     """)
 
@@ -401,7 +404,7 @@ def update_anahashes(session, alphabet_file, tqdm_factory=None, batch_size=50000
 
     anahashes = anahash_df(df[['frequency']], alphabet_file)
 
-    bulk_add_anahashes(session, anahashes, tqdm_factory=tqdm_factory, batch_size=batch_size)
+    bulk_add_anahashes(session, anahashes, tqdm_factory=None, batch_size=batch_size)
 
     connect_anahashes_to_wordforms(session, anahashes, wf_mapping, batch_size)
 
@@ -658,23 +661,8 @@ SELECT
        SUM(frequency) AS frequency
 FROM
      wordforms LEFT JOIN text_attestations ta ON wordforms.wordform_id = ta.wordform_id
-GROUP BY wordforms.wordform, wordforms.wordform_id    
+GROUP BY wordforms.wordform, wordforms.wordform_id
     """)
-
-    # LOGGER.info('Calculating wordform frequencies.')
-    # q = select([Wordform, func.sum(TextAttestation.frequency).label('freq')]) \
-    #     .select_from(Wordform.__table__.join(TextAttestation)) \
-    #     .group_by(Wordform.wordform_id)
-    # r = session.execute(q)
-    #
-    # def iterate_results(result):
-    #     for row in tqdm(result.fetchall()):
-    #         yield {'wordform': row.wordform,
-    #                'wordform_id': row.wordform_id,
-    #                'frequency': row.freq}
-    #
-    # LOGGER.info('Inserting wordform frequencies into the database.')
-    # sql_insert(session, WordformFrequencies, iterate_results(r))
 
 
 def add_ticcl_variants(session, name, df):

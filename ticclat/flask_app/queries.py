@@ -373,7 +373,7 @@ def get_paradigm_variants(session, paradigm):
 
 def get_lexica_data(session, wordform):
     lexica = session.query(Lexicon).all()
-    orm_wordform = session.query(Wordform).filter(Wordform.wordform==wordform).first()
+    orm_wordform = session.query(Wordform).filter(Wordform.wordform == wordform).first()
 
     def map_lexicon(lexicon):
         correct = None
@@ -392,8 +392,8 @@ def get_lexica_data(session, wordform):
 
         else:
             row = session.execute(
-                "SELECT wordform_from_correct FROM source_x_wordform_link WHERE lexicon_id = :lexicon_id " +
-                "AND wordform_from = :wordform_id",
+                "SELECT wordform_from_correct FROM source_x_wordform_link WHERE lexicon_id = :lexicon_id "
+                + "AND wordform_from = :wordform_id",
                 {'lexicon_id': lexicon.lexicon_id, 'wordform_id': orm_wordform.wordform_id}
             ).first()
 
