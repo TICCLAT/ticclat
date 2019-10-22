@@ -72,6 +72,7 @@ setup(
         'pytest-datafiles',
         'testcontainers[mysql]',
         'cryptography',
+        'pylint>=2.4',
     ],
     extras_require={
         'dev': ['prospector[with_pyroma]', 'yapf', 'isort'],
