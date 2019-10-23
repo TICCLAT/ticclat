@@ -59,7 +59,7 @@ def ingest_all(session, base_dir='/data',
 
     if len(include) > 0 and len(exclude) > 0:
         raise Exception("ingest_all: Don't use include and exclude at the same time!")
-    elif len(include) > 0:
+    if len(include) > 0:
         sources = {k: ALL_SOURCES[k] for k in include}
     elif len(exclude) > 0:
         sources = {k: v for k, v in ALL_SOURCES.items() if k not in exclude}

@@ -1,25 +1,47 @@
 # coding: utf-8
+# pylint: disable=too-few-public-methods
+"""
+SQLAlchemy schema of the TICCLAT database.
+
+Contains all the tables of the database and their connections, defined as
+SQLAlchemy declarative_base subclasses.
+
+Many of the tables here defined are based on an INT lexicon database created
+in the IMPACT project
+(https://ivdnt.org/images/stories/onderzoek_en_onderwijs/publicaties/impact/impact_lexicon_structure.pdf).
+See https://github.com/TICCLAT/docs/blob/master/database_design.md for more
+information about the database design.
+
+Based on this, in TICCLAT, we added tables for:
+- links between wordforms
+- morphological paradigm groups of wordforms
+- anagram hashes from TICCL
+- spelling variants from TICCL
+- identifiers linking wordforms to external sources like the WNT, MNW, INT.
+"""
+
 from sqlalchemy import Column, String, Table, ForeignKey, Unicode, Boolean, \
     Integer, BigInteger, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
-metadata = Base.metadata
 
 
+# Table for storing the relation between corpora and documents.
 corpusId_x_documentId = Table('corpusId_x_documentId', Base.metadata,
                               Column('corpus_id', BigInteger(), ForeignKey('corpora.corpus_id')),
                               Column('document_id', BigInteger(), ForeignKey('documents.document_id'))
                               )
 
-# Removed:
-# __table_args__ = (
-#     Index('tlaKey', 'wordform_id', 'document_id', unique=True),
-# )
-
 
 class TextAttestation(Base):
+    """
+    Table for storing text attestations.
+
+    A text attestation entry is defined in the INT schema as the occurrence
+    and frequency of wordforms in documents.
+    """
     __tablename__ = 'text_attestations'
 
     attestation_id = Column(BigInteger(), primary_key=True)
@@ -37,6 +59,7 @@ class TextAttestation(Base):
 
 
 class Corpus(Base):
+    """Table for storing corpus metadata."""
     __tablename__ = 'corpora'
 
     corpus_id = Column(BigInteger(), primary_key=True)
@@ -47,6 +70,7 @@ class Corpus(Base):
 
 
 class Document(Base):
+    """Table for storing document metadata."""
     __tablename__ = 'documents'
 
     document_id = Column(BigInteger(), primary_key=True)
@@ -73,6 +97,7 @@ class Document(Base):
     document_wordforms = relationship('TextAttestation', back_populates='ta_document')
 
 
+# Table for storing which lexica wordforms occur in.
 lexical_source_wordform = Table('lexical_source_wordform', Base.metadata,
                                 Column('wordform_source_id', BigInteger(), primary_key=True),
                                 Column('lexicon_id', BigInteger(), ForeignKey('lexica.lexicon_id')),
@@ -82,6 +107,8 @@ lexical_source_wordform = Table('lexical_source_wordform', Base.metadata,
 
 class Lexicon(Base):
     """
+    Table for storing lexicon metadata.
+
     vocabulary (bool): if True, all words in this lexicon are (supposed to be)
                        valid words, if False, some are misspelled
     """
@@ -102,6 +129,14 @@ class Lexicon(Base):
 
 
 class Anahash(Base):
+    """
+    Table for storing anahashes.
+
+    The anahashes in this table have no direct relation to the wordforms, those
+    links are tracked in the wordforms table. This was done so that the
+    anahashes table can be efficiently searched, e.g. for ranges in anahash
+    "space".
+    """
     __tablename__ = 'anahashes'
 
     anahash_id = Column(BigInteger(), primary_key=True)
@@ -112,6 +147,7 @@ class Anahash(Base):
 
 
 class Wordform(Base):
+    """Table for storing wordforms and associated anahashes."""
     __tablename__ = 'wordforms'
 
     wordform_id = Column(BigInteger(), primary_key=True)
@@ -125,18 +161,18 @@ class Wordform(Base):
                              back_populates='lexicon_wordforms')
     wordform_documents = relationship('TextAttestation', back_populates='ta_wordform')
 
-    def link(self, wf):
+    def link(self, wordform):
         """Add WordformLinks between self and another wordfrom and vice versa.
 
         The WordformLinks are added only in the link does not yet exist.
 
         Inputs:
-            wf (Wordform): Wordform that is related to Wordform self.
+            wordform (Wordform): Wordform that is related to Wordform self.
         """
         links = [w.linked_to for w in self.links]
-        if wf not in links:
-            WordformLink(self, wf)
-            WordformLink(wf, self)
+        if wordform not in links:
+            WordformLink(self, wordform)
+            WordformLink(wordform, self)
 
     def link_with_metadata(self, wf_to, wf_from_correct, wf_to_correct,
                            lexicon):
@@ -162,7 +198,7 @@ class Wordform(Base):
 
         # check whether the WordformLinkSource is already in the database
         wfl = next((wfl for wfl in self.links if wfl.linked_to == wf_to))
-        wflinks = [link for link in wfl.wf_links]
+        wflinks = wfl.wf_links
         lexica = [l.wfls_lexicon for l in wflinks]
 
         if lexicon not in lexica:
@@ -193,6 +229,7 @@ class Wordform(Base):
 
 
 class WordformLink(Base):
+    """Table for storing links between wordforms."""
     __tablename__ = 'wordform_links'
 
     wordform_from = Column(BigInteger(), ForeignKey('wordforms.wordform_id'), primary_key=True)
@@ -212,9 +249,17 @@ class WordformLink(Base):
 
 
 class WordformLinkSource(Base):
+    """
+    Table for storing the sources of links between wordforms.
+
+    Wordform links are given by lexica (dictionaries, spelling correction
+    lists, etc.). This table records which lexicon a given link between
+    wordforms was originally ingested from.
+    """
     __tablename__ = 'source_x_wordform_link'
     __table_args__ = (
-        ForeignKeyConstraint(['wordform_from', 'wordform_to'], ['wordform_links.wordform_from', 'wordform_links.wordform_to']),
+        ForeignKeyConstraint(['wordform_from', 'wordform_to'],
+                             ['wordform_links.wordform_from', 'wordform_links.wordform_to']),
     )
 
     source_x_wordform_link_id = Column(BigInteger(), primary_key=True)
@@ -246,7 +291,11 @@ class WordformLinkSource(Base):
 
 
 class MorphologicalParadigm(Base):
-    """Table for storing information about morphological paradigms of wordforms.
+    """
+    Table for storing information about morphological paradigms of wordforms.
+
+    The paradigms are determined according to Reynaert's method (to be
+    published).
     """
     __tablename__ = 'morphological_paradigms'
 
