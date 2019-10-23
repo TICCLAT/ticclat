@@ -561,60 +561,6 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
     return lexicon
 
 
-def add_corpus(session, name, texts_file, n_documents=1000):
-    """Add a corpus to the database.
-
-    Take care: this is a very slow method for adding a big corpus like the
-    Dutch wikipedia. Also, this function is still untested.
-
-    Inputs:
-        session: SQLAlchemy session object.
-        name (str): The name of the corpus.
-        texts_file (str): Path to the file containing the texts. This file
-            should contain one text per line.
-    Returns:
-        Corpus: The corpus object
-    """
-    # add all the wordforms in the corpus
-    i = 0
-    dfs = []
-
-    def add_em(dfs, session):
-        wordforms = pd.concat(dfs)
-        wordforms = wordforms.drop_duplicates(subset='wordform')
-        number_added = bulk_add_wordforms(session, wordforms)
-        LOGGER.info('Added %s wordforms', number_added)
-
-    for terms_vector in tqdm(nltk_tokenize(texts_file)):
-        df = pd.DataFrame()
-        df['wordform'] = terms_vector.keys()
-        dfs.append(df)
-
-        i += 1
-
-        if i % n_documents == 0:
-            add_em(dfs, session)
-            dfs = []
-
-    # also add the final documents
-    if len(dfs) > 0:
-        add_em(dfs, session)
-
-    # create corpus
-    corpus = Corpus(name=name)
-    session.add(corpus)
-
-    for terms_vector in tqdm(nltk_tokenize(texts_file)):
-        # get the wordforms
-        query = session.query(Wordform)
-        wordforms = query.filter(Wordform.wordform.in_(terms_vector.keys())).all()
-
-        # FIXME: add proper metadata for a document
-        corpus.add_document(terms_vector, wordforms)
-
-    return corpus
-
-
 def add_morphological_paradigms(session, in_file):
     data = pd.read_csv(in_file, sep='\t', names=['wordform',
                                                  'corpus_freq',

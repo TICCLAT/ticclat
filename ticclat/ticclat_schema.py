@@ -45,28 +45,6 @@ class Corpus(Base):
                                     secondary=corpusId_x_documentId,
                                     back_populates='document_corpora')
 
-    def add_document(self, terms_vector, wfs):
-        """Add a document to the Corpus.
-
-        Inputs:
-            terms_vector (Counter): term-frequency vector representing the
-                document.
-            wfs (list of Wordforms): list of Wordforms that occur in the
-                document
-
-        Returns:
-            Document (Document object): The document that was added to the
-                corpus
-        """
-        # TODO: Fix setting document metadata
-        d = Document(word_count=sum(terms_vector.values()))
-        for wf in wfs:
-            TextAttestation(d, wf, terms_vector[wf.wordform])
-
-        d.document_corpora.append(self)
-
-        return d
-
 
 class Document(Base):
     __tablename__ = 'documents'
