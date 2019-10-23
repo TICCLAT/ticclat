@@ -7,11 +7,15 @@ a specified selection for testing or later additions.
 """
 
 import logging
+import tempfile
+
 from ticclat.utils import set_logger
 from ticclat.ingest import elex, gb, opentaal, sonar, inl, sgd, edbo, \
     twente_spelling_correction_list, dbnl, morph_par, wf_frequencies, \
     sgd_ticcl_variants, ticcl_variants
-from ticclat.dbutils import get_db_name, update_anahashes_new
+from ticclat.dbutils import get_db_name, update_anahashes_new, create_ticclat_database, \
+    get_session_maker, session_scope
+from ticclat.ticclat_schema import Anahash
 
 
 LOGGER = logging.getLogger(__name__)
@@ -94,11 +98,6 @@ def run(reset_db=False,
         include = []
     if exclude is None:
         exclude = []
-
-    from ticclat.dbutils import create_ticclat_database, get_session_maker, update_anahashes, session_scope
-    from ticclat.ticclat_schema import Anahash
-
-    import tempfile
 
     set_logger(loglevel)
 
