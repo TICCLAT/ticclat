@@ -23,6 +23,9 @@ def test_add_corpus_core_nltk(dbsession, datafiles):
 
     corpus_m, v = terms_documents_matrix_word_lists(texts_iterator)
 
+    # TODO: add test that adds metadata; replace pd.DataFrame() with mock dataframe containing metadata fields.
+    # Currently, the database contains no data in any of the following columns: persistent_id, encoding, author,
+    # editor, publisher, publishing_location, text_type, region, other_languages, spelling and parent_document.
     add_corpus_core(dbsession, corpus_m, v, corpus_name, pd.DataFrame())
 
     # wordforms
