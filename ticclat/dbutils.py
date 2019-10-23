@@ -221,8 +221,7 @@ def get_wf_mapping(session, lexicon=None, lexicon_id=None):
         if lexicon.lexicon_id is None:
             raise ValueError('The lexicon does not (yet) have an ID. Please'
                              ' make sure the ID of the lexicon is set.')
-        else:
-            lexicon_id = lexicon.lexicon_id
+        lexicon_id = lexicon.lexicon_id
         msg = msg.format(lexicon)
     elif lexicon_id is not None:
         msg = msg.format('lexicon id {}'.format(lexicon_id))
@@ -623,9 +622,8 @@ def create_ticclat_database(delete_existing=False):
         if database_exists(engine.url):
             if not delete_existing:
                 raise Exception(f"Database `{db_name}` already exists, delete it first before recreating.")
-            else:
-                drop_database(engine.url)
-                connection.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
+            drop_database(engine.url)
+            connection.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
         else:
             raise exception
 

@@ -54,10 +54,7 @@ def sql_insert(engine, table_object, to_insert):
             the objects (rows) to be inserted
     """
 
-    engine.execute(
-        table_object.__table__.insert(),
-        [obj for obj in to_insert]
-    )
+    engine.execute(table_object.__table__.insert(), to_insert)
 
 
 def sql_query_batches(engine, query, iterator, total=0, batch_size=10000):
@@ -212,12 +209,12 @@ def add_corpus_core(session, corpus_matrix, vectorizer, corpus_name,
             with tqdm(total=count_lines(wf_file)) as pbar:
                 for chunk in chunk_json_lines(wf_file, batch_size=batch_size):
                     # Find out which wordwordforms are not yet in the database
-                    wordforms = set([wf['wordform'] for wf in chunk])
+                    wordforms = {wf['wordform'] for wf in chunk}
                     select_statement = select([Wordform]).where(Wordform.wordform.in_(wordforms))
                     result = session.execute(select_statement).fetchall()
 
                     # wf: (id, wordform, anahash_id, wordform_lowercase)
-                    existing_wfs = set([wf[1] for wf in result])
+                    existing_wfs = {wf[1] for wf in result}
                     for wordform in wordforms.difference(existing_wfs):
                         wf_to_add_file.write(json.dumps({'wordform': wordform,
                                                          'wordform_lowercase': wordform.lower()}))
