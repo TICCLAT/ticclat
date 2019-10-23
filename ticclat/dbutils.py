@@ -373,8 +373,8 @@ WHERE anahash_id IS NULL;
     LOGGER.info("Generating anahashes")
     try:
         sh.TICCL_anahash(['--list', '--alph', alphabet_file, tmp_file_path])
-    except sh.ErrorReturnCode as e:
-        raise ValueError('Running TICCL-anahash failed: {}'.format(e.stdout))
+    except sh.ErrorReturnCode as exception:
+        raise ValueError('Running TICCL-anahash failed: {}'.format(exception.stdout))
 
     ticcled_file_path = tmp_file_path + '.list'
 
@@ -439,6 +439,17 @@ def update_anahashes(session, alphabet_file, tqdm_factory=None, batch_size=50000
 def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
                         wf_to_name, lexicon_id, wf_from_correct, wf_to_correct,
                         links_file, sources_file, add_columns=None):
+    """
+    Write wordform links (obtained from lexica) to JSON files for later processing.
+
+    Two JSON files will be written to: `links_file` and `sources_file`. The links
+    file contains only the wordform links and corresponds to the wordform_links
+    database table. The sources file contains the source lexicon of each link and
+    also whether either wordform is considered a "correct" form or not, which is
+    defined by the lexicon (whether it is a "dictionary" with only correct words
+    or a correction list with correct words in one column and incorrect ones in the
+    other).
+    """
     if add_columns is None:
         add_columns = []
     num_wf_links = 0
@@ -451,11 +462,11 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
         # Don't add links to self! and keep track of what was added,
         # because duplicates may occur
         if wf_from != wf_to and (wf_from, wf_to) not in wf_links:
-            s = select([WordformLink]). \
-                where(and_(WordformLink.wordform_from == wf_from,
-                           WordformLink.wordform_to == wf_to))
-            r = session.execute(s).fetchone()
-            if r is None:
+            select_statement = select([WordformLink]). \
+                               where(and_(WordformLink.wordform_from == wf_from,
+                                          WordformLink.wordform_to == wf_to))
+            result = session.execute(select_statement).fetchone()
+            if result is None:
                 # Both directions of the relationship need to be added.
                 links_file.write(json_line({'wordform_from': wf_from,
                                             'wordform_to': wf_to}))
@@ -465,23 +476,23 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
                 num_wf_links += 2
             # The wordform link sources (in both directions) need to be
             # written regardless of the existence of the wordform links.
-            s = {'wordform_from': wf_from,
-                 'wordform_to': wf_to,
-                 'lexicon_id': lexicon_id,
-                 'wordform_from_correct': wf_from_correct,
-                 'wordform_to_correct': wf_to_correct}
-            for c in add_columns:
-                s[c] = row[c]
-            line = json_line(s)
+            link_source = {'wordform_from': wf_from,
+                           'wordform_to': wf_to,
+                           'lexicon_id': lexicon_id,
+                           'wordform_from_correct': wf_from_correct,
+                           'wordform_to_correct': wf_to_correct}
+            for column in add_columns:
+                link_sources[column] = row[column]
+            line = json_line(link_source)
             sources_file.write(line)
-            s = {'wordform_from': wf_to,
-                 'wordform_to': wf_from,
-                 'lexicon_id': lexicon_id,
-                 'wordform_from_correct': wf_to_correct,
-                 'wordform_to_correct': wf_from_correct}
-            for c in add_columns:
-                s[c] = row[c]
-            line = json_line(s)
+            link_source = {'wordform_from': wf_to,
+                           'wordform_to': wf_from,
+                           'lexicon_id': lexicon_id,
+                           'wordform_from_correct': wf_to_correct,
+                           'wordform_to_correct': wf_from_correct}
+            for column in add_columns:
+                link_source[column] = row[column]
+            line = json_line(link_source)
             sources_file.write(line)
             num_wf_link_sources += 2
 
@@ -494,6 +505,18 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
 def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
                            to_column, from_correct, to_correct,
                            batch_size=50000, preprocess_wfs=True, to_add=None):
+    """
+    Add wordforms from a lexicon with links to the database.
+
+    Lexica with links contain wordform pairs that are linked. The `wfs`
+    dataframe must contain two columns: the `from_column` and the `to_column`,
+    which contains the two words of each pair (per row). Using the arguments
+    `from_correct` and `to_correct`, you can indicate whether the columns of
+    this dataframe contain correct words or not (boolean). Typically, there
+    are two types of linked lexica: True + True, meaning it links correct
+    wordforms (e.g. morphological variants) or True + False, meaning it links
+    correct wordforms to incorrect ones (e.g. a spelling correction list).
+    """
     LOGGER.info('Adding lexicon with links between wordforms.')
 
     if to_add is None:
@@ -556,6 +579,12 @@ def add_corpus(session, name, texts_file, n_documents=1000):
     i = 0
     dfs = []
 
+    def add_em(dfs, session):
+        wordforms = pd.concat(dfs)
+        wordforms = wordforms.drop_duplicates(subset='wordform')
+        number_added = bulk_add_wordforms(session, wordforms)
+        LOGGER.info('Added %s wordforms', number_added)
+
     for terms_vector in tqdm(nltk_tokenize(texts_file)):
         df = pd.DataFrame()
         df['wordform'] = terms_vector.keys()
@@ -564,19 +593,12 @@ def add_corpus(session, name, texts_file, n_documents=1000):
         i += 1
 
         if i % n_documents == 0:
-            r = pd.concat(dfs)
-            r = r.drop_duplicates(subset='wordform')
-            n = bulk_add_wordforms(session, r)
-            print('Added {} wordforms'.format(n))
-
+            add_em(dfs, session)
             dfs = []
 
     # also add the final documents
     if len(dfs) > 0:
-        r = pd.concat(dfs)
-        r = r.drop_duplicates(subset='wordform')
-        n = bulk_add_wordforms(session, r)
-        print('Added {} wordforms'.format(n))
+        add_em(dfs, session)
 
     # create corpus
     corpus = Corpus(name=name)
@@ -584,11 +606,11 @@ def add_corpus(session, name, texts_file, n_documents=1000):
 
     for terms_vector in tqdm(nltk_tokenize(texts_file)):
         # get the wordforms
-        q = session.query(Wordform)
-        wfs = q.filter(Wordform.wordform.in_(terms_vector.keys())).all()
+        query = session.query(Wordform)
+        wordforms = query.filter(Wordform.wordform.in_(terms_vector.keys())).all()
 
         # FIXME: add proper metadata for a document
-        corpus.add_document(terms_vector, wfs)
+        corpus.add_document(terms_vector, wordforms)
 
     return corpus
 

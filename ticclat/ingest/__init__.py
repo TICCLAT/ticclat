@@ -71,6 +71,25 @@ def run(reset_db=False,
         alphabet_file="/data/ALPH/nld.aspell.dict.clip20.lc.LD3.charconfus.clip20.lc.chars",
         batch_size=5000, include=None, exclude=None, ingest=True, anahash=True,
         tmpdir="/data/tmp", loglevel="INFO", reset_anahashes=False, **kwargs):
+    """
+    Ingest data sources into the database.
+
+    Arguments:
+    - reset_db: if True, the entire database will be removed and an empty one
+                recreated.
+    - alphabet_file: the alphabet file used by TICCL.
+    - batch_size: used by some functions to batch ingestion into the database
+                  to avoid memory issues.
+    - include/exclude: see documentation for `ingest_all`.
+    - ingest: if True, `ingest_all` is called to ingest all data sources.
+    - anahash: if True, anagram hashes are added for all (new) wordforms.
+    - tmpdir: some ingestion functions use temporary files for bulk ingestion.
+              The path of these files can be given here.
+    - loglevel: set logging level, see `utils.set_logger`
+    - reset_anahashes: if True, will remove all existing anahashes before
+                       adding new ones.
+    - **kwargs: are passed on to `ingest_all`, see there for more options.
+    """
     if include is None:
         include = []
     if exclude is None:
@@ -81,7 +100,7 @@ def run(reset_db=False,
 
     import tempfile
 
-    set_LOGGER(loglevel)
+    set_logger(loglevel)
 
     tempfile.tempdir = tmpdir
 

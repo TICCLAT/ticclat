@@ -1,3 +1,7 @@
+"""
+Non-database related utility functions for TICCLAT.
+"""
+
 import logging
 import os
 import tempfile
