@@ -6,32 +6,37 @@ of input data.
 """
 import bz2
 
-from itertools import chain
-
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
 
 
 def ticcl_frequency(in_files, max_word_length=255):
+    """
+    Generate word-frequency pairs from TICCL frequency files.
+
+    For each file in `in_files`, open it and yield a dictionary with
+    frequencies (value) for each word (key).
+    """
     for freq_file in in_files:
-        c = {}
+        word_freqs = {}
         if freq_file.endswith('bz2'):
             file_open = bz2.open(freq_file, 'rt')
         else:
             file_open = open(freq_file)
 
-        with file_open as f:
-            for line in f:
+        with file_open as file_handle:
+            for line in file_handle:
                 # Sometimes a word contains a space, so we split only on tab.
                 word, freq = line.split('\t')
 
                 # The corpus may contain wordforms that are too long
                 if len(word) <= max_word_length:
-                    c[word] = int(freq)
-        yield c
+                    word_freqs[word] = int(freq)
+        yield word_freqs
 
 
 def do_nothing(list_of_words):
+    """Return the argument unchanged."""
     return list_of_words
 
 
@@ -42,13 +47,13 @@ def terms_documents_matrix_word_lists(word_lists):
         word_lists: iterator over lists of words
     Returns:
         corpus: a sparse terms documents matrix
-        v: the vecorizer object containing the vocabulary (i.e., all word forms
-            in the corpus)
+        vocabulary: the vecorizer object containing the vocabulary (i.e., all word forms
+                    in the corpus)
     """
-    v = CountVectorizer(tokenizer=do_nothing, lowercase=False)
-    corpus = v.fit_transform(word_lists)
+    vocabulary = CountVectorizer(tokenizer=do_nothing, lowercase=False)
+    corpus = vocabulary.fit_transform(word_lists)
 
-    return corpus, v
+    return corpus, vocabulary
 
 
 def terms_documents_matrix_ticcl_frequency(in_files):
@@ -59,10 +64,10 @@ def terms_documents_matrix_ticcl_frequency(in_files):
             corpus)
     Returns:
         corpus: a sparse terms documents matrix
-        v: the vecorizer object containing the vocabulary (i.e., all word forms
-            in the corpus)
+        vocabulary: the vecorizer object containing the vocabulary (i.e., all word forms
+                    in the corpus)
     """
-    v = DictVectorizer()
-    corpus = v.fit_transform(ticcl_frequency(in_files))
+    vocabulary = DictVectorizer()
+    corpus = vocabulary.fit_transform(ticcl_frequency(in_files))
 
-    return corpus, v
+    return corpus, vocabulary
