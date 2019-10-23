@@ -583,13 +583,13 @@ def add_morphological_paradigms(session, in_file):
 
     # get the morphological variants from the pandas dataframe
     LOGGER.info('extracting morphological variants')
-    result = defaultdict(list)
+    morph_paradigms_per_wordform = defaultdict(list)
     with tqdm(total=data.shape[0]) as pbar:
         for row in data.iterrows():
             codes = row[1]['component_codes'].split('#')
             wordform = row[1]['wordform']
             for code in codes:
-                result[wordform].append(split_component_code(code, wordform))
+                morph_paradigms_per_wordform[wordform].append(split_component_code(code, wordform))
             pbar.update()
 
     LOGGER.info('Looking up wordform ids.')
@@ -598,7 +598,7 @@ def add_morphological_paradigms(session, in_file):
 
     LOGGER.info('Writing morphological variants to file.')
     with get_temp_file() as mp_file:
-        total_lines_written = write_json_lines(mp_file, morph_iterator(result, mapping))
+        total_lines_written = write_json_lines(mp_file, morph_iterator(morph_paradigms_per_wordform, mapping))
         LOGGER.info('Wrote %s morphological variants.', total_lines_written)
         LOGGER.info('Inserting morphological variants to the database.')
         sql_insert_batches(session, MorphologicalParadigm,
