@@ -3,13 +3,14 @@ import os
 
 import pandas as pd
 
-from ticclat.tokenize import nltk_tokenize, terms_documents_matrix_word_lists
+from ticclat.tokenize import terms_documents_matrix_word_lists
 from ticclat.dbutils import add_ticcl_variants
 from ticclat.sacoreutils import add_corpus_core
 from ticclat.utils import read_ticcl_variants_file
 
 from ticclat.flask_app.queries import get_ticcl_variants
 
+from .helpers import nltk_tokenize
 
 from . import data_dir
 

@@ -32,7 +32,6 @@ from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
     read_json_lines, get_temp_file, json_line, split_component_code, \
     morph_iterator, preprocess_wordforms
 from ticclat.sacoreutils import bulk_add_anahashes_core, sql_query_batches, sql_insert_batches
-from ticclat.tokenize import nltk_tokenize
 
 LOGGER = logging.getLogger(__name__)
 

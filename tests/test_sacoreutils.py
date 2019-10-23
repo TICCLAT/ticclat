@@ -4,9 +4,11 @@ import pytest
 import pandas as pd
 
 from ticclat.ticclat_schema import Wordform, Corpus
-from ticclat.tokenize import nltk_tokenize, terms_documents_matrix_word_lists
+from ticclat.tokenize import terms_documents_matrix_word_lists
 
 from ticclat.sacoreutils import add_corpus_core
+
+from .helpers import nltk_tokenize
 
 from . import data_dir
 

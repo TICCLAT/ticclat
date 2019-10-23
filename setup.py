@@ -45,7 +45,6 @@ setup(
         "sh",
         "SQLAlchemy",
         "tqdm",
-        "nltk",
         "mysqlclient",
         "sqlalchemy_utils",
         "Flask-SQLAlchemy-Session",
@@ -73,6 +72,7 @@ setup(
         'testcontainers[mysql]',
         'cryptography',
         'pylint>=2.4',
+        'nltk',
     ],
     extras_require={
         'dev': ['prospector[with_pyroma]', 'yapf', 'isort'],

@@ -6,35 +6,10 @@ of input data.
 """
 import bz2
 
-import nltk.data
-
 from itertools import chain
-
-from nltk import word_tokenize
 
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
-
-
-def nltk_tokenize(texts_file, punkt='tokenizers/punkt/dutch.pickle'):
-    """
-    Inputs:
-        texts_file (str): File name of a file that contains the texts. This
-            should contain one document per line.
-        punkt (str): Path to the nltk punctuation data to be used.
-
-    Yields:
-        Counter: term-frequency vector representing a document.
-    """
-    nltk.download('punkt')
-    tokenizer = nltk.data.load(punkt)
-
-    with open(texts_file) as f:
-        for line in f:
-            tokens = [word_tokenize(sent)
-                      for sent in tokenizer.tokenize(line.strip())]
-
-            yield list(chain(*tokens))
 
 
 def ticcl_frequency(in_files, max_word_length=255):
