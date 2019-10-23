@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Documentation about ticclat"""
+"""Documentation about TICCLAT"""
+
+import logging
 
 from .__version__ import __version__  # noqa
 
-import logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __author__ = "Janneke van der Zwaan"

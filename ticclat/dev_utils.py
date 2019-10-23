@@ -1,11 +1,10 @@
-import logging
+"""Utilities used while developing TICCLAT"""
 
-from ticclat.ticclat_schema import Lexicon, WordformLinkSource
-
-logger = logging.getLogger(__name__)
+from ticclat.ticclat_schema import Lexicon
 
 
 def delete_lexicon(session, lexicon_id):
+    """Delete a lexicon from the database."""
     lexicon = session.query(Lexicon).get(lexicon_id)
 
     # delete relevant related objects

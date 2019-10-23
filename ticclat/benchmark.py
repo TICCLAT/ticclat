@@ -11,7 +11,7 @@ from ticclat.tokenize import terms_documents_matrix_word_lists
 from ticclat.sacoreutils import add_corpus_core
 from ticclat.dbutils import add_lexicon, add_lexicon_with_links
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def random_corpus(num_documents, num_tokens_min, num_tokens_max, vocabulary):
@@ -55,7 +55,7 @@ def ingest_corpora(session, num_corpora, num_documents_min, num_documents_max,
                           num_tokens_max, vocabulary)
     for i, (corpus, v, md) in enumerate(ca):
         name = f'Corpus {i}'
-        logger.info(f'Generating {name}')
+        LOGGER.info(f'Generating {name}')
         add_corpus_core(session, corpus_matrix=corpus, vectorizer=v,
                         corpus_name=name, document_metadata=md)
 
@@ -76,7 +76,7 @@ def ingest_lexica(session, num_lexica, num_wf_min, num_wf_max, vocabulary):
     lexica = generate_lexica(num_lexica, num_wf_min, num_wf_max + 1, vocabulary)
     for i, wfs in enumerate(lexica):
         name = f'Lexicon {i}'
-        logger.info(f'Generating {name}')
+        LOGGER.info(f'Generating {name}')
         add_lexicon(session, lexicon_name=name, vocabulary=True, wfs=wfs)
 
 
@@ -109,7 +109,7 @@ def ingest_linked_lexica(session, num_lexica, num_wf_min, num_wf_max,
         from_correct = is_vocabulary
         print(name, 'is_vocabulary:', is_vocabulary)
 
-        logger.info(f'Generating {name} (is vocabulary: {is_vocabulary})')
+        LOGGER.info(f'Generating {name} (is vocabulary: {is_vocabulary})')
 
         add_lexicon_with_links(session, lexicon_name=name,
                                vocabulary=is_vocabulary, wfs=wfs,
