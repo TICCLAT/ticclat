@@ -25,7 +25,7 @@ import MySQLdb
 from sqlalchemy_utils import database_exists
 from sqlalchemy_utils.functions import drop_database
 
-from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, Corpus, \
+from ticclat.ticclat_schema import Base, Wordform, Lexicon, Anahash, \
     lexical_source_wordform, WordformLink, WordformLinkSource, \
     MorphologicalParadigm, WordformFrequencies
 from ticclat.utils import chunk_df, anahash_df, write_json_lines, \
@@ -171,7 +171,9 @@ def add_lexicon(session, lexicon_name, vocabulary, wfs, preprocess_wfs=True):
 
     LOGGER.info('Adding %s wordforms to the lexicon.', len(result))
     session.execute(
-        lexical_source_wordform.insert(),
+        lexical_source_wordform.insert(),  # noqa pylint: disable=E1120
+                                           # this is a known pylint/sqlalchemy issue, see
+                                           # https://github.com/sqlalchemy/sqlalchemy/issues/4656
         [{'lexicon_id': lexicon_id,
           'wordform_id': wf['wordform_id']} for wf in result]
     )
@@ -481,7 +483,7 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
                            'wordform_from_correct': wf_from_correct,
                            'wordform_to_correct': wf_to_correct}
             for column in add_columns:
-                link_sources[column] = row[column]
+                link_source[column] = row[column]
             line = json_line(link_source)
             sources_file.write(line)
             link_source = {'wordform_from': wf_to,
@@ -561,6 +563,9 @@ def add_lexicon_with_links(session, lexicon_name, vocabulary, wfs, from_column,
 
 
 def add_morphological_paradigms(session, in_file):
+    """
+    Add morphological paradigms to database from CSV file.
+    """
     data = pd.read_csv(in_file, sep='\t', names=['wordform',
                                                  'corpus_freq',
                                                  'component_codes',
@@ -583,25 +588,30 @@ def add_morphological_paradigms(session, in_file):
     with tqdm(total=data.shape[0]) as pbar:
         for row in data.iterrows():
             codes = row[1]['component_codes'].split('#')
-            wf = row[1]['wordform']
+            wordform = row[1]['wordform']
             for code in codes:
-                result[wf].append(split_component_code(code, wf))
+                result[wordform].append(split_component_code(code, wordform))
             pbar.update()
 
     LOGGER.info('Looking up wordform ids.')
-    s = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
-    mapping = session.execute(s).fetchall()
+    select_statement = select([Wordform]).where(Wordform.wordform.in_(wfs['wordform']))
+    mapping = session.execute(select_statement).fetchall()
 
     LOGGER.info('Writing morphological variants to file.')
     with get_temp_file() as mp_file:
-        t = write_json_lines(mp_file, morph_iterator(result, mapping))
-        LOGGER.info('Wrote %s morphological variants.', t)
+        total_lines_written = write_json_lines(mp_file, morph_iterator(result, mapping))
+        LOGGER.info('Wrote %s morphological variants.', total_lines_written)
         LOGGER.info('Inserting morphological variants to the database.')
         sql_insert_batches(session, MorphologicalParadigm,
                            read_json_lines(mp_file), batch_size=50000)
 
 
 def create_ticclat_database(delete_existing=False):
+    """
+    Create the TICCLAT database.
+
+    Sets the proper encoding settings and uses the schema to create tables.
+    """
     # db = MySQLdb.connect(user=user, passwd=passwd, host=host)
     # engine = create_engine(f"mysql://{user}:{passwd}@{host}/{dbname}?charset=utf8mb4")
     engine = get_engine(without_database=True)
@@ -609,7 +619,7 @@ def create_ticclat_database(delete_existing=False):
     db_name = get_db_name()
     try:
         connection.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
-    except MySQLdb.ProgrammingError as e:
+    except MySQLdb.ProgrammingError as exception:
         if database_exists(engine.url):
             if not delete_existing:
                 raise Exception(f"Database `{db_name}` already exists, delete it first before recreating.")
@@ -617,7 +627,7 @@ def create_ticclat_database(delete_existing=False):
                 drop_database(engine.url)
                 connection.execute(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;")
         else:
-            raise e
+            raise exception
 
     connection.close()
 
@@ -628,9 +638,14 @@ def create_ticclat_database(delete_existing=False):
 
 
 def empty_table(session, table_class):
-    n = session.query(table_class).first()
+    """
+    Empty a database table.
 
-    if n:
+    - table_class: the ticclat_schema class corresponding to the table
+    """
+    row = session.query(table_class).first()
+
+    if row is not None:
         LOGGER.info('Table "%s" is not empty.', table_class.__table__.name)
         LOGGER.info('Deleting rows...')
         Base.metadata.drop_all(bind=session.get_bind(),
@@ -640,6 +655,12 @@ def empty_table(session, table_class):
 
 
 def create_wf_frequencies_table(session):
+    """
+    Create wordform_frequencies table in the database.
+
+    The text_attestations frequencies are summed and stored in this table.
+    This can be used to save time when needing total-database frequencies.
+    """
     LOGGER.info('Creating wordform_frequencies table.')
     # Make sure the wordform_frequency table exists (create it if it doesn't)
     Base.metadata.create_all(session.get_bind(),
@@ -660,6 +681,9 @@ GROUP BY wordforms.wordform, wordforms.wordform_id
 
 
 def add_ticcl_variants(session, name, df):
+    """
+    Add TICCL variants as a linked lexicon.
+    """
     lexicon = add_lexicon_with_links(session,
                                      lexicon_name=name,
                                      vocabulary=False,
