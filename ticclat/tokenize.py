@@ -43,11 +43,14 @@ def do_nothing(list_of_words):
 def terms_documents_matrix_word_lists(word_lists):
     """Returns a terms document matrix and related objects of a corpus
 
+    A terms document matrix contains frequencies of wordforms, with wordforms
+    along one matrix axis and documents along the other.
+
     Inputs:
         word_lists: iterator over lists of words
     Returns:
         corpus: a sparse terms documents matrix
-        vocabulary: the vecorizer object containing the vocabulary (i.e., all word forms
+        vocabulary: the vectorizer object containing the vocabulary (i.e., all word forms
                     in the corpus)
     """
     vocabulary = CountVectorizer(tokenizer=do_nothing, lowercase=False)
@@ -59,12 +62,15 @@ def terms_documents_matrix_word_lists(word_lists):
 def terms_documents_matrix_ticcl_frequency(in_files):
     """Returns a terms document matrix and related objects of a corpus
 
+    A terms document matrix contains frequencies of wordforms, with wordforms
+    along one matrix axis (columns) and documents along the other (rows).
+
     Inputs:
         in_files: list of ticcl frequency files (one per document in the
             corpus)
     Returns:
         corpus: a sparse terms documents matrix
-        vocabulary: the vecorizer object containing the vocabulary (i.e., all word forms
+        vocabulary: the vectorizer object containing the vocabulary (i.e., all word forms
                     in the corpus)
     """
     vocabulary = DictVectorizer()
