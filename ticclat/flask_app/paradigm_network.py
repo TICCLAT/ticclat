@@ -1,3 +1,5 @@
+import math
+
 import pandas
 
 from ticclat.flask_app import raw_queries
@@ -30,6 +32,10 @@ def paradigm_network(connection, wordform):
     ]
     W_list = flatten(nested_w)
     for w in W_list:
+        frequency = w['frequency']
+        if not frequency or math.isnan(frequency):
+            frequency = 0
+
         nodes.append({
             'id': str(w['wordform_id']),
             'tc_z': wxyz['Z'],
@@ -37,11 +43,15 @@ def paradigm_network(connection, wordform):
             'tc_x': w['X'],
             'tc_w': w['W'],
             'type': 'w',
-            'frequency': w['frequency'],
+            'frequency': frequency,
             'wordform': w['wordform']
         })
     for x in x_values:
         w_nodes_for_x = [node for node in nodes if node['tc_x'] == x]
+        frequency = sum([node['frequency'] for node in w_nodes_for_x if node['frequency']])
+        if math.isnan(frequency):
+            frequency = 0
+
         x_node = {
             'id': f'Z{wxyz["Z"]}Y{wxyz["Y"]}X{x}',
             'tc_z': wxyz['Z'],
@@ -49,7 +59,7 @@ def paradigm_network(connection, wordform):
             'tc_x': x,
             'tc_w': w_nodes_for_x[0]['tc_w'],
             'type': 'x',
-            'frequency': sum([node['frequency'] for node in w_nodes_for_x if node['frequency']]),
+            'frequency': frequency,
             'wordform': w_nodes_for_x[0]['wordform']
         }
         nodes.append(x_node)
