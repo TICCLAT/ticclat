@@ -49,7 +49,7 @@ def paradigm_network(connection, wordform):
             'tc_x': x,
             'tc_w': w_nodes_for_x[0]['tc_w'],
             'type': 'x',
-            'frequency': sum([node['frequency'] for node in w_nodes_for_x]),
+            'frequency': sum([node['frequency'] for node in w_nodes_for_x if node['frequency']]),
             'wordform': w_nodes_for_x[0]['wordform']
         }
         nodes.append(x_node)
