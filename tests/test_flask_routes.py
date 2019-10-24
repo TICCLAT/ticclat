@@ -1,12 +1,19 @@
-import pytest
+# -*- coding: utf-8 -*-
+# pylint: disable=bad-whitespace, missing-function-docstring
+"""Tests for all the flask routes in flask_app/routes.py.
+
+Note
+    See conftest.py for the flask_test_client. Test data from `tests/db_data` is (re-)loaded for each test.
+"""
 from urllib.parse import urlencode
+import pytest
 
 
 def test_root(flask_test_client):
     response = flask_test_client.get('/')
     assert response.status_code == 200
     expected_set = {
-        "/", "/corpora", "/corrections", "/lemmas_for_wordform/<word_form>", "/lexica/<word_name>",
+        "/", "/corpora", "/corrections/<word_name>", "/lemmas_for_wordform/<word_form>", "/lexica/<word_name>",
         "/morphological_variants_for_lemma/<paradigm_id>", "/network/<wordform>", "/paradigm_count",
         "/plots/corpus_size", "/plots/lexicon_size", "/plots/paradigm_size", "/plots/word_count_per_year",
         "/regexp_search/<regexp>", "/static/<path:filename>", "/suffixes/<suffix_1>", "/suffixes/<suffix_1>/<suffix_2>",
