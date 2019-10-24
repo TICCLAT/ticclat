@@ -143,21 +143,28 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
     max_corpus_rel_freq = -np.inf
     for name, data in df.groupby('name'):
         corpus_data = {'name': name, 'frequencies': []}
-        total_words_all_years = 0
+
         min_corpus_freq = np.inf
         max_corpus_freq = -np.inf
+
+        total_words_all_years = sum([row[1]['term_frequency'] for row in data.iterrows()])
+        corpus_data['total_number_of_words'] = total_words_all_years
+
         for row in data.iterrows():
             corpus_data['frequencies'].append(
                 {
                     'year': row[1]['pub_year'],
                     'freq': row[1]['normalized_tf'],
                     'total': row[1]['num_words'],
-                    'term_frequency': row[1]['term_frequency']
+                    'term_frequency': row[1]['term_frequency'],
+                    'rel_corpus_frequency': row[1]['term_frequency'] / total_words_all_years
                 })
-            total_words_all_years += row[1]['num_words']
+
             min_corpus_freq = min(min_corpus_freq, row[1]['term_frequency'])
             max_corpus_freq = max(max_corpus_freq, row[1]['term_frequency'])
-        corpus_data['total_number_of_words'] = total_words_all_years
+
+
+
         result.append(corpus_data)
         min_corpus_rel_freq = min(min_corpus_rel_freq, min_corpus_freq / total_words_all_years)
         max_corpus_rel_freq = max(max_corpus_rel_freq, max_corpus_freq / total_words_all_years)
