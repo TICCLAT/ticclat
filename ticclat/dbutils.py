@@ -232,7 +232,7 @@ def get_wf_mapping(session, lexicon=None, lexicon_id=None):
     LOGGER.info(msg)
 
     select_statement = select([lexical_source_wordform.join(Lexicon).join(Wordform)]) \
-                       .where(Lexicon.lexicon_id == lexicon_id)
+        .where(Lexicon.lexicon_id == lexicon_id)
     LOGGER.debug(select_statement)
     result = session.execute(select_statement).fetchall()
 
@@ -335,8 +335,8 @@ def connect_anahashes_to_wordforms(session, anahashes, df, batch_size=50000):
                                                get_anahashes(session, anahashes, df))
 
         update_statement = Wordform.__table__.update(). \
-                           where(Wordform.wordform_id == bindparam('wf_id')). \
-                           values(anahash_id=bindparam('a_id'))
+            where(Wordform.wordform_id == bindparam('wf_id')). \
+            values(anahash_id=bindparam('a_id'))
 
         LOGGER.debug('Adding the connections wordform -> anahash_id.')
         sql_query_batches(session, update_statement, read_json_lines(anahash_to_wf_file),
@@ -463,8 +463,7 @@ def write_wf_links_data(session, wf_mapping, links_df, wf_from_name,
         # because duplicates may occur
         if wf_from != wf_to and (wf_from, wf_to) not in wf_links:
             select_statement = select([WordformLink]). \
-                               where(and_(WordformLink.wordform_from == wf_from,
-                                          WordformLink.wordform_to == wf_to))
+                where(and_(WordformLink.wordform_from == wf_from, WordformLink.wordform_to == wf_to))
             result = session.execute(select_statement).fetchone()
             if result is None:
                 # Both directions of the relationship need to be added.
@@ -565,15 +564,10 @@ def add_morphological_paradigms(session, in_file):
     """
     Add morphological paradigms to database from CSV file.
     """
-    data = pd.read_csv(in_file, sep='\t', index_col=False, names=['wordform',
-                                                 'corpus_freq',
-                                                 'component_codes',
-                                                 'human_readable_c_code',
-                                                 'first_year',
-                                                 'last_year',
-                                                 'dict_ids',
-                                                 'pos_tags',
-                                                 'int_ids'])
+    data = pd.read_csv(in_file, sep='\t', index_col=False,
+                       names=['wordform', 'corpus_freq', 'component_codes',
+                              'human_readable_c_code', 'first_year', 'last_year',
+                              'dict_ids', 'pos_tags', 'int_ids'])
     # drop first row (contains empty wordform)
     data = data.drop([0])
 
@@ -678,7 +672,7 @@ GROUP BY wordforms.wordform, wordforms.wordform_id
     """)
 
 
-def add_ticcl_variants(session, name, df):
+def add_ticcl_variants(session, name, df, **kwargs):
     """
     Add TICCL variants as a linked lexicon.
     """
@@ -691,5 +685,6 @@ def add_ticcl_variants(session, name, df):
                                      from_correct=False,
                                      to_correct=True,
                                      preprocess_wfs=False,
-                                     to_add=['ld'])
+                                     to_add=['ld'],
+                                     **kwargs)
     return lexicon
