@@ -19,7 +19,7 @@ setup(
     version=version["__version__"],
     description="TICCLAT is a tool for text-induced corpus correction and lexical assessment.",
     long_description=readme + "\n\n",
-    author="Janneke van der Zwaan",
+    author="Janneke van der Zwaan, Patrick Bos, Tom Klaver",
     author_email='j.vanderzwaan@esciencecenter.nl',
     url='https://github.com/ticclat/ticclat',
     packages=[

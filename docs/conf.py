@@ -34,7 +34,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon',
+              'sphinx.ext.intersphinx', 'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -51,7 +52,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'ticclat'
 copyright = u'2019, Netherlands eScience Center and Meertens Instituut'
-author = u"Janneke van der Zwaan"
+author = u"Janneke van der Zwaan, Patrick Bos, Tom Klaver"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -181,7 +182,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'ticclat.tex', u'ticclat Documentation',
-     u"Janneke van der Zwaan", 'manual'),
+     author, 'manual'),
 ]
 
 
