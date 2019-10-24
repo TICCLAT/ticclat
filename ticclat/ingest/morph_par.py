@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 # ! before ingesting the data.
 # ! When changing the input file, please check if the first line of the file
 # ! still needs to be removed.
-INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms265.tsv'
+# INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms265.tsv'
+INPUT = 'morph/CombinationGigantMolexCombilexTypolist6INThistlex.TICCLATingest.NEWSPLITSnoplus.DeriveParadigms306.delfirstlines.KopStaartCodes.tsv'
 
 
 def ingest(session, base_dir='', in_file=INPUT, **kwargs):
