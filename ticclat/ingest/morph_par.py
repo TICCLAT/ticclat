@@ -1,11 +1,9 @@
-import logging
+"""Morphological paradigms ingestion."""
+
 import os.path
 
 from ..ticclat_schema import MorphologicalParadigm
 from ..dbutils import session_scope, add_morphological_paradigms, empty_table
-
-
-logger = logging.getLogger(__name__)
 
 # ! In this version of the data, the first line contains noise and is removed
 # ! before ingesting the data.
@@ -14,8 +12,13 @@ logger = logging.getLogger(__name__)
 INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms265.tsv'
 
 
-def ingest(session, base_dir='', in_file=INPUT, **kwargs):
-    with session_scope(session) as s:
-        empty_table(s, MorphologicalParadigm)
+def ingest(session_maker, base_dir='', morph_par_file=INPUT, **kwargs):
+    """
+    Ingest morphological paradigms into TICCLAT database.
 
-        add_morphological_paradigms(s, os.path.join(base_dir, in_file))
+    Removes any existing data from the morphological_paradigms database table.
+    """
+    with session_scope(session_maker) as session:
+        empty_table(session, MorphologicalParadigm)
+
+        add_morphological_paradigms(session, os.path.join(base_dir, morph_par_file))

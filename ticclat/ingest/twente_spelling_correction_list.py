@@ -63,11 +63,11 @@ def load_data(in_file):
     return data
 
 
-def ingest(session, base_dir='',
+def ingest(session_maker, base_dir='',
            twente_file='twente/TWENTE.noxml.2002.sq.clean.norm.tok.sortu.unifrq.LC.noapekrol.allasterisk.12.withcorrections.12186.txt', **kwargs):
     wfs_with_links = load_data(os.path.join(base_dir, twente_file))
 
-    with session_scope(session) as s:
+    with session_scope(session_maker) as session:
         name = 'TWENTE.noxml.2002.sq.clean.norm.tok.sortu.unifrq.LC.noapekrol.allasterisk.12.withcorrections.12186'
         vocabulary = False
         from_column = 'wf'
@@ -75,4 +75,5 @@ def ingest(session, base_dir='',
         to_column = 'corr'
         to_correct = True
 
-        add_lexicon_with_links(s, name, vocabulary, wfs_with_links, from_column, to_column, from_correct, to_correct)
+        add_lexicon_with_links(session, name, vocabulary, wfs_with_links,
+                               from_column, to_column, from_correct, to_correct, **kwargs)

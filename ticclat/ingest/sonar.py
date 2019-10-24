@@ -8,7 +8,7 @@ from ..sacoreutils import add_corpus_core
 import glob
 
 
-def ingest(session, base_dir='',
+def ingest(session_maker, base_dir='',
            sonar_dir='SONAR500', **kwargs):
     in_dir = os.path.join(base_dir, sonar_dir)
     in_files = glob.glob(os.path.join(in_dir, '*.wordfreqlist.clean.tsv.bz2'))
@@ -22,5 +22,6 @@ def ingest(session, base_dir='',
     document_metadata["year_to"] = 2010
     # More metadata?
 
-    with session_scope(session) as s:
-        add_corpus_core(s, corpus_matrix, vectorizer, 'SoNaR-500', document_metadata, **kwargs)
+    with session_scope(session_maker) as session:
+        add_corpus_core(session, corpus_matrix, vectorizer, 'SoNaR-500',
+                        document_metadata, **kwargs)

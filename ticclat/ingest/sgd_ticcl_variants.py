@@ -1,3 +1,5 @@
+"""SGD"""
+
 import logging
 import glob
 
@@ -8,19 +10,19 @@ from pathlib import Path
 from ticclat.utils import read_ticcl_variants_file
 from ticclat.dbutils import add_ticcl_variants, session_scope
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
-def ingest(session, base_dir='/', data_dir='SGD_ticcl_variants', **kwargs):
+def ingest(session_maker, base_dir='/', sgd_ticcl_variants_dir='SGD_ticcl_variants', **kwargs):
     # TODO: now all correction data is read into memory before ingestion. For
     # the total amount of data this probably is not feasible, so this needs
     # to be fixed later.
-    in_dir = Path(base_dir) / data_dir
+    in_dir = Path(base_dir) / sgd_ticcl_variants_dir
     expr = Path(in_dir) / '*'
     in_files = glob.glob(str(expr))
 
-    logger.debug('Reading data from: {}'.format(in_dir))
-    logger.debug('Ingesting files: {}'.format(' - '.join(in_files)))
+    LOGGER.debug('Reading data from: %s', in_dir)
+    LOGGER.debug('Ingesting files: %s', ' - '.join(in_files))
 
     dfs = []
 
@@ -29,6 +31,6 @@ def ingest(session, base_dir='/', data_dir='SGD_ticcl_variants', **kwargs):
         dfs.append(df)
     data = pd.concat(dfs)
 
-    with session_scope(session) as s:
+    with session_scope(session_maker) as session:
         name = 'SGD ticcl correction candidates'
-        add_ticcl_variants(s, name, data)
+        add_ticcl_variants(session, name, data)

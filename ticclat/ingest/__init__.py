@@ -38,7 +38,7 @@ ALL_SOURCES = {
 }
 
 
-def ingest_all(session, base_dir='/data',
+def ingest_all(session_maker, base_dir='/data',
                include=None, exclude=None, **kwargs):
     """
     Ingest all data sources into the database.
@@ -51,6 +51,10 @@ def ingest_all(session, base_dir='/data',
     a certain format under one central base directory specfied using
     base_dir. See the specific ingestion functions for more on how
     the sources should be organized.
+
+    Using kwargs, the ingestion functions can be configured. Each
+    function has uniquely named parameters for the input files, like
+    `edbo_dir` for ingesting EDBO data, etcetera.
     """
     if include is None:
         include = []
@@ -68,7 +72,7 @@ def ingest_all(session, base_dir='/data',
 
     for name, source in sources.items():
         LOGGER.info('ingesting %s...', name)
-        source.ingest(session, base_dir=base_dir, **kwargs)
+        source.ingest(session_maker, base_dir=base_dir, **kwargs)
 
 
 def run(reset_db=False,
