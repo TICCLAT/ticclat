@@ -1,3 +1,5 @@
+"""TICCL variants ingestion."""
+
 import logging
 import shutil
 import subprocess
@@ -9,6 +11,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def run(cmd):
+    """Run a command on the command line."""
     proc = subprocess.Popen(['sh', '-c', cmd],
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
@@ -21,6 +24,7 @@ def run(cmd):
 def ingest(session_maker, base_dir='/',
            ticcl_variants_file='ticcl_variants/TICCLATEDBO.INDEXERUnigramsOnly.clean.confuslist.indexNT.ldcalc.RANK.ranked.NEWCHAIN.manualfiltering.chained.gz',
            **kwargs):
+    """Ingest TICCL variants into TICCLAT database."""
     ingest_file_path = Path(base_dir) / ticcl_variants_file
     tmp_path = Path(tempfile.mkdtemp())
     csv_file_path = tmp_path / 'to_load.csv'
@@ -28,7 +32,7 @@ def ingest(session_maker, base_dir='/',
     session = session_maker()
 
     try:
-        exit_code, stdout, stderr = run(
+        exit_code, _, _ = run(
             f'gunzip -c "{ingest_file_path}" | cut -d# -f1,2,3,6 | tr \\# \\\t > "{csv_file_path}"'
         )
         assert exit_code == 0, 'Error running unix toolchain'

@@ -1,3 +1,5 @@
+"""Staten Generaal Digitaal corpus ingestion."""
+
 import os.path
 import glob
 
@@ -9,6 +11,7 @@ from ..sacoreutils import add_corpus_core
 
 
 def ingest(session_maker, base_dir='', sgd_dir='SGD', **kwargs):
+    """Ingest the Staten Generaal Digitaal corpus into the database."""
     in_dir = os.path.join(base_dir, sgd_dir)
     in_files = glob.glob(os.path.join(in_dir, '*.clean'))
 

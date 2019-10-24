@@ -1,15 +1,17 @@
+"""SONAR corpus ingestion."""
 import os.path
+import glob
+
 import pandas as pd
 
 from ..dbutils import session_scope
 from ..tokenize import terms_documents_matrix_ticcl_frequency
 from ..sacoreutils import add_corpus_core
 
-import glob
-
 
 def ingest(session_maker, base_dir='',
            sonar_dir='SONAR500', **kwargs):
+    """Ingest SONAR corpus into TICCLAT database."""
     in_dir = os.path.join(base_dir, sonar_dir)
     in_files = glob.glob(os.path.join(in_dir, '*.wordfreqlist.clean.tsv.bz2'))
 
