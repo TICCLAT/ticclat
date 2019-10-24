@@ -119,13 +119,22 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
     if np.isnan(max_freq):
         max_freq = 0.0
 
+    min_term_freq = df['term_frequency'].min()
+    if np.isnan(min_term_freq):
+        min_term_freq = 0.0
+    max_term_freq = df['term_frequency'].max()
+    if np.isnan(max_term_freq):
+        max_term_freq = 0.0
+
     md = {
         'overall_min_year': start_year,
         'overall_max_year': end_year,
         'min_year': int(min_year),
         'max_year': int(max_year),
         'min_freq': float(min_freq),
-        'max_freq': float(max_freq)
+        'max_freq': float(max_freq),
+        'min_term_freq': int(min_term_freq),
+        'max_term_freq': int(max_term_freq)
     }
 
     # create result
