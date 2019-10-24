@@ -565,7 +565,7 @@ def add_morphological_paradigms(session, in_file):
     """
     Add morphological paradigms to database from CSV file.
     """
-    data = pd.read_csv(in_file, sep='\t', names=['wordform',
+    data = pd.read_csv(in_file, sep='\t', index_col=False, names=['wordform',
                                                  'corpus_freq',
                                                  'component_codes',
                                                  'human_readable_c_code',

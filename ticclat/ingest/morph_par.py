@@ -9,7 +9,8 @@ from ..dbutils import session_scope, add_morphological_paradigms, empty_table
 # ! before ingesting the data.
 # ! When changing the input file, please check if the first line of the file
 # ! still needs to be removed.
-INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms265.tsv'
+# INPUT = 'morph/CombilexTypolistINThistlex.TICCLATingest.DeriveParadigms265.tsv'
+INPUT = 'morph/CombinationGigantMolexCombilexTypolist6INThistlex.TICCLATingest.NEWSPLITSnoplus.DeriveParadigms306.delfirstlines.KopStaartCodes.tsv'
 
 
 def ingest(session_maker, base_dir='', morph_par_file=INPUT, **kwargs):
