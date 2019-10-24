@@ -134,14 +134,18 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
         'min_freq': float(min_freq),
         'max_freq': float(max_freq),
         'min_term_freq': int(min_term_freq),
-        'max_term_freq': int(max_term_freq)
+        'max_term_freq': int(max_term_freq),
     }
 
     # create result
     result = []
+    min_corpus_rel_freq = np.inf
+    max_corpus_rel_freq = -np.inf
     for name, data in df.groupby('name'):
         corpus_data = {'name': name, 'frequencies': []}
         total_words_all_years = 0
+        min_corpus_freq = np.inf
+        max_corpus_freq = -np.inf
         for row in data.iterrows():
             corpus_data['frequencies'].append(
                 {
@@ -151,8 +155,15 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
                     'term_frequency': row[1]['term_frequency']
                 })
             total_words_all_years += row[1]['num_words']
+            min_corpus_freq = min(min_corpus_freq, row[1]['term_frequency'])
+            max_corpus_freq = max(max_corpus_freq, row[1]['term_frequency'])
         corpus_data['total_number_of_words'] = total_words_all_years
         result.append(corpus_data)
+        min_corpus_rel_freq = min(min_corpus_rel_freq, min_corpus_freq / total_words_all_years)
+        max_corpus_rel_freq = max(max_corpus_rel_freq, max_corpus_freq / total_words_all_years)
+
+    md['min_corpus_rel_freq'] = float(min_corpus_rel_freq)
+    md['max_corpus_rel_freq'] = float(max_corpus_rel_freq)
 
     return result, md
 
