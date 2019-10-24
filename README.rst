@@ -244,6 +244,18 @@ Or a production server:
   export $(cat .env | xargs)
   gunicorn ticclat.flask_app:app --bind 0.0.0.0:8000
 
+Debugger
+********
+If the debugger in e.g. PyCharm isn't working correctly, this might be because test coverage is enabled.
+Disbable this temporarily by commenting `addopts` line in `setup.cfg`:
+
+.. code-block::
+
+  [tool:pytest]
+  testpaths = tests
+  #addopts = --cov --cov-report xml --cov-report term --cov-report html
+
+
 Documentation
 *************
 

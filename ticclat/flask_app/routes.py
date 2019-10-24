@@ -273,3 +273,13 @@ def init_app(app, session):
         df = pandas.read_sql(query, session.connection(), params={'W': W, 'X': X, 'Y': Y, 'Z': Z})
 
         return jsonify(df.to_dict(orient="record"))
+
+    @app.route("/corrections/<word_name>")
+    def corrections(word_name: str):
+        paradigms, md = queries.get_wf_variants(session, word_name)
+        q = "SELECT wordform, frequency, levenshtein_distance FROM ticcl_variants WHERE wordform_source = %(wordform)s"
+        df = pandas.read_sql(q, session.connection(), params={'wordform': word_name})
+        return jsonify({'wordform': word_name,
+                        'paradigms': paradigms,
+                        'metadata': md,
+                        'corrections': df.to_dict(orient="record")})

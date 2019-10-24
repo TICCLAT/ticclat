@@ -1,12 +1,19 @@
-import pytest
+# -*- coding: utf-8 -*-
+# pylint: disable=bad-whitespace, missing-function-docstring
+"""Tests for all the flask routes in flask_app/routes.py.
+
+Note
+    See conftest.py for the flask_test_client. Test data from `tests/db_data` is (re-)loaded for each test.
+"""
 from urllib.parse import urlencode
+import pytest
 
 
 def test_root(flask_test_client):
     response = flask_test_client.get('/')
     assert response.status_code == 200
     expected_set = {
-        "/", "/corpora", "/lemmas_for_wordform/<word_form>", "/lexica/<word_name>",
+        "/", "/corpora", "/corrections/<word_name>", "/lemmas_for_wordform/<word_form>", "/lexica/<word_name>",
         "/morphological_variants_for_lemma/<paradigm_id>", "/network/<wordform>", "/paradigm_count",
         "/plots/corpus_size", "/plots/lexicon_size", "/plots/paradigm_size", "/plots/word_count_per_year",
         "/regexp_search/<regexp>", "/static/<path:filename>", "/suffixes/<suffix_1>", "/suffixes/<suffix_1>/<suffix_2>",
@@ -223,3 +230,23 @@ def test_word_type_codes(flask_test_client):
     response = flask_test_client.get('/word_type_codes')
     assert response.status_code == 200
     assert set(response.json) == {'HCL', 'HCT'}
+
+
+def test_corrections(flask_test_client):
+    response = flask_test_client.get('/corrections/wanneer')
+    assert response.status_code == 200
+    expected_response = {'corrections': [{'frequency': 1, 'levenshtein_distance': 3, 'wordform': '-A-nee:r'},
+                                         {'frequency': 1, 'levenshtein_distance': 3, 'wordform': '-Janneef'},
+                                         {'frequency': 1, 'levenshtein_distance': 4, 'wordform': '-S.Vanneer'},
+                                         {'frequency': 1, 'levenshtein_distance': 3, 'wordform': '-Wanfeen'},
+                                         {'frequency': 85, 'levenshtein_distance': 1, 'wordform': '-Wanneer'},
+                                         {'frequency': 1, 'levenshtein_distance': 2, 'wordform': '-Wanneet'},
+                                         {'frequency': 1, 'levenshtein_distance': 2, 'wordform': '-Wan„eer'},
+                                         {'frequency': 3, 'levenshtein_distance': 1, 'wordform': '-anneer'},
+                                         {'frequency': 1, 'levenshtein_distance': 3, 'wordform': '-annexh'},
+                                         {'frequency': 1, 'levenshtein_distance': 4, 'wordform': '-ar.neei'}],
+                         'metadata': {'max_freq': 0.0, 'max_year': 0, 'min_freq': 0.0, 'min_year': 0,
+                                      'overall_max_year': 1930, 'overall_min_year': 1510},
+                         'paradigms': [], 'wordform': 'wanneer'}
+
+    assert response.json == expected_response
