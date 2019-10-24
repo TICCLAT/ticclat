@@ -192,7 +192,7 @@ def get_word_frequency_df(session, add_ids=False):
             connected to an anahash value
     """
     LOGGER.info('Selecting wordforms without anahash value.')
-    query = session.query(Wordform).filter(Wordform.anahash is None)
+    query = session.query(Wordform).filter(Wordform.anahash == None)  # noqa E711 pylint: disable=singleton-comparison
     if add_ids:
         query = query.with_entities(Wordform.wordform, Wordform.wordform_id)
     else:

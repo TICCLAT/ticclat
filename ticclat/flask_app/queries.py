@@ -163,8 +163,6 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
             min_corpus_freq = min(min_corpus_freq, row[1]['term_frequency'])
             max_corpus_freq = max(max_corpus_freq, row[1]['term_frequency'])
 
-
-
         result.append(corpus_data)
         min_corpus_rel_freq = min(min_corpus_rel_freq, min_corpus_freq / total_words_all_years)
         max_corpus_rel_freq = max(max_corpus_rel_freq, max_corpus_freq / total_words_all_years)
