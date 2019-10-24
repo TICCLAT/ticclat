@@ -642,7 +642,7 @@ def empty_table(session, table_class):
         LOGGER.info('Deleting rows...')
         Base.metadata.drop_all(bind=session.get_bind(),
                                tables=[table_class.__table__])
-        Base.metadata.create_all(session.get_bind(),
+        Base.metadata.create_all(bind=session.get_bind(),
                                  tables=[table_class.__table__])
 
 
