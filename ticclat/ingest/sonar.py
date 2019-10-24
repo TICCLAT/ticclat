@@ -18,7 +18,7 @@ def ingest(session_maker, base_dir='',
     document_metadata = pd.DataFrame()
     document_metadata["title"] = [os.path.basename(f).split(".", 1)[0] for f in in_files]
     document_metadata["language"] = "nl"
-    document_metadata["year_from"] = 1950
+    document_metadata["year_from"] = 1990
     document_metadata["year_to"] = 2010
     # More metadata?
 
