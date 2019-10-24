@@ -141,6 +141,7 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
     result = []
     for name, data in df.groupby('name'):
         corpus_data = {'name': name, 'frequencies': []}
+        total_words_all_years = 0
         for row in data.iterrows():
             corpus_data['frequencies'].append(
                 {
@@ -149,6 +150,8 @@ def wordform_in_corpora_over_time(session, wf, start_year=None, end_year=None):
                     'total': row[1]['num_words'],
                     'term_frequency': row[1]['term_frequency']
                 })
+            total_words_all_years += row[1]['num_words']
+        corpus_data['total_number_of_words'] = total_words_all_years
         result.append(corpus_data)
 
     return result, md
