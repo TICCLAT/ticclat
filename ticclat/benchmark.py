@@ -15,54 +15,59 @@ LOGGER = logging.getLogger(__name__)
 
 
 def random_corpus(num_documents, num_tokens_min, num_tokens_max, vocabulary):
+    """Generator that yields random bags of words (documents)."""
     fake = Faker()
-    for i in range(num_documents):
+    for _ in range(num_documents):
         num_tokens = np.random.randint(num_tokens_min, num_tokens_max + 1)
 
         yield fake.words(nb=num_tokens, ext_word_list=vocabulary, unique=False)
 
 
 def corpus_metadata(num_documents, language, year_min, year_max):
-    md = pd.DataFrame()
-    md['language'] = [language for i in range(num_documents)]
-    md['pub_year'] = [np.random.randint(year_min, year_max + 1)
-                      for i in range(num_documents)]
+    """Return a mock corpus metadata dataframe."""
+    metadata = pd.DataFrame()
+    metadata['language'] = [language for i in range(num_documents)]
+    metadata['pub_year'] = [np.random.randint(year_min, year_max + 1)
+                            for i in range(num_documents)]
 
-    return md
+    return metadata
 
 
 def generate_corpora(num_corpora, num_documents_min, num_documents_max,
                      language, year_min, year_max, num_tokens_min,
                      num_tokens_max, vocabulary):
-    for i in range(num_corpora):
+    """Generator that yields randomized corpus term-documents matrices."""
+    for _ in range(num_corpora):
         num_documents = np.random.randint(num_documents_min,
                                           num_documents_max + 1)
 
-        md = corpus_metadata(num_documents, language, year_min, year_max + 1)
+        metadata = corpus_metadata(num_documents, language, year_min, year_max + 1)
 
         word_lists = random_corpus(num_documents, num_tokens_min,
                                    num_tokens_max + 1, vocabulary)
-        corpus, v = terms_documents_matrix_word_lists(word_lists)
+        corpus, vocabulary = terms_documents_matrix_word_lists(word_lists)
 
-        yield corpus, v, md
+        yield corpus, vocabulary, metadata
 
 
 def ingest_corpora(session, num_corpora, num_documents_min, num_documents_max,
                    language, year_min, year_max, num_tokens_min,
                    num_tokens_max, vocabulary):
-    ca = generate_corpora(num_corpora, num_documents_min, num_documents_max,
-                          language, year_min, year_max, num_tokens_min,
-                          num_tokens_max, vocabulary)
-    for i, (corpus, v, md) in enumerate(ca):
+    """Run multiple (random built) corpus ingestions."""
+    corpus_data = generate_corpora(num_corpora, num_documents_min, num_documents_max,
+                                   language, year_min, year_max, num_tokens_min,
+                                   num_tokens_max, vocabulary)
+    for i, (corpus, vocabulary_i, metadata) in enumerate(corpus_data):
         name = f'Corpus {i}'
-        LOGGER.info(f'Generating {name}')
-        add_corpus_core(session, corpus_matrix=corpus, vectorizer=v,
-                        corpus_name=name, document_metadata=md)
+        LOGGER.info('Generating %s', name)
+        add_corpus_core(session, corpus_matrix=corpus, vectorizer=vocabulary_i,
+                        corpus_name=name, document_metadata=metadata)
 
 
 def generate_lexica(num_lexica, num_wf_min, num_wf_max, vocabulary):
+    """Generator that yields randomized lexicon wordform lists."""
     fake = Faker()
-    for i in range(num_lexica):
+    for _ in range(num_lexica):
         num_wf = np.random.randint(num_wf_min, num_wf_max)
 
         wfs = pd.DataFrame()
@@ -73,16 +78,18 @@ def generate_lexica(num_lexica, num_wf_min, num_wf_max, vocabulary):
 
 
 def ingest_lexica(session, num_lexica, num_wf_min, num_wf_max, vocabulary):
+    """Run multiple (random built) lexicon ingestions."""
     lexica = generate_lexica(num_lexica, num_wf_min, num_wf_max + 1, vocabulary)
     for i, wfs in enumerate(lexica):
         name = f'Lexicon {i}'
-        LOGGER.info(f'Generating {name}')
+        LOGGER.info('Generating %s', name)
         add_lexicon(session, lexicon_name=name, vocabulary=True, wfs=wfs)
 
 
 def generate_linked_lexica(num_lexica, num_wf_min, num_wf_max, vocabulary):
+    """Generator that yields randomized linked lexicon dataframes."""
     fake = Faker()
-    for i in range(num_lexica):
+    for _ in range(num_lexica):
         num_wf = np.random.randint(num_wf_min, num_wf_max)
         if num_wf % 2 != 0:
             num_wf += 1
@@ -99,6 +106,7 @@ def generate_linked_lexica(num_lexica, num_wf_min, num_wf_max, vocabulary):
 
 def ingest_linked_lexica(session, num_lexica, num_wf_min, num_wf_max,
                          vocabulary):
+    """Run multiple (random built) linked lexicon ingestions."""
     lexica = generate_linked_lexica(num_lexica, num_wf_min, num_wf_max + 1,
                                     vocabulary)
 
@@ -109,7 +117,7 @@ def ingest_linked_lexica(session, num_lexica, num_wf_min, num_wf_max,
         from_correct = is_vocabulary
         print(name, 'is_vocabulary:', is_vocabulary)
 
-        LOGGER.info(f'Generating {name} (is vocabulary: {is_vocabulary})')
+        LOGGER.info('Generating %s (is vocabulary: %s)', name, is_vocabulary)
 
         add_lexicon_with_links(session, lexicon_name=name,
                                vocabulary=is_vocabulary, wfs=wfs,

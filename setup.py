@@ -76,5 +76,6 @@ setup(
     ],
     extras_require={
         'dev': ['prospector[with_pyroma]', 'yapf', 'isort'],
+        'benchmark': ['pyfakefs'],
     }
 )
