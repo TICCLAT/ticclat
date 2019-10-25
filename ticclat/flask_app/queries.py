@@ -334,6 +334,8 @@ def get_wf_variants(session, wf, start_year=None, end_year=None):
         min_freqs = []
         max_freqs = []
         for variant in get_paradigm_variants(session, paradigm).fetchall():
+            if variant.wordform in [var_['wordform'] for var_ in p['variants']]:
+                continue
             vd = {'wordform': variant.wordform}
             r, md = wordform_in_corpora_over_time(session, wf=variant.wordform,
                                                   start_year=start_year,
@@ -366,6 +368,8 @@ def get_wf_variants(session, wf, start_year=None, end_year=None):
         metadata['max_year'] = max(max_years)
         metadata['min_freq'] = min(min_freqs)
         metadata['max_freq'] = max(max_freqs)
+
+
 
     return paradigms, metadata
 
