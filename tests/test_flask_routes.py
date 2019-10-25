@@ -81,15 +81,16 @@ def test_lexica(flask_test_client, wordform_input, expected):
 # lexicon 1 = not vocabulary
 # lexicon 2 = vocabulary
 @pytest.mark.parametrize("paradigm_id,expected", [
-    (1, [{'V': 1, 'frequency': 5.0, 'max_year': 1980.0, 'min_year': 1510.0, 'num_corpora': 2, 'num_lexica': 0,
-          'num_paradigms': 1, 'word_type_code': 'HCL', 'wordform': 'aandacht', 'wordform_id': 1
-          }]),
-    (3, [
-        {'V': 1, 'frequency': 4.0, 'max_year': 1510.0, 'min_year': 1510.0, 'num_corpora': 1, 'num_lexica': 2,
-         'num_paradigms': 1, 'word_type_code': 'HCL', 'wordform': 'dromedaris', 'wordform_id': 3},
-        {'V': 2, 'frequency': 4.0, 'max_year': 1510.0, 'min_year': 1510.0, 'num_corpora': 1, 'num_lexica': 1,
-         'num_paradigms': 1, 'word_type_code': 'HCT', 'wordform': 'drmoedaris', 'wordform_id': 4}
-    ]),
+    (1, [{'V': 1, 'W': 1, 'X': 1, 'Y': 1, 'Z': 1, 'frequency': 5.0, 'max_year': 1980.0, 'min_year': 1510.0,
+          'num_corpora': 2, 'num_lexica': 0, 'num_paradigms': 1, 'word_type_code': 'HCL', 'wordform': 'aandacht',
+          'wordform_id': 1}]),
+    (3, [{'V': 1, 'W': 2, 'X': 1, 'Y': 1, 'Z': 1, 'frequency': 4.0, 'max_year': 1510.0, 'min_year': 1510.0,
+          'num_corpora': 1, 'num_lexica': 2, 'num_paradigms': 1, 'word_type_code': 'HCL', 'wordform': 'dromedaris',
+          'wordform_id': 3},
+         {'V': 2, 'W': 2, 'X': 1, 'Y': 1, 'Z': 1, 'frequency': 4.0, 'max_year': 1510.0, 'min_year': 1510.0,
+          'num_corpora': 1, 'num_lexica': 1, 'num_paradigms': 1, 'word_type_code': 'HCT', 'wordform': 'drmoedaris',
+          'wordform_id': 4}
+         ]),
 ])
 def test_morphological_variants_for_lemma(flask_test_client, paradigm_id, expected):
     response = flask_test_client.get(f'/morphological_variants_for_lemma/{paradigm_id}')
