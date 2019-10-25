@@ -73,7 +73,8 @@ def ingest(session_maker, base_dir='',
     wfs_with_links = load_data(os.path.join(base_dir, twente_file))
 
     with session_scope(session_maker) as session:
-        name = 'TWENTE.noxml.2002.sq.clean.norm.tok.sortu.unifrq.LC.noapekrol.allasterisk.12.withcorrections.12186'
+        # name = 'TWENTE.noxml.2002.sq.clean.norm.tok.sortu.unifrq.LC.noapekrol.allasterisk.12.withcorrections.12186'
+        name = 'Published Dutch typos (Dutch Newspapers 2002)'
         vocabulary = False
         from_column = 'wf'
         from_correct = False

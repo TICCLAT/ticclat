@@ -14,7 +14,8 @@ def ingest(session_maker, base_dir='',
     wfs.columns = ['wordform']
 
     with session_scope(session_maker) as session:
-        name = 'GB1914.expanded.types.utf-8'
+        # name = 'GB1914.expanded.types.utf-8'
+        name = 'Green Booklet 1914 (Gutenberg)'
         vocabulary = True
         add_lexicon(session, name, vocabulary, wfs, **kwargs)
 
@@ -23,6 +24,7 @@ def ingest(session_maker, base_dir='',
     wfs.columns = ['wordform']
 
     with session_scope(session_maker) as session:
-        name = 'GB95-05_002.csv.alltokens.utf8.nopunct'
+        # name = 'GB95-05_002.csv.alltokens.utf8.nopunct'
+        name = 'Green Booklets 1995 and 2005 (merged)'
         vocabulary = True
         add_lexicon(session, name, vocabulary, wfs, **kwargs)

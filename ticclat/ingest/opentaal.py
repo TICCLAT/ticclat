@@ -12,6 +12,7 @@ def ingest(session_maker, base_dir='',
     wfs.columns = ['wordform']
 
     with session_scope(session_maker) as session:
-        name = 'OpenTaal-210G-BasisEnFlexies'
+        # name = 'OpenTaal-210G-BasisEnFlexies'
+        name = 'Open Taal modern Dutch word list'
         vocabulary = True
         add_lexicon(session, name, vocabulary, wfs, **kwargs)

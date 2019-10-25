@@ -20,6 +20,7 @@ def ingest(session_maker, base_dir='',
     wfs = pd.read_csv(os.path.join(base_dir, inl_file), keep_default_na=False)
 
     with session_scope(session_maker) as session:
-        name = 'INL_EE3-5_Dutch_IR'
+        # name = 'INL_EE3-5_Dutch_IR'
+        name = 'Dutch Historical Lexicon INT (prerelease)'
         vocabulary = True
         add_lexicon(session, name, vocabulary, wfs, **kwargs)

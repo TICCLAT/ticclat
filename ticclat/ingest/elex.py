@@ -17,7 +17,8 @@ def ingest(session_maker, base_dir='',
     l_wf_pairs.columns = ['lemma', 'variant']
 
     with session_scope(session_maker) as session:
-        name = 'e-Lex-1.1.lemma_wordform.utf8.nonumbers'
+        # name = 'e-Lex-1.1.lemma_wordform.utf8.nonumbers'
+        name = 'e-Lex'
         vocabulary = True
         from_column = 'lemma'
         from_correct = True
