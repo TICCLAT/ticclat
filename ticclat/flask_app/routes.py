@@ -260,7 +260,7 @@ def init_app(app, session):
         Z = request.args.get('z')
 
         query = """
-    SELECT frequency, w.wordform FROM morphological_paradigms
+    SELECT IFNULL(frequency, 0) AS frequency, w.wordform FROM morphological_paradigms
     LEFT JOIN wordforms w on morphological_paradigms.wordform_id = w.wordform_id
     LEFT JOIN wordform_frequency ON w.wordform_id = wordform_frequency.wordform_id
     WHERE morphological_paradigms.W = %(W)s
