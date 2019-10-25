@@ -83,6 +83,10 @@ SELECT paradigm_id, wordform, W, X, Y, Z FROM morphological_paradigms
 def find_morphological_variants_for_lemma():
     return """
 SELECT V,
+       W,
+       X,
+       Y,
+       Z,
        word_type_code,
        wordform,
        wordform_id,
@@ -93,6 +97,10 @@ SELECT V,
        COUNT(DISTINCT code) AS num_paradigms,
        SUM(frequency) AS frequency
 FROM (SELECT mp2.V,
+             mp2.W,
+             mp2.X,
+             mp2.Y,
+             mp2.Z,
              mp2.word_type_code,
              wordform,
              wordforms.wordform_id,
@@ -121,7 +129,7 @@ FROM (SELECT mp2.V,
                LEFT JOIN morphological_paradigms mp3 ON wordforms.wordform_id = mp3.wordform_id
       WHERE mp1.paradigm_id = %(paradigm_id)s
      ) AS wordform_stats
-GROUP BY V, word_type_code, wordform, wordform_id
+GROUP BY V, W, X, Y, Z, word_type_code, wordform, wordform_id
 """
 
 
