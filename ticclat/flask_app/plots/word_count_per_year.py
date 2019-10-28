@@ -2,6 +2,7 @@ import pandas
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure, show
 from bokeh import palettes
+from sqlalchemy.orm import Session
 
 from ticclat.flask_app.db import database
 
@@ -32,7 +33,7 @@ ORDER BY year
         active_scroll='wheel_zoom',
     )
 
-    corpus_names = df['name'].unique()
+    corpus_names = sorted(df['name'].unique())
 
     palette = palettes.Category10[10]
 
@@ -70,5 +71,7 @@ ORDER BY year
 
 
 if __name__ == '__main__':
+    database.setup()
+    database.session = Session(bind=database.engine.connect())
     p = word_count_per_year()
     show(p)

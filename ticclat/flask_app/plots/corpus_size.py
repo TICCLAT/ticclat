@@ -4,6 +4,7 @@ from bokeh import models
 from bokeh.models import HoverTool
 from bokeh.plotting import figure, show
 from bokeh import palettes
+from sqlalchemy.orm import Session
 
 from ticclat.flask_app.db import database
 
@@ -16,7 +17,7 @@ FROM documents
          LEFT JOIN corpusId_x_documentId cIxdI on documents.document_id = cIxdI.document_id
          LEFT JOIN corpora c on cIxdI.corpus_id = c.corpus_id
 GROUP BY c.corpus_id, c.name
-ORDER BY sum_word_count DESC
+ORDER BY c.name ASC
 """
     connection = database.session.connection()
     df = pandas.read_sql(query, connection)
@@ -58,5 +59,7 @@ ORDER BY sum_word_count DESC
 
 
 if __name__ == '__main__':
+    database.setup()
+    database.session = Session(bind=database.engine.connect())
     p = corpus_size()
     show(p)
