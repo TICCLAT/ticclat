@@ -16,6 +16,9 @@ TICCLAT is a tool for text-induced corpus correction and lexical assessment.
 
 .. image:: https://api.codacy.com/project/badge/Grade/df3276b470274a088819d2af9c0faaee
     :target: https://www.codacy.com/manual/egpbos/ticclat?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=TICCLAT/ticclat&amp;utm_campaign=Badge_Grade
+    
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3520462.svg
+    :target: https://doi.org/10.5281/zenodo.3520462
 
 Installation
 ************
