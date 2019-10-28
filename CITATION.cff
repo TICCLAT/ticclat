@@ -1,0 +1,34 @@
+# YAML 1.2
+---
+abstract: "TICCLAT is a tool for text-induced corpus correction and lexical assessment."
+authors:
+  -
+    affiliation: "Netherlands eScience Center"
+    family-names: Pawar
+    given-names: Pushpanjali
+  -
+    affiliation: "Netherlands eScience Center"
+    family-names: Mendrik
+    given-names: Adriënne
+  -
+    affiliation: "Netherlands eScience Center"
+    family-names: Bos
+    given-names: Patrick
+  -
+    affiliation: "Netherlands eScience Center"
+    family-names: Klaver
+    given-names: Tom
+  -
+    affiliation: "Meertens Instituut"
+    family-names: Reynaert
+    given-names: Martin
+cff-version: "1.0.3"
+date-released: 2019-10-28
+keywords:
+  - "Spelling correction"
+  - "Visualization"
+license: "Apache-2.0"
+message: "If you use this software, please cite it using these metadata."
+title: "TICCLAT"
+version: "0.2.0"
+...
