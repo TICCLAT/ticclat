@@ -1,2 +1,3 @@
 """TICCLAT version."""
-__version__ = '0.2.1'
+# Don't forget version in CITATION.cff
+__version__ = '0.2.2'

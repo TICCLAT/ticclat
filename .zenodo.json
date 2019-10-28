@@ -1,0 +1,41 @@
+{
+    "creators": [
+        {
+            "affiliation": "Netherlands eScience Center",
+            "name": "Pawar, Pushpanjali"
+        },
+        {
+            "affiliation": "Netherlands eScience Center",
+            "name": "Mendrik, Adriënne"
+        },
+        {
+            "affiliation": "Netherlands eScience Center",
+            "name": "van Meersbergen, Maarten"
+        },
+        {
+            "affiliation": "Netherlands eScience Center",
+            "name": "Bos, Patrick"
+        },
+        {
+            "affiliation": "Netherlands eScience Center",
+            "name": "Klaver, Tom"
+        },
+        {
+            "affiliation": "Netherlands eScience Center",
+            "name": "van der Zwaan, Janneke"
+        },
+        {
+            "affiliation": "Meertens Instituut",
+            "name": "Reynaert, Martin"
+        }
+    ],
+    "description": "TICCLAT is a tool for text-induced corpus correction and lexical assessment.",
+    "keywords": [
+      "Spelling correction",
+      "Visualization"
+    ],
+    "license": {
+        "id": "Apache-2.0"
+    },
+    "title": "TICCLAT"
+}
