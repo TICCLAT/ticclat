@@ -23,7 +23,6 @@ ORDER BY num_paradigms DESC, {var} ASC
         x_range=df[var],
         y_axis_type="log",
         y_range=[1e-1, 1e6],
-        active_scroll='wheel_zoom',
         tools=['hover', 'pan', 'wheel_zoom', 'save', 'reset']
     )
 

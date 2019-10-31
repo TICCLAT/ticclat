@@ -22,7 +22,6 @@ ORDER BY word_count DESC
         title="Lexicon size",
         sizing_mode='stretch_both',
         y_range=df['name'],
-        active_scroll='wheel_zoom',
         tools=['hover', 'pan', 'wheel_zoom', 'save', 'reset']
     )
 

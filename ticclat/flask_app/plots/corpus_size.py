@@ -26,7 +26,6 @@ ORDER BY c.name ASC
         title="Corpus size",
         sizing_mode='stretch_both',
         y_range=df['name'],
-        active_scroll='wheel_zoom',
         tools=['hover', 'pan', 'wheel_zoom', 'save', 'reset']
     )
 
