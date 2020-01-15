@@ -251,7 +251,9 @@ Or a production server:
 .. code-block:: console
 
   export $(cat .env | xargs)
-  gunicorn ticclat.flask_app:app --bind 0.0.0.0:8000
+  gunicorn ticclat.flask_app.wsgi:app --bind 0.0.0.0:8000 --max-requests 100 --workers 2 --timeout 30
+
+where the last three options may not be necessary, but can be tweaked for stability and performance.
 
 Debugger
 ********
